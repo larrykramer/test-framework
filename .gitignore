@@ -1,0 +1,27 @@
+# from Java.gitignore
+*.class
+*.log
+*.jar
+*.zip
+*.tar.gz
+hs_err_pid*
+replay_pid*
+# from Maven.gitignore
+target/
+dependency-reduced-pom.xml
+.project
+.classpath
+# from Global/macOS.gitignore
+.DS_Store
+# IntelliJ IDEA
+out/
+/.idea/**
+!/.idea/codeStyles/
+!/.idea/codeStyles/codeStyleConfig.xml
+!/.idea/codeStyles/Project.xml
+!/.idea/copyright/
+!/.idea/copyright/profiles_settings.xml
+!/.idea/runConfigurations/
+!/.idea/runConfigurations/**/*.xml
+*.iml
+*.ipr

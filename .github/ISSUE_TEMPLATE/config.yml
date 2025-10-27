@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: General questions about the Test Framework
+    url: https://github.com/larrykramer/test-framework/discussions
+    about: |
+      For general technical questions or "how-to" guidance, please search the Discussions section or create a new post.

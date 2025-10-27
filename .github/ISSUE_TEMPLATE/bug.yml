@@ -1,0 +1,97 @@
+name: Bug report
+description: Create a bug report to help improve the project
+title: '[Bug]: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Thanks for taking the time to fill out this bug report!
+
+        If the Test Framework is not behaving as you expect, please first search the existing issues to see if your problem has already been reported.
+        Please make reasonable efforts to troubleshoot and rule out issues with your code, the configuration, or any third-party libraries you might be using.
+        If you are unsure about the cause of the problem, consider asking for help in the project [Discussions](https://github.com/larrykramer/test-framework/discussions) before posting a bug report.
+        The issue tracker is not a help forum.
+
+        #### Create a minimal reproduction
+
+        To file the report, you will need a minimal (but complete) example and simple, clear steps to reproduce the bug.
+        The simpler you make it, the more likely I will be able to verify and fix the bug.
+  - type: markdown
+    attributes:
+      value: |
+        > [!IMPORTANT]
+        > Bug reports without a minimal reproduction will be rejected.
+  - type: textarea
+    id: mvce
+    attributes:
+      label: Minimal, reproducible example
+      description: |
+        Provide a [minimal, reproducible example](https://stackoverflow.com/help/minimal-reproducible-example) or a link to a repository with a minimal reproduction of the bug you are facing.
+      placeholder: |
+        Minimal, reproducible example or link to a repository with a minimal reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Please provide the minimal reproduction or a link to a repository with a minimal reproduction in the "Minimal, reproducible example" field, and accurately describe how I can reproduce the bug.
+      placeholder: |
+        Example steps (replace with your own):
+        1. Clone my repo at https://github.com/<myuser>/example
+        2. mvn test
+        3. You should see the error appear
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: >
+        The version of the Test Framework you are using.
+        Is it the [latest](https://github.com/larrykramer/test-framework/tags)?
+        Test to see whether the bug has already been fixed.
+      placeholder: e.g., 1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: A description of what you expect to happen.
+      placeholder: I expect to see X or Y
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Actual behavior
+      description: |
+        A clear and concise description of the unexpected behavior.
+        Please include any relevant output here, especially any error messages.
+      placeholder: A bug happened!
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that might be relevant.
+    validations:
+      required: false
+  - type: textarea
+    id: envinfo
+    attributes:
+      label: Environment
+      description: |
+        Please provide information about the environment you are running in.
+      placeholder: |
+        - Operating System: [Ubuntu 22.04]
+        - CPU: [arm64]
+        - Java Version: [21]
+        - Maven Version: [3.9.9]
+        - Other info:
+    validations:
+      required: true

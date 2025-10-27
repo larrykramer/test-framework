@@ -1,0 +1,58 @@
+name: CI
+
+permissions:
+  contents: read
+  actions: write
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      # These are the defaults.
+      # See: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - main
+
+jobs:
+  java-tests:
+    name: Java tests on ${{ matrix.os }} using JDK ${{ matrix.java-version }}
+    runs-on: ${{ matrix.os }}
+    # This condition prevents the CI workflow from running on commits made by the
+    # release workflow.
+    if: >-
+      github.event_name != 'push' ||
+      !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version:
+          - '21'
+          - '25'
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java environment
+        uses: ./.github/actions/setup-java-environment
+        with:
+          java-version: ${{ matrix.java-version }}
+
+      - name: Run unit tests
+        run: mvn -B -pl test-framework-core -am clean test
+
+      - name: Upload Surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.os }}
+          path: 'test-framework-core/target/surefire-reports/*'
+          if-no-files-found: ignore
