@@ -222,7 +222,8 @@ class ContextImpl implements AlterableContext {
             lastScenario.remove();
         } else {
             // Ensures initialized event is only fired once per scenario.
-            if (!scenario.equals(lastScenario.get())) {
+            Scenario previous = lastScenario.get();
+            if (scenario != previous) {
                 lastScenario.set(scenario);
                 beanManager.getEvent().select(INITIALIZED_LITERAL).fire(scenario);
             }
