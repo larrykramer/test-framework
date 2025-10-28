@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="OperatingSystemTest" type="JUnit" factoryName="JUnit" folderName="Core Utility Unit Tests">
+    <module name="test-framework-core" />
+    <option name="PACKAGE_NAME" value="net.larrykramer.test.util" />
+    <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.util.OperatingSystemTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
