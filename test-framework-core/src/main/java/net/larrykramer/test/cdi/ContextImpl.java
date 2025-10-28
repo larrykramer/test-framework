@@ -283,8 +283,20 @@ class ContextImpl implements AlterableContext {
      */
     private record ContextualInstance<T>(T value, CreationalContext<T> creationalContext,
             Contextual<T> contextual) {
+        /**
+         * Destroys the contextual instance and releases its dependent objects.
+         * This method invokes the bean's {@code PreDestroy} lifecycle callbacks and associated
+         * {@code Disposer} methods, then releases the {@code CreationalContext} to clean up
+         * dependent resources.
+         */
         void destroy() {
-            contextual.destroy(value, creationalContext);
+            try {
+                contextual.destroy(value, creationalContext);
+            } finally {
+                // Per CDI specification, the CreationalContext must be release to destroy
+                // dependent objects and prevent memory leaks.
+                creationalContext.release();
+            }
         }
     }
 }
