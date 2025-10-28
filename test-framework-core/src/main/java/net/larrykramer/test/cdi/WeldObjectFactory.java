@@ -22,6 +22,7 @@
 
 package net.larrykramer.test.cdi;
 
+import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -33,9 +34,7 @@ import java.util.logging.Logger;
 import io.cucumber.core.backend.ObjectFactory;
 import io.cucumber.java.Scenario;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Any;
-import jakarta.enterprise.inject.Default;
-import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.*;
 import jakarta.enterprise.inject.spi.*;
 import jakarta.enterprise.inject.spi.configurator.BeanConfigurator;
 import org.jboss.weld.config.ConfigurationKey;
@@ -374,6 +373,32 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
 
     // -- CDI extension callbacks --
 
+    <T> void vetoGlueBeans(@Observes ProcessAnnotatedType<T> event, BeanManager manager) {
+        AnnotatedType<T> annotatedType = event.getAnnotatedType();
+        Class<T> beanClass = annotatedType.getJavaClass();
+
+        if (!glueClasses.contains(beanClass)) {
+            return;
+        }
+
+        // Check if the bean class has an explicit scope other than @ScenarioScoped. If it does, we
+        // should NOT veto it.
+        for (var a : annotatedType.getAnnotations()) {
+            Class<? extends Annotation> klass = a.annotationType();
+            if (manager.isScope(klass) && !klass.equals(ScenarioScoped.class)) {
+                LOGGER.log(Level.FINER, "Preserving bean {0} with explicit scope @{1}",
+                        new Object[] { beanClass, klass.getSimpleName() });
+                return;
+            }
+        }
+
+        // At this point, the bean is either unannotated or it has been annotated with
+        // @ScenarioScoped. In any case, veto it so our afterBeanDiscovery method can register it
+        // with the correct custom lifecycle.
+        LOGGER.log(Level.FINER, "Vetoing auto-discovery of bean {0}", beanClass.getName());
+        event.veto();
+    }
+
     void beforeBeanDiscovery(@Observes BeforeBeanDiscovery event) {
         event.addScope(ScenarioScoped.class, true, false);
         LOGGER.config("Added @ScenarioScoped scope");
@@ -386,6 +411,10 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
 
         // Register the glue beans.
         for (var glueClass : glueClasses) {
+            if (glueClass.isAnnotationPresent(Vetoed.class)) {
+                LOGGER.log(Level.FINER, "Vetoing {0}", glueClass.getName());
+                continue;
+            }
             if (!manager.getBeans(glueClass).isEmpty()) {
                 LOGGER.log(Level.FINER,
                         "Skipping registration of {0} as it is already a managed bean",
