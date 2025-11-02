@@ -183,8 +183,7 @@ public final class IsolatedClassLoader extends ClassLoader {
         return switch (cause) {
             case null -> new IllegalStateException("No cause associated with throwable", t);
             case Error error -> error;
-            case RuntimeException re -> re;
-            case Exception ex -> ex;
+            case Exception exception -> exception;
             default -> new RuntimeException("Unexpected failure", cause);
         };
     }
