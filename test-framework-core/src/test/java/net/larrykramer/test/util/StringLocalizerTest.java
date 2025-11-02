@@ -174,7 +174,7 @@ public class StringLocalizerTest {
     }
 
     @Test
-    public void testLocalize_withNonExistantKey_returnsMissingKeyPlaceholder() {
+    public void testLocalize_withNonExistentKey_returnsMissingKeyPlaceholder() {
         assertEquals("???absent???", newLocalizer().localize("absent"));
     }
 
