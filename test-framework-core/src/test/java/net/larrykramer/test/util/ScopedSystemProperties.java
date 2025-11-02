@@ -185,7 +185,13 @@ public class ScopedSystemProperties {
 
                 @Override
                 protected ArrayDeque<Properties> childValue(ArrayDeque<Properties> parentValue) {
-                    return new ArrayDeque<>(parentValue);
+                    ArrayDeque<Properties> child = new ArrayDeque<>(parentValue.size());
+                    var it = parentValue.descendingIterator();
+                    while (it.hasNext()) {
+                        Properties view = it.next();
+                        child.addFirst((view == ManagedProperties.this.root) ? view : copyOf(view));
+                    }
+                    return child;
                 }
             };
         }
