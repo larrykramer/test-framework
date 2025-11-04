@@ -275,7 +275,8 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
                 started.set(false);
                 closed.set(true);
                 FACTORIES.remove(this);
-                LOGGER.log(Level.SEVERE, "Unable to start Weld container", t);
+                LOGGER.log(Level.SEVERE, "Unable to start Weld container");
+                LOGGER.throwing(getClass().getName(), "start", t);
                 throw t;
             }
         }
@@ -401,13 +402,13 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
 
     void beforeBeanDiscovery(@Observes BeforeBeanDiscovery event) {
         event.addScope(ScenarioScoped.class, true, false);
-        LOGGER.config("Added @ScenarioScoped scope");
+        LOGGER.log(Level.CONFIG, "Added @ScenarioScoped scope");
     }
 
     void afterBeanDiscovery(@Observes AfterBeanDiscovery event, BeanManager manager) {
         this.context = new ContextImpl(manager);
         event.addContext(this.context);
-        LOGGER.config("Added @ScenarioScoped context");
+        LOGGER.log(Level.CONFIG, "Added @ScenarioScoped context");
 
         // Register the glue beans.
         for (var glueClass : glueClasses) {
