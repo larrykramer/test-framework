@@ -209,15 +209,62 @@ The commit message body should include:
 
 ## 6. Writing Tests and Documentation
 
-### 6.1 Write Tests
+High-quality tests and clear documentation are essential for maintaining the project's stability and usability.
 
-* Contributions should include unit tests for new code or bug fixes.
-* Ensure all tests pass before submitting a pull request: `mvn -pl test-framework-core -am clean test`.
-* Running `mvn clean verify` from the root directory will execute both unit and integration tests.
+### 6.1 Writing Tests
 
-### 6.2 Documentation
+All contributions that add or modify code must include corresponding tests.
+The project uses JUnit categories to group tests based on their purpose and execution time.
 
-* Update relevant documentation (e.g., READMEs, Javadoc) if your changes affect user-facing aspects or internal architecture.
+#### 6.1.1 Test Categories
+
+| Category               | Description                                                                                                                                                                                                                          |
+|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Unit & Smoke Tests** | These are fast, reliable tests that verify individual components and critical application paths. They do not require a specific category annotation (`SmokeTest` is run by default) and are executed with the standard test command. |
+| **Fuzzer Tests**       | These are long-running, resource-intensive tests designed to find stability or security issues by providing unexpected or random data. They are marked with the `@Category(FuzzerTest.class)` annotation and must be run separately. |
+| **Integration Tests**  | These are browser-based tests that validate end-to-end functionality. They are located in the `test-suite` module and are designed to be run locally, not as part of the standard test suite for contributions.                      |
+
+
+### 6.2 Running Tests
+
+You can run different sets of tests using Maven's build lifecycle and profiles.
+
+#### 6.2.1 Running the Standard Test Suite (Required for PRs)
+
+To run all unit and smoke tests (which excludes fuzzer and browser-based integration tests), use the `test` phase.
+This is the primary command you should run to validate your changes before submitting a pull request.
+
+```shell
+mvn -pl test-framework-core -am clean test
+```
+
+This command executes quickly and ensures that your changes have not introduced any regressions in the core logic.
+
+#### 6.2.2 Running Fuzzer Tests
+
+To run the specialized fuzzer tests, you must activate the `fuzzer-tests` Maven profile using the `-P` flag.
+This will run *only* the tests categorized as `FuzzerTest`.
+
+```shell
+mvn -pl test-framework-core -am clean test -P fuzzer-tests
+```
+
+#### 6.2.3 Running Browser-Based Integration Tests
+
+The browser-based integration tests are executed during the `verify` phase.
+These tests require a local browser setup and are generally not required for contributions unless you are specifically working on the integration test suite itself.
+
+```shell
+mvn clean verify
+```
+
+> **Note:**
+> You are not expected to run this command as part of a typical contribution. The CI system does not run these tests.
+
+### 6.3 Documentation
+
+If your changes affect user-facing aspects, internal architecture, or add new features, please update the relevant documentation (e.g., READMEs, Javadoc).
+Clear documentation is as important as the code itself.
 
 ## 7. Submitting a Pull Request (PR)
 

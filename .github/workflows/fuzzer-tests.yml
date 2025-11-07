@@ -1,0 +1,50 @@
+name: Fuzzer Tests
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+
+  # Runs every Sunday at 2:00 AM UTC
+  schedule:
+    - cron: '0 2 * * 0'
+
+jobs:
+  fuzzer-tests:
+    name: Fuzzer tests on ${{ matrix.os }} using JDK ${{ matrix.java-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version:
+          - '21'
+          - '25'
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java environment
+        uses: ./.github/actions/setup-java-environment
+        with:
+          java-version: ${{ matrix.java-version }}
+
+      - name: Run fuzzer tests
+        run: mvn -B -pl test-framework-core -am clean test -P fuzzer-tests
+
+      - name: Upload Surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzzer-surefire-reports-${{ matrix.os }}-${{ matrix.java-version }}
+          path: 'test-framework-core/target/surefire-reports/*'
+          if-no-files-found: ignore

@@ -20,28 +20,36 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.util;
+package net.larrykramer.test.categories;
 
-import net.larrykramer.test.categories.SmokeTest;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-@Category(SmokeTest.class)
-public class ScopedSystemPropertiesSmokeTest {
-    @Test
-    public void testOpen_whenPropertyIsSetInScope_itIsRestoredAfterClose() {
-        // Arrange
-        String key = "my.scoped.property.test";
-        String original = System.getProperty(key); // could be null
-
-        // Act & Assert
-        try (var env = ScopedSystemProperties.open()) {
-            env.setProperty(key, "new-value");
-            Assert.assertEquals("new-value", System.getProperty(key));
-        }
-
-        // Assert
-        Assert.assertEquals(original, System.getProperty(key));
-    }
+/**
+ * Marker interface used with JUnit 4's {@link org.junit.experimental.categories.Category Category}
+ * annotation to identify smoke tests.
+ * <p>
+ * Apply this category to tests that provide a quick, high-level verification of the application's
+ * critical paths—typically a small subset of the overall test suite that can be executed
+ * frequently to catch major regressions early.
+ * <p>
+ * <strong>Example:</strong>
+ * <pre>{@code
+ * import net.larrykramer.test.categories.SmokeTest;
+ * import org.junit.Test;
+ * import org.junit.experimental.categories.Category;
+ *
+ * @Category(SmokeTest.class)
+ * public class UserLoginSmokeTest {
+ *
+ *     @Test
+ *     public void loginSucceedsWithValidCredentials() {
+ *         // smoke test logic
+ *     }
+ * }
+ * }</pre>
+ * <p>
+ * The interface is intentionally empty; it serves only as a semantic tag. You can run smoke tests
+ * exclusively—or exclude them—by configuring your build or IDE to include or omit this category
+ * when executing the JUnit suite.
+ */
+public interface SmokeTest {
+    /* category marker */
 }

@@ -38,6 +38,21 @@
   <name>Test Framework - Core Module</name>
   <description>Core Module for the Test Framework</description>
 
+  <properties>
+    <!--
+      Control JUnit test execution using categories.
+      These properties define the default behavior for the Maven Surefire Plugin.
+      By default, all tests are run (`<groups>` is empty) except for those
+      in the `FuzzerTest` category.
+
+      This behavior can be overridden by:
+      1. Activating a Maven profile (e.g., `fuzzer-tests`) that redefines these properties.
+      2. Passing user properties on the command line (e.g., `-Dgroups=...`).
+    -->
+    <groups/>
+    <excludedGroups>net.larrykramer.test.categories.FuzzerTest</excludedGroups>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -104,4 +119,14 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>fuzzer-tests</id>
+      <properties>
+        <groups>net.larrykramer.test.categories.FuzzerTest</groups>
+        <excludedGroups/>
+      </properties>
+    </profile>
+  </profiles>
 </project>

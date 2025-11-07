@@ -26,9 +26,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import net.larrykramer.test.categories.SmokeTest;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SmokeTest.class)
 public class IsolatedClassLoaderSmokeTest {
     @Test
     public void testDoInvoke_withResourceOverride_classSeesOverriddenResource() throws Throwable {
