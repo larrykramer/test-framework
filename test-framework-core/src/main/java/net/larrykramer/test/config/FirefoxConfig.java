@@ -45,7 +45,7 @@ public class FirefoxConfig {
      * {@code webdriver.firefox.user-preferences}.
      */
     @ConfigProperty(name = "user-preferences")
-    public Map<String, String> userPrefs = Map.of();
+    public Map<String, Object> userPrefs = Map.of();
 
     /**
      * Specifies the absolute path to a custom Firefox executable.

@@ -78,5 +78,5 @@ public class GridConfig {
      * <p>
      * Mapped from properties prefixed with {@code grid.capabilities}.
      */
-    public Map<String, String> capabilities = Map.of();
+    public Map<String, Object> capabilities = Map.of();
 }

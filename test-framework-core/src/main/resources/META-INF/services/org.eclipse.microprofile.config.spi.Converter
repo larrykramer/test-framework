@@ -1,2 +1,3 @@
 net.larrykramer.test.config.DimensionConverter
+net.larrykramer.test.config.ObjectConverter
 net.larrykramer.test.config.URIConverter
