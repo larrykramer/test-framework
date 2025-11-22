@@ -52,15 +52,27 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
     protected void buildChromiumOptions(T options, ChromiumConfig chromiumConfig) {
         chromiumConfig.executable.ifPresent(options::setBinary);
 
+        boolean hasHeadlessArg = false;
+        boolean hasWindowSizeArg = false;
+
         if (!chromiumConfig.arguments.isEmpty()) {
             options.addArguments(chromiumConfig.arguments);
+
+            // Check existing arguments to avoid duplicate arguments
+            for (String arg : chromiumConfig.arguments) {
+                if (arg.equals("--headless") || arg.startsWith("--headless=")) {
+                    hasHeadlessArg = true;
+                } else if (arg.startsWith("--window-size=")) {
+                    hasWindowSizeArg = true;
+                }
+            }
         }
 
-        if (config.headless) {
+        if (config.headless && !hasHeadlessArg) {
             // Let the browser decide which headless implementation to use.
             options.addArguments("--headless");
         }
-        if (!config.maximize && config.windowSize.isPresent()) {
+        if (!config.maximize && config.windowSize.isPresent() && !hasWindowSizeArg) {
             Dimension windowSize = config.windowSize.get();
             options.addArguments("--window-size=" + windowSize.width + "," + windowSize.height);
         }

@@ -142,6 +142,36 @@ public class EdgeDriverFactoryTest {
         assertTrue(args.contains("--window-size=800,600"));
     }
 
+    @Test
+    public void testBuildOptions_withHeadlessArgument_doesNotDuplicateHeadlessOption() {
+        // Arrange
+        WebDriverConfig config = createConfig();
+        ChromiumConfig chromium = new ChromiumConfig();
+        config.headless = true;
+        chromium.executable = Optional.empty();
+        chromium.arguments = List.of("--headless=new", "--foo");
+        FactoryTestHelper.setWebDriverConfig(factory, config);
+        setInjectedConfigField(chromium);
+
+        // Act
+        EdgeOptions options = factory.buildOptions();
+
+        // Assert
+        assertNotNull(options);
+        List<String> args = extractArguments(options);
+
+        assertEquals(2, args.size());
+        assertTrue(args.contains("--foo"));
+
+        int headlessArgCount = 0;
+        for (String arg : args) {
+            if (arg.equals("--headless") || arg.startsWith("--headless=")) {
+                headlessArgCount++;
+            }
+        }
+        assertEquals(1, headlessArgCount);
+    }
+
     private static WebDriverConfig createConfig() {
         WebDriverConfig config = new WebDriverConfig();
 

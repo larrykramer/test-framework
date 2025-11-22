@@ -141,6 +141,60 @@ public class ChromeDriverFactoryTest {
         assertTrue(args.contains("--window-size=1024,768"));
     }
 
+    @Test
+    public void testBuildOptions_withHeadlessArgument_doesNotDuplicateHeadlessOption() {
+        // Arrange
+        WebDriverConfig config = createConfig();
+        ChromiumConfig chromium = new ChromiumConfig();
+        config.headless = true;
+        chromium.executable = Optional.empty();
+        chromium.arguments = List.of("--headless", "--foo");
+        FactoryTestHelper.setWebDriverConfig(factory, config);
+        setInjectedConfigField(chromium);
+
+        // Act
+        ChromeOptions options = factory.buildOptions();
+
+        // Assert
+        assertNotNull(options);
+
+        List<String> args = extractArguments(options);
+        assertEquals(2, args.size());
+        assertTrue(args.contains("--foo"));
+
+        int headlessArgCount = 0;
+        for (String arg : args) {
+            if (arg.equals("--headless") || arg.startsWith("--headless=")) {
+                headlessArgCount++;
+            }
+        }
+        assertEquals(1, headlessArgCount);
+    }
+
+    @Test
+    public void testBuildOptions_withWindowSizeArgument_doesNotDuplicateWindowSizeOption() {
+        // Arrange
+        WebDriverConfig config = createConfig();
+        ChromiumConfig chromium = new ChromiumConfig();
+        config.maximize = false;
+        config.windowSize = Optional.of(new Dimension(3840, 2160));
+        chromium.executable = Optional.empty();
+        chromium.arguments = List.of("--window-size=800,600", "--foo");
+        FactoryTestHelper.setWebDriverConfig(factory, config);
+        setInjectedConfigField(chromium);
+
+        // Act
+        ChromeOptions options = factory.buildOptions();
+
+        // Assert
+        assertNotNull(options);
+        List<String> args = extractArguments(options);
+        assertEquals(2, args.size());
+        assertTrue(args.contains("--foo"));
+        assertTrue(args.contains("--window-size=800,600"));
+        assertFalse(args.contains("--window-size=3840,2160"));
+    }
+
     private static WebDriverConfig createConfig() {
         WebDriverConfig config = new WebDriverConfig();
 
