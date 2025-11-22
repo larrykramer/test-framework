@@ -34,6 +34,10 @@ public class ObjectConverter implements Converter<Object> {
      * method returns:
      * <ul>
      * <li>An empty string if the trimmed value is blank;
+     * <li>The unquoted string value if the trimmed input is enclosed in matching
+     *   single ({@code '}) or double ({@code "}) quotes. This serves as an
+     *   escape hatch to force a specific value to remain a {@link String}
+     *   (e.g., {@code "123"} becomes the string {@code 123});
      * <li>{@link Boolean#TRUE} or {@link Boolean#FALSE} for recognized boolean
      *   literals such as {@code "true"}, {@code "false"}, {@code "yes"},
      *   {@code "no"}, {@code "on"}, {@code "off"}, {@code "y"}, {@code "n"}
@@ -49,7 +53,8 @@ public class ObjectConverter implements Converter<Object> {
      *
      * @param value the configuration value to convert; must not be {@code null}
      * @return the converted object as described above
-     * @throws NullPointerException if {@code value} is {@code null}
+     * @throws IllegalArgumentException if {@code value} has mismatched quotes
+     * @throws NullPointerException     if {@code value} is {@code null}
      */
     @Override
     public Object convert(String value) {
@@ -58,12 +63,24 @@ public class ObjectConverter implements Converter<Object> {
         }
 
         String s = value.strip();
+        if (s.isEmpty()) {
+            return "";
+        }
+
+        char ch = s.charAt(0);
+        if (ch == '"' || ch == '\'') {
+            // The value starts with a quote, so it MUST end with a matching one.
+            if (s.length() >= 2 && s.charAt(s.length() - 1) == ch) {
+                return s.substring(1, s.length() - 1);
+            } else {
+                throw new IllegalArgumentException("Mismatched quote in value: " + value);
+            }
+        }
+
         // Follow the Microprofile Config boolean convention with two notable exceptions—"0" and
         // "1". We can't differentiate between "0"/"1" as a boolean and "0"/"1" as an integer, so
         // convert "0" and "1" to an integer.
-        if (s.isEmpty()) {
-            return "";
-        } else if ("true".equalsIgnoreCase(s)
+        if ("true".equalsIgnoreCase(s)
                 || "yes".equalsIgnoreCase(s) || "y".equalsIgnoreCase(s)
                 || "on".equalsIgnoreCase(s)) {
             return Boolean.TRUE;

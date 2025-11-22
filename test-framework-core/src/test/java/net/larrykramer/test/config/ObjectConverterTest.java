@@ -25,14 +25,13 @@ package net.larrykramer.test.config;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.Assert.*;
 
 @RunWith(Enclosed.class)
 public class ObjectConverterTest {
@@ -64,7 +63,15 @@ public class ObjectConverterTest {
                     { "1e5", 1e5d, Double.class, false },
                     { "  some text  ", "  some text  ", String.class, true },
                     { "123a", "123a", String.class, true },
-                    { "3.14.15", "3.14.15", String.class, true }
+                    { "3.14.15", "3.14.15", String.class, true },
+                    { "\"123\"", "123", String.class, false },
+                    { "'true'", "true", String.class, false },
+                    { "  \"  padded  \" ", "  padded  ", String.class, false },
+                    { "  '0'  ", "0", String.class, false },
+                    { "1'", "1'", String.class, false },
+                    { "123\"", "123\"", String.class, false },
+                    { "\"\"", "", String.class, false },
+                    { "''", "", String.class, false },
             });
         }
 
@@ -93,10 +100,35 @@ public class ObjectConverterTest {
         }
     }
 
-    public static class ConvertNullValueTest {
+    public static class InvalidInputTest {
+        private ObjectConverter converter;
+
+        @Before
+        public void setUp() {
+            converter = new ObjectConverter();
+        }
+
         @Test(expected = NullPointerException.class)
         public void testConvert_givenNullInput_throwsNullPointerException() {
-            new ObjectConverter().convert(null);
+            converter.convert(null);
+        }
+
+        @Test
+        public void testConvert_givenMismatchedDoubleQuote_throwsIllegalArgumentException() {
+            var e = assertThrows(IllegalArgumentException.class, () -> converter.convert("\"abc"));
+            assertEquals("Mismatched quote in value: \"abc", e.getMessage());
+        }
+
+        @Test
+        public void testConvert_givenMismatchedSingleQuote_throwsIllegalArgumentException() {
+            var e = assertThrows(IllegalArgumentException.class, () -> converter.convert("'abc"));
+            assertEquals("Mismatched quote in value: 'abc", e.getMessage());
+        }
+
+        @Test
+        public void testConvert_givenSingleQuoteCharacter_throwsIllegalArgumentException() {
+            var e = assertThrows(IllegalArgumentException.class, () -> converter.convert("'"));
+            assertEquals("Mismatched quote in value: '", e.getMessage());
         }
     }
 }
