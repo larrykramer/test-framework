@@ -22,6 +22,8 @@
 
 package net.larrykramer.test.factory.browser;
 
+import java.math.BigDecimal;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import net.larrykramer.test.config.FirefoxConfig;
@@ -71,12 +73,48 @@ public final class FirefoxDriverFactory extends WebDriverFactory<FirefoxOptions>
         FirefoxOptions options = new FirefoxOptions();
 
         firefoxConfig.executable.ifPresent(options::setBinary);
-        firefoxConfig.userPrefs.forEach(options::addPreference);
+
+        for (var entry : firefoxConfig.userPrefs.entrySet()) {
+            options.addPreference(entry.getKey(), convertToFirefoxPreference(entry.getValue()));
+        }
 
         if (config.headless) {
             options.addArguments("-headless");
         }
 
         return options;
+    }
+
+    /*
+     * Convert configuration values into types accepted by FirefoxOptions.
+     *
+     * The ObjectConverter produces Double instance for all floating-point inputs.
+     * However, Selenium's FirefoxOptions strictly accepts String, Integer, or
+     * Boolean. This method ensures that whole numbers fitting within an Integer,
+     * while floating-point values are converted to String.
+     */
+    private static Object convertToFirefoxPreference(Object value) {
+        if (!(value instanceof Number n)) {
+            return value; // Boolean or String
+        }
+        if (n instanceof Integer) {
+            return n;
+        }
+
+        final double d = n.doubleValue();
+        if (Double.isFinite(d)) {
+            BigDecimal bd = BigDecimal.valueOf(d);
+            if (bd.stripTrailingZeros().scale() <= 0
+                    && bd.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) <= 0
+                    && bd.compareTo(BigDecimal.valueOf(Integer.MIN_VALUE)) >= 0) {
+                try {
+                    return bd.intValueExact(); // use intValueExact to be sure.
+                } catch (ArithmeticException e) {
+                    // Not exactly representable as an int.
+                }
+            }
+        }
+
+        return String.valueOf(n);
     }
 }

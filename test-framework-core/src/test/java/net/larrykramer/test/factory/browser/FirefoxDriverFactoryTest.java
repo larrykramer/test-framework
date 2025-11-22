@@ -93,15 +93,26 @@ public class FirefoxDriverFactoryTest {
     @Test
     public void testBuildOptions_whenUserPrefsAreProvided_setsProfileWithConvertedValues() {
         // Arrange
+        double overflow = Integer.MAX_VALUE + 1.0d;
+        double underflow = Integer.MIN_VALUE - 1.0d;
         //@formatter:off
-        Map<String, Object> userPrefs = Map.of(
-                "pref.blank", "",
-                "pref.boolean.true", Boolean.TRUE,
-                "pref.boolean.false", Boolean.FALSE,
-                "pref.integer", 42,
-                "pref.double", 3.14,
-                "pref.string", "  keep  ",
-                "pref.integer.one", 1
+        Map<String, Object> userPrefs = Map.ofEntries(
+                // Standard types
+                Map.entry("pref.boolean.true", Boolean.TRUE),
+                Map.entry("pref.boolean.false", Boolean.FALSE),
+                Map.entry("pref.string", "  keep  "),
+                Map.entry("pref.blank", ""),
+                Map.entry("pref.integer", 42),
+                // Edge cases
+                Map.entry("pref.double.whole", 42.0d),                     // should -> Integer
+                Map.entry("pref.double.fraction", 3.14d),                  // should -> String
+                Map.entry("pref.integer.max", (double) Integer.MAX_VALUE), // should -> Integer
+                Map.entry("pref.integer.min", (double) Integer.MIN_VALUE), // should -> Integer
+                Map.entry("pref.overflow", overflow),                      // should -> String
+                Map.entry("pref.underflow", underflow),                    // should -> String
+                Map.entry("pref.nan", Double.NaN),                         // should -> String
+                Map.entry("pref.inf.pos", Double.POSITIVE_INFINITY),       // should -> String
+                Map.entry("pref.inf.neg", Double.NEGATIVE_INFINITY)        // should -> String
         );
         //@formatter:on
         FirefoxConfig firefox = new FirefoxConfig();
@@ -120,13 +131,23 @@ public class FirefoxDriverFactoryTest {
 
         @SuppressWarnings("unchecked")
         Map<String, Object> prefs = (Map<String, Object>) rawPrefs;
-        assertEquals("", prefs.get("pref.blank"));
+        // Standard types
         assertEquals(Boolean.TRUE, prefs.get("pref.boolean.true"));
         assertEquals(Boolean.FALSE, prefs.get("pref.boolean.false"));
-        assertEquals(42, prefs.get("pref.integer"));
-        assertEquals(3.14, ((Number) prefs.get("pref.double")).doubleValue(), 0.000001);
         assertEquals("  keep  ", prefs.get("pref.string"));
-        assertEquals(1, prefs.get("pref.integer.one"));
+        assertEquals("", prefs.get("pref.blank"));
+        assertEquals(42, prefs.get("pref.integer"));
+        // Whole number Double -> Integer
+        assertEquals("42.0 should become Integer 42", 42, prefs.get("pref.double.whole"));
+        assertEquals(Integer.MAX_VALUE, prefs.get("pref.integer.max"));
+        assertEquals(Integer.MIN_VALUE, prefs.get("pref.integer.min"));
+        // Fractional/Overflow/Special Double -> String
+        assertEquals("3.14", prefs.get("pref.double.fraction"));
+        assertEquals(String.valueOf(overflow), prefs.get("pref.overflow"));
+        assertEquals(String.valueOf(underflow), prefs.get("pref.underflow"));
+        assertEquals("NaN", prefs.get("pref.nan"));
+        assertEquals("Infinity", prefs.get("pref.inf.pos"));
+        assertEquals("-Infinity", prefs.get("pref.inf.neg"));
     }
 
     @Test
