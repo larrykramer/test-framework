@@ -174,6 +174,26 @@ public class WebDriverFactoryTest {
     }
 
     @Test
+    public void testGetOptions_givenIPv6HttpProxy_setsHttpProxyWithBrackets() {
+        // Arrange
+        MutableCapabilities options = new MutableCapabilities();
+        WebDriverConfig config = createConfig();
+        config.proxyAddress = Optional.of(URI.create("http://[fe80::1]:8080"));
+
+        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+
+        // Act
+        MutableCapabilities result = factory.getOptions();
+
+        // Assert
+        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        assertNotNull(proxy);
+        assertEquals("[fe80::1]:8080", proxy.getHttpProxy());
+        assertNull(proxy.getSslProxy());
+        assertNull(proxy.getSocksProxy());
+    }
+
+    @Test
     public void testGetOptions_givenHttpsProxy_setsHttpAndSslProxy() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
@@ -198,6 +218,27 @@ public class WebDriverFactoryTest {
         MutableCapabilities options = new MutableCapabilities();
         WebDriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://socks.example:1080"));
+
+        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+
+        // Act
+        MutableCapabilities result = factory.getOptions();
+
+        // Assert
+        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        assertNotNull(proxy);
+        assertEquals("socks.example:1080", proxy.getSocksProxy());
+        assertEquals(Integer.valueOf(5), proxy.getSocksVersion());
+        assertNull(proxy.getHttpProxy());
+        assertNull(proxy.getSslProxy());
+    }
+
+    @Test
+    public void testGetOptions_givenSocks5Proxy_setsVersion5AndProxy() {
+        // Arrange
+        MutableCapabilities options = new MutableCapabilities();
+        WebDriverConfig config = createConfig();
+        config.proxyAddress = Optional.of(URI.create("SOCKS5://socks.example:1080"));
 
         SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
 

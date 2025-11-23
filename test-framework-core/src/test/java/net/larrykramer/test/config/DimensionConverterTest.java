@@ -47,6 +47,10 @@ public class DimensionConverterTest {
                     { "800X600", new Dimension(800, 600) },
                     { "300 , 200", new Dimension(300, 200) },
                     { "  1024 x  768  ", new Dimension(1024, 768) },
+                    { "-1600x900", new Dimension(-1600, 900) },
+                    { "2560x-1440", new Dimension(2560, -1440) },
+                    { "-640x-480", new Dimension(-640, -480) },
+                    { "0x0", new Dimension(0, 0) },
                     { "   ", null }
             });
         }
@@ -62,25 +66,25 @@ public class DimensionConverterTest {
         }
     }
 
-    public static class NonParameterizedTest {
+    public static class InvalidInputTest {
         @Test
         public void testConvert_givenInvalidFormat_throwsIllegalArgumentException() {
             // Arrange
             DimensionConverter converter = new DimensionConverter();
-            final String value =  "1920*1080";
             // Act & Assert
-            var e = assertThrows(IllegalArgumentException.class, () -> converter.convert(value));
-            assertEquals("Dimension must be <width>x<height> or <width>,<height>: 1920*1080",
-                    e.getMessage());
+            var expected = IllegalArgumentException.class;
+            var e = assertThrows(expected, () -> converter.convert("1920*1080"));
+            String msg = e.getMessage();
+            assertEquals("Dimension must be <width>x<height> or <width>,<height>: 1920*1080", msg);
         }
 
         @Test
         public void testConvert_givenNonNumericComponent_throwsIllegalArgumentException() {
             // Arrange
             DimensionConverter converter = new DimensionConverter();
-            final String value =  "1920xabc";
             // Act & Assert
-            var e = assertThrows(IllegalArgumentException.class, () -> converter.convert(value));
+            var expected = IllegalArgumentException.class;
+            var e = assertThrows(expected, () -> converter.convert("1920xabc"));
             assertEquals("Dimension components must be numeric: 1920xabc", e.getMessage());
             assertTrue(e.getCause() instanceof NumberFormatException);
         }
