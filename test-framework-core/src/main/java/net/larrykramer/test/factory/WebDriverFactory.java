@@ -24,6 +24,7 @@ package net.larrykramer.test.factory;
 
 import java.net.URI;
 import java.util.Locale;
+import java.util.StringJoiner;
 
 import jakarta.inject.Inject;
 import net.larrykramer.test.config.WebDriverConfig;
@@ -129,19 +130,14 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
         proxy.setProxyType(Proxy.ProxyType.MANUAL);
 
         if (config.nonProxyHosts.isPresent()) {
-            StringBuilder nonProxyHosts = new StringBuilder();
-            String[] hosts = config.nonProxyHosts.get().split("\\|");
-            for (int i = 0; i < hosts.length; i++) {
-                String host = hosts[i].strip();
-                if (!host.isEmpty()) {
-                    if (i > 0) {
-                        nonProxyHosts.append(',');
-                    }
-                    nonProxyHosts.append(host);
+            StringJoiner sj = new StringJoiner(",");
+            for (String host : config.nonProxyHosts.get().split("\\|")) {
+                if (!host.isBlank()) {
+                    sj.add(host.strip());
                 }
             }
-            if (!nonProxyHosts.isEmpty()) {
-                proxy.setNoProxy(nonProxyHosts.toString());
+            if (sj.length() > 0) {
+                proxy.setNoProxy(sj.toString());
             }
         }
 

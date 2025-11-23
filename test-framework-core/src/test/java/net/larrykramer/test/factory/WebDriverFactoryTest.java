@@ -299,7 +299,7 @@ public class WebDriverFactoryTest {
         MutableCapabilities options = new MutableCapabilities();
         WebDriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://proxy.example.com:8443"));
-        config.nonProxyHosts = Optional.of("  example.com || internal.local  ");
+        config.nonProxyHosts = Optional.of(" |example.com|| internal.local | ");
 
         SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
 
