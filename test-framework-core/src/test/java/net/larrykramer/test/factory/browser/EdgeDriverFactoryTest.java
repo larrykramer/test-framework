@@ -172,6 +172,16 @@ public class EdgeDriverFactoryTest {
         assertEquals(1, headlessArgCount);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testBuildOptions_withZeroHeightWindowSize_throwsIllegalArgumentException() {
+        // Arrange
+        WebDriverConfig config = createConfig();
+        config.windowSize = Optional.of(new Dimension(800, 0));
+        FactoryTestHelper.setWebDriverConfig(factory, config);
+        // Act
+        factory.buildOptions();
+    }
+
     private static WebDriverConfig createConfig() {
         WebDriverConfig config = new WebDriverConfig();
 

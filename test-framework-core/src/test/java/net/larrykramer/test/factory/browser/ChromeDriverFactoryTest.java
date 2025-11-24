@@ -195,6 +195,18 @@ public class ChromeDriverFactoryTest {
         assertFalse(args.contains("--window-size=3840,2160"));
     }
 
+    @Test
+    public void testBuildOptions_givenNegativeWindowSize_throwsIllegalArgumentException() {
+        // Arrange
+        WebDriverConfig config = createConfig();
+        config.windowSize = Optional.of(new Dimension(-800, -600));
+        FactoryTestHelper.setWebDriverConfig(factory, config);
+
+        // Act & Assert
+        var e = assertThrows(IllegalArgumentException.class, () -> factory.buildOptions());
+        assertEquals("Window width and height must be greater than 0: -800x-600", e.getMessage());
+    }
+
     private static WebDriverConfig createConfig() {
         WebDriverConfig config = new WebDriverConfig();
 

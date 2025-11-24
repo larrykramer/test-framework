@@ -48,6 +48,7 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
      *
      * @param options        the Chromium options that should be configured
      * @param chromiumConfig the Chromium-specific configuration
+     * @throws IllegalArgumentException if the configured window width or height is negative or 0
      */
     protected void buildChromiumOptions(T options, ChromiumConfig chromiumConfig) {
         chromiumConfig.executable.ifPresent(options::setBinary);
@@ -74,6 +75,11 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
         }
         if (!config.maximize && config.windowSize.isPresent() && !hasWindowSizeArg) {
             Dimension windowSize = config.windowSize.get();
+            if (windowSize.width <= 0 || windowSize.height <= 0) {
+                throw new IllegalArgumentException("Window width and height must be "
+                        + "greater than 0: "
+                        + windowSize.width + "x" + windowSize.height);
+            }
             options.addArguments("--window-size=" + windowSize.width + "," + windowSize.height);
         }
     }
