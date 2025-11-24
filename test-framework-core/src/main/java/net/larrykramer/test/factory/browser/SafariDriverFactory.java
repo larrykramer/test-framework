@@ -64,8 +64,8 @@ public final class SafariDriverFactory extends WebDriverFactory<SafariOptions> {
     public WebDriver createWebDriver() {
         // Safari can only run locally on macOS. However, we allow the factory to be instantiated
         // on any OS to support RemoteWebDriver (Grid) scenarios where the client is Linux/Windows
-        // but the Grid Node is macOS. Therefore, the OS check is performed here (local creation)
-        // rather than in buildOptions().
+        // but the Grid Node is macOS. Therefore, the OS check is performed here during local
+        // creation.
         if (!OperatingSystem.isMacOS()) {
             throw new UnsupportedOperationException(
                     "Safari local execution not supported on this platform");
