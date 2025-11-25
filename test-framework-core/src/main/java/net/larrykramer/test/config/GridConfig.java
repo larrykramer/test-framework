@@ -76,6 +76,12 @@ public class GridConfig {
      * settings (e.g., for cloud-based grid providers like BrowserStack or Sauce
      * Labs) that are not covered by the standard properties.
      * <p>
+     * <strong>Precedence Note:</strong><br>
+     * These capabilities are applied last. Therefore, any keys defined in this
+     * map will override standard configuration fields such as
+     * {@link #browserVersion}, {@link #platform}, and the standard browser
+     * name.
+     * <p>
      * Mapped from properties prefixed with {@code grid.capabilities}.
      */
     public Map<String, Object> capabilities = Map.of();

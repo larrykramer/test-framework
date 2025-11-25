@@ -139,9 +139,16 @@ public class WebDriverConfig {
      * Defines hosts that should be reached directly, bypassing the configured
      * proxy. The format is a {@code |}-separated list of hostnames or IP
      * addresses.
-     * Examples include {@code localhost|10.0.0.1}.
+     * <p>
+     * The value is passed through directly to the proxy configuration, enabling
+     * support for wildcards.
      * <p>
      * This property maps to {@code webdriver.non-proxy-hosts}.
+     * <p>
+     * <strong>Example usage:</strong>
+     * <pre>{@code
+     * webdriver.non-proxy-hosts=*.example.com|localhost|10.0.0.1
+     * }</pre>
      */
     public Optional<String> nonProxyHosts;
 }
