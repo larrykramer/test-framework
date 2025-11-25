@@ -224,10 +224,11 @@ public class WebDriverService {
         try {
             gridURL = gridConfig.uri.get().toURL();
             String path = gridURL.getPath();
-            if (path != null && !path.endsWith("/wd/hub") && !path.endsWith("/")) {
-                LOGGER.log(Level.INFO, "The configured Selenium URL is '{0}'. For modern Selenium "
-                                + "Grid 4, a root path ('/') is common. If you encounter "
-                                + "connection issues, ensure this is the correct session endpoint",
+            if (path != null && !path.isEmpty() && !path.endsWith("/")
+                    && !path.endsWith("/wd/hub")) {
+                LOGGER.log(Level.INFO, "Configured Selenium URL is ''{0}''.\nIf you encounter "
+                                + "connection issues, ensure {0} is the correct session "
+                                + "endpoint.",
                         sanitizeURI(gridConfig.uri.get()));
             }
         } catch (MalformedURLException | NoSuchElementException e) {
@@ -245,10 +246,16 @@ public class WebDriverService {
         MutableCapabilities capabilities = new MutableCapabilities(options);
 
         if (webDriverConfig.type != WebDriverType.SPI) {
-            capabilities.setCapability(BROWSER_NAME, webDriverConfig.type.getCanonicalName());
-            gridConfig.browserVersion.ifPresent(
-                    v -> capabilities.setCapability(BROWSER_VERSION, v));
+            // Only fall back to the canonical name when the copied factory options didn't already
+            // provide one.
+            if (capabilities.getCapability(BROWSER_NAME) == null) {
+                capabilities.setCapability(BROWSER_NAME, webDriverConfig.type.getCanonicalName());
+            }
+        } else if (capabilities.getCapability(BROWSER_NAME) == null) {
+            LOGGER.log(Level.WARNING, "Missing capability {0} from SPI Grid session", BROWSER_NAME);
         }
+
+        gridConfig.browserVersion.ifPresent(v -> capabilities.setCapability(BROWSER_VERSION, v));
 
         gridConfig.platform.ifPresent(v -> {
             try {

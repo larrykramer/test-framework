@@ -27,6 +27,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.*;
+import java.util.logging.*;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
@@ -39,6 +40,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openqa.selenium.*;
 import org.openqa.selenium.remote.CapabilityType;
@@ -367,10 +369,7 @@ public class WebDriverServiceTest {
 
         List<Object> capturedArguments = new ArrayList<>();
 
-        try (var mocked = mockConstruction(RemoteWebDriver.class, (mock, context) -> {
-            stubWebDriver(mock);
-            capturedArguments.addAll(context.arguments());
-        })) {
+        try (var mocked = mockConstruction(RemoteWebDriver.class, stubRemote(capturedArguments))) {
             WebDriverService service = createService(config, grid, mockFactory);
 
             // Act
@@ -381,8 +380,8 @@ public class WebDriverServiceTest {
         }
 
         assertEquals(2, capturedArguments.size());
-        MutableCapabilities capturedOptions = (MutableCapabilities) capturedArguments.get(1);
 
+        MutableCapabilities capturedOptions = (MutableCapabilities) capturedArguments.get(1);
         assertNotEquals(options, capturedOptions);
 
         assertEquals("firefox", capturedOptions.getCapability(CapabilityType.BROWSER_NAME));
@@ -398,23 +397,19 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenGridWithSPIType_doesNotSetBrowserNameOrVersion() {
+    public void testCreateWebDriver_givenGridWithSPIType_doesNotSetBrowserName() {
         // Arrange
         WebDriverConfig config = createConfig(WebDriverType.SPI);
         config.spi = Optional.of(mockFactory.getClass().getName());
         GridConfig grid = createGridConfig();
         grid.uri = Optional.of(URI.create("https://localhost:4444/"));
-        grid.browserVersion = Optional.of("1.0");
 
         when(mockFactory.getType()).thenReturn(config.type);
         when(mockFactory.getOptions()).thenReturn(new MutableCapabilities());
 
         List<Object> capturedArguments = new ArrayList<>();
 
-        try (var mocked = mockConstruction(RemoteWebDriver.class, (mock, context) -> {
-            stubWebDriver(mock);
-            capturedArguments.addAll(context.arguments());
-        })) {
+        try (var mocked = mockConstruction(RemoteWebDriver.class, stubRemote(capturedArguments))) {
             WebDriverService service = createService(config, grid, mockFactory);
 
             // Act
@@ -425,10 +420,89 @@ public class WebDriverServiceTest {
         }
 
         assertEquals(2, capturedArguments.size());
-        MutableCapabilities options = (MutableCapabilities) capturedArguments.get(1);
 
+        MutableCapabilities options = (MutableCapabilities) capturedArguments.get(1);
         assertNull(options.getCapability(CapabilityType.BROWSER_NAME));
-        assertNull(options.getCapability(CapabilityType.BROWSER_VERSION));
+    }
+
+    @Test
+    public void testCreateWebDriver_whenOptionsHasBrowserName_preservesExistingBrowserName() {
+        // Arrange
+        WebDriverConfig config = createConfig(WebDriverType.EDGE);
+        GridConfig grid = createGridConfig();
+        grid.uri = Optional.of(URI.create("https://localhost:4444"));
+
+        MutableCapabilities options = new MutableCapabilities();
+        options.setCapability(CapabilityType.BROWSER_NAME, "mock-browser");
+
+        when(mockFactory.getType()).thenReturn(config.type);
+        when(mockFactory.getOptions()).thenReturn(options);
+
+        List<Object> capturedArguments = new ArrayList<>();
+
+        try (var mocked = mockConstruction(RemoteWebDriver.class, stubRemote(capturedArguments))) {
+            WebDriverService service = createService(config, grid, mockFactory);
+
+            // Act
+            WebDriver result = service.createWebDriver();
+
+            // Assert
+            assertSame(mocked.constructed().getFirst(), result);
+        }
+
+        assertEquals(2, capturedArguments.size());
+
+        MutableCapabilities capturedOptions = (MutableCapabilities) capturedArguments.get(1);
+        assertEquals("mock-browser", capturedOptions.getCapability(CapabilityType.BROWSER_NAME));
+    }
+
+    @Test
+    public void testCreateWebDriver_whenGridURLHasCustomPath_logsInfoMessage() {
+        // Arrange
+        WebDriverConfig config = createConfig(WebDriverType.CHROME);
+        config.spi = Optional.of(mockFactory.getClass().getName());
+        GridConfig grid = createGridConfig();
+        grid.uri = Optional.of(URI.create("https://localhost:4444/custom/grid"));
+
+        when(mockFactory.getType()).thenReturn(config.type);
+        when(mockFactory.getOptions()).thenReturn(new MutableCapabilities());
+
+        Logger logger = Logger.getLogger(WebDriverService.class.getName());
+        Level originalLevel = logger.getLevel();
+        boolean useParentHandlers = logger.getUseParentHandlers();
+
+        Handler mockLogHandler = mock(Handler.class);
+        List<LogRecord> capturedLogRecords = new ArrayList<>();
+        doAnswer(invocation -> {
+            LogRecord original = invocation.getArgument(0);
+            String message = new SimpleFormatter().formatMessage(original);
+            capturedLogRecords.add(new LogRecord(original.getLevel(), message));
+            return null;
+        }).when(mockLogHandler).publish(any(LogRecord.class));
+
+        logger.addHandler(mockLogHandler);
+        logger.setLevel(Level.INFO);
+        logger.setUseParentHandlers(false);
+
+        try (var mocked = mockConstruction(RemoteWebDriver.class, stubRemote(new ArrayList<>()))) {
+            WebDriverService service = createService(config, grid, mockFactory);
+
+            // Act
+            service.createWebDriver();
+
+            // Assert
+            assertEquals(1, capturedLogRecords.size());
+
+            LogRecord record = capturedLogRecords.getFirst();
+            assertEquals(Level.INFO, record.getLevel());
+            assertTrue(record.getMessage().startsWith("Configured Selenium URL is "
+                    + "'https://localhost:4444/custom/grid'.\nIf you encounter connection issues, "
+                    + "ensure https://localhost:4444/custom/grid"));
+        } finally {
+            logger.removeHandler(mockLogHandler);
+            logger.setLevel(originalLevel);
+            logger.setUseParentHandlers(useParentHandlers);
+        }
     }
 
     @Test
@@ -464,6 +538,13 @@ public class WebDriverServiceTest {
         when(driver.manage()).thenReturn(mockOptions);
         when(mockOptions.timeouts()).thenReturn(mockTimeouts);
         when(mockOptions.window()).thenReturn(mockWindow);
+    }
+
+    private MockedConstruction.MockInitializer<RemoteWebDriver> stubRemote(List<Object> args) {
+        return (mock, context) -> {
+            stubWebDriver(mock);
+            args.addAll(context.arguments());
+        };
     }
 
     private static WebDriverConfig createConfig(WebDriverType type) {
