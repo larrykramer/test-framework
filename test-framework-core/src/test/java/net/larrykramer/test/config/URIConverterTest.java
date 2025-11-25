@@ -128,6 +128,17 @@ public class URIConverterTest {
     }
 
     @Test
+    public void testConvert_givenUnbracketedIPv6Address_returnsHttpURIWithoutPort() {
+        // Act
+        URI result = converter.convert("2001:db8:85a3::8a2e:370:7334");
+        // Assert
+        assertEquals("http://[2001:db8:85a3::8a2e:370:7334]", result.toString());
+        assertEquals("http", result.getScheme());
+        assertEquals("[2001:db8:85a3::8a2e:370:7334]", result.getHost());
+        assertEquals(-1, result.getPort());
+    }
+
+    @Test
     public void testConvert_givenWssScheme_returnsParsedURI() {
         // Act
         URI result = converter.convert("wss://securechat.example.com");

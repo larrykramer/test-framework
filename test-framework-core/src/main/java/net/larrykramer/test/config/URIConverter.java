@@ -56,6 +56,25 @@ public class URIConverter implements Converter<URI> {
             = Pattern.compile("^(?:\\[[0-9a-fA-F:]+]|[^:/?#@]+):\\d+$");
 
     /*
+     * Matches valid IPv6 addresses in standard hex-colon or compressed ('::') notation.
+     *
+     * This pattern is case-insensitive regarding hex digits. It strictly matches
+     * hexadecimal formats and does not support mixed IPv4-mapped addresses
+     * (dotted-decimal) or Zone IDs.
+     */
+    private static final Pattern IPV6_PATTERN = Pattern.compile("^("
+            + "([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|"            // 1:2:3:4:5:6:7:8
+            + "([0-9a-fA-F]{1,4}:){1,7}:|"                         // 1::
+            + "([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|"         // 1::8
+            + "([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|"  // 1::7:8
+            + "([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|"  // 1::6:7:8
+            + "([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|"  // 1::5:6:7:8
+            + "([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|"  // 1::4:5:6:7:8
+            + "[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|"       // 1::3:4:5:6:7:8
+            + ":((:[0-9a-fA-F]{1,4}){1,7}|:)"                      // ::2:3:4:5:6:7:8
+            + ")$");
+
+    /*
      * Matches a valid RFC 3986 Scheme start (e.g., http:, mailto:, urn:)
      * According to RFC 3986, a scheme starts with a letter, followed by any combination of
      * letters, digits, plus (+), period (.), or hyphen (-).
@@ -90,10 +109,14 @@ public class URIConverter implements Converter<URI> {
             String s = value.strip();
             // Check if the value already has a valid scheme. If not, we assume it's a schemeless
             // authority (e.g., "host:port") and prepend a default scheme. This allows the URI
-            // constructor to correctly parse hostnames, IPv4, and bracketed IPv6 literals, which
-            // it would otherwise fail on.
+            // constructor to correctly parse hostnames, IPv4, bracketed IPv6 and unbracketed IPv6
+            // literals, which it would otherwise fail on.
             if (ADDRESS_PORT_PATTERN.matcher(s).matches() || !SCHEME_PATTERN.matcher(s).matches()) {
-                //noinspection HttpUrlsUsage
+                // An IPv6 address must be enclosed in square brackets ('[' and ']') as specified
+                // by RFC 2732.
+                if (IPV6_PATTERN.matcher(s).matches()) {
+                    s = "[" + s + "]";
+                }
                 s = "http://" + s;
             }
             return new URI(s);
