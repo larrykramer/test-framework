@@ -37,6 +37,15 @@ import org.eclipse.microprofile.config.spi.Converter;
  * {@code null}. When no scheme is present, inputs such as {@code "proxy:3128"}
  * are interpreted as host/port pairs and normalized into an {@code http}
  * {@link URI}, preserving the parsed host and port components.
+ * <p>
+ * <strong>IPv6 Address Note</strong><br>
+ * IPv6 addresses containing a port <em>must</em> be wrapped in square brackets
+ * as required by RFC 2732. Inputs such as {@code 2001:db8::1:8080} or
+ * {@code 2001:db8::1:12345} will either be misinterpreted as part of the IPv6
+ * address (if the port fits hex syntax), or {@link URI} parses these as a
+ * registry-based authority, resulting in a {@code null} Host component. This
+ * may (and correctly) cause downstream consumers to fail, effectively enforcing
+ * standard bracket notation for port specification.
  */
 public class URIConverter implements Converter<URI> {
     /*
