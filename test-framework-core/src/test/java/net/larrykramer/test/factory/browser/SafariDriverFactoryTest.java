@@ -101,7 +101,7 @@ public class SafariDriverFactoryTest {
         ArgumentCaptor<LogRecord> logRecordCaptor = ArgumentCaptor.forClass(LogRecord.class);
 
         logger.addHandler(mockLogHandler);
-        logger.setLevel(Level.FINER);
+        logger.setLevel(Level.WARNING);
         logger.setUseParentHandlers(false);
 
         try (var mocked = mockStatic(OperatingSystem.class)) {
@@ -121,7 +121,7 @@ public class SafariDriverFactoryTest {
             verify(mockLogHandler).publish(logRecordCaptor.capture());
 
             LogRecord record = logRecordCaptor.getValue();
-            assertEquals(Level.FINER, record.getLevel());
+            assertEquals(Level.WARNING, record.getLevel());
             assertTrue(record.getMessage().contains("Headless mode in Safari not supported"));
         } finally {
             logger.removeHandler(mockLogHandler);

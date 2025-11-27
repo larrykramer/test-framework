@@ -84,7 +84,7 @@ public final class SafariDriverFactory extends WebDriverFactory<SafariOptions> {
     @Override
     protected SafariOptions buildOptions() {
         if (config.headless) {
-            LOGGER.log(Level.FINER, "Headless mode in Safari not supported - headless mode "
+            LOGGER.log(Level.WARNING, "Headless mode in Safari not supported - headless mode "
                     + "configuration property will be ignored");
         }
         return new SafariOptions();
