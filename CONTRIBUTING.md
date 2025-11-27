@@ -55,10 +55,12 @@ There are many ways to contribute:
     Please use a descriptive branch name.
 6.  **Set Up Development Environment:**
     * Ensure you have JDK 21 or higher and Apache Maven 3.6.3 or higher installed.
-    * Build the project to ensure everything is set up correctly:
-      ```shell
-      mvn clean verify
-      ```
+    * Build the core module and run its unit tests:
+    ```shell
+    mvn -pl test-framework-core -am clean test
+    ```
+  * If you are specifically working on the browser-based integration tests, see section 6.2.3.
+    These are not required for typical contributions.
 
 ## 4. Coding Conventions
 
@@ -255,11 +257,12 @@ The browser-based integration tests are executed during the `verify` phase.
 These tests require a local browser setup and are generally not required for contributions unless you are specifically working on the integration test suite itself.
 
 ```shell
-mvn clean verify
+mvn -pl test-suite -am verify
 ```
 
 > **Note:**
-> You are not expected to run this command as part of a typical contribution. The CI system does not run these tests.
+> You are not expected to run this command as part of a typical contribution.
+> The CI system does not run these tests.
 
 ### 6.3 Documentation
 
