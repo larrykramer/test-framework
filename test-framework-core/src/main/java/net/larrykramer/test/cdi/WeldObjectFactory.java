@@ -208,11 +208,8 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
                 LOGGER.log(Level.CONFIG, "Weld container {0} stopped", container.getId());
             }
         } catch (Throwable t) {
-            if (container == null) {
-                LOGGER.log(Level.WARNING, "Unable to stop Weld container");
-            } else {
-                LOGGER.log(Level.WARNING, "Unable to stop Weld container {0}", container.getId());
-            }
+            String id = (container == null) ? "<uninitialized>" : container.getId();
+            LOGGER.log(Level.WARNING, "Unable to stop Weld container {0}", id);
             LOGGER.throwing(getClass().getName(), "shutdownWeldContainer", t);
         } finally {
             started.set(false);
