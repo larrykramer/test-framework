@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="LocatorTest" type="JUnit" factoryName="JUnit" folderName="Core Utility Unit Tests">
+  <configuration default="false" name="LocatorTest" type="JUnit" factoryName="JUnit" folderName="Utilities">
     <module name="test-framework-core" />
     <option name="PACKAGE_NAME" value="net.larrykramer.test.util" />
     <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.util.LocatorTest" />

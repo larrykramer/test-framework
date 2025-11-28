@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="WeldObjectFactoryLifecycleTest" type="JUnit" factoryName="JUnit" folderName="CDI Unit Tests">
+  <configuration default="false" name="WeldObjectFactoryLifecycleTest" type="JUnit" factoryName="JUnit" folderName="CDI">
     <module name="test-framework-core" />
     <option name="PACKAGE_NAME" value="net.larrykramer.test.cdi" />
     <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.cdi.WeldObjectFactoryLifecycleTest" />
