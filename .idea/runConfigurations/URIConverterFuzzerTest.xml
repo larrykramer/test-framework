@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="URIConverterFuzzerTest" type="JUnit" factoryName="JUnit" folderName="Config Unit Tests">
+  <configuration default="false" name="URIConverterFuzzerTest" type="JUnit" factoryName="JUnit" folderName="Configuration">
     <module name="test-framework-core" />
     <option name="PACKAGE_NAME" value="net.larrykramer.test.config" />
     <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.config.URIConverterFuzzerTest" />

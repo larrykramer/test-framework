@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="EdgeDriverFactoryTest" type="JUnit" factoryName="JUnit" folderName="Factory Unit Tests">
+  <configuration default="false" name="EdgeDriverFactoryTest" type="JUnit" factoryName="JUnit" folderName="Factory">
     <module name="test-framework-core" />
     <option name="PACKAGE_NAME" value="net.larrykramer.test.factory.browser" />
     <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.factory.browser.EdgeDriverFactoryTest" />
