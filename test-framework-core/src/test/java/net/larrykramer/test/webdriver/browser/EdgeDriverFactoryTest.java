@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.factory.browser;
+package net.larrykramer.test.webdriver.browser;
 
 import java.util.List;
 import java.util.Map;
@@ -29,45 +29,45 @@ import java.util.Optional;
 import net.larrykramer.test.config.ChromiumConfig;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.factory.FactoryTestHelper;
+import net.larrykramer.test.webdriver.FactoryTestHelper;
 import org.junit.Before;
 import org.junit.Test;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.edge.EdgeOptions;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mockConstruction;
 
-public class ChromeDriverFactoryTest {
-    private ChromeDriverFactory factory;
+public class EdgeDriverFactoryTest {
+    private EdgeDriverFactory factory;
 
     @Before
     public void setUp() {
-        factory = new ChromeDriverFactory();
+        factory = new EdgeDriverFactory();
 
         FactoryTestHelper.setWebDriverConfig(factory, createConfig());
 
-        ChromiumConfig config = new ChromiumConfig();
-        config.executable = Optional.empty();
-        config.arguments = List.of();
-        setInjectedConfigField(config);
+        ChromiumConfig chromium = new ChromiumConfig();
+        chromium.executable = Optional.empty();
+        chromium.arguments = List.of();
+        setInjectedConfigField(chromium);
     }
 
     @Test
-    public void testGetDriverType_whenCalled_returnsChromeWebDriverType() {
+    public void testGetDriverType_whenCalled_returnsEdgeWebDriverType() {
         // Act
         WebDriverType result = factory.getType();
         // Assert
-        assertEquals(WebDriverType.CHROME, result);
-        assertEquals("chrome", result.getCanonicalName());
+        assertEquals(WebDriverType.EDGE, result);
+        assertEquals("MicrosoftEdge", result.getCanonicalName());
     }
 
     @Test
     public void testCreateWebDriver_whenCalled_returnsWebDriverInstance() {
         // Arrange
-        try (var mocked = mockConstruction(ChromeDriver.class)) {
+        try (var mocked = mockConstruction(EdgeDriver.class)) {
             // Act
             WebDriver driver = factory.createWebDriver();
             // Assert
@@ -77,24 +77,24 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testBuildOptions_withChromeAndGlobalOptions_appliesExpectedChromeOptions() {
+    public void testBuildOptions_withEdgeAndGlobalOptions_appliesExpectedEdgeOptions() {
         // Arrange
         WebDriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
         config.maximize = false;
-        chromium.executable = Optional.of("/custom/chrome");
+        chromium.executable = Optional.of("/custom/edge");
         chromium.arguments = List.of("--foo", "--bar");
         FactoryTestHelper.setWebDriverConfig(factory, config);
         setInjectedConfigField(chromium);
 
         // Act
-        ChromeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.buildOptions();
 
         // Assert
         assertNotNull(options);
 
-        assertEquals("/custom/chrome", extractChromeOptions(options).get("binary"));
+        assertEquals("/custom/edge", extractEdgeOptions(options).get("binary"));
 
         List<String> args = extractArguments(options);
         assertEquals(3, args.size());
@@ -110,14 +110,14 @@ public class ChromeDriverFactoryTest {
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = false;
         config.maximize = true;
-        config.windowSize = Optional.of(new Dimension(1600, 900));
+        config.windowSize = Optional.of(new Dimension(3840, 2160));
         chromium.executable = Optional.empty();
         chromium.arguments = List.of();
         FactoryTestHelper.setWebDriverConfig(factory, config);
         setInjectedConfigField(chromium);
 
         // Act
-        ChromeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.buildOptions();
 
         // Assert
         assertNotNull(options);
@@ -129,16 +129,17 @@ public class ChromeDriverFactoryTest {
         // Arrange
         WebDriverConfig config = createConfig();
         config.headless = false;
-        config.windowSize = Optional.of(new Dimension(1024, 768));
+        config.windowSize = Optional.of(new Dimension(800, 600));
         FactoryTestHelper.setWebDriverConfig(factory, config);
 
         // Act
-        ChromeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.buildOptions();
 
         // Assert
         assertNotNull(options);
+
         List<String> args = extractArguments(options);
-        assertTrue(args.contains("--window-size=1024,768"));
+        assertTrue(args.contains("--window-size=800,600"));
     }
 
     @Test
@@ -148,17 +149,17 @@ public class ChromeDriverFactoryTest {
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
         chromium.executable = Optional.empty();
-        chromium.arguments = List.of("--headless", "--foo");
+        chromium.arguments = List.of("--headless=new", "--foo");
         FactoryTestHelper.setWebDriverConfig(factory, config);
         setInjectedConfigField(chromium);
 
         // Act
-        ChromeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.buildOptions();
 
         // Assert
         assertNotNull(options);
-
         List<String> args = extractArguments(options);
+
         assertEquals(2, args.size());
         assertTrue(args.contains("--foo"));
 
@@ -171,46 +172,20 @@ public class ChromeDriverFactoryTest {
         assertEquals(1, headlessArgCount);
     }
 
-    @Test
-    public void testBuildOptions_withWindowSizeArgument_doesNotDuplicateWindowSizeOption() {
+    @Test(expected = IllegalArgumentException.class)
+    public void testBuildOptions_withZeroHeightWindowSize_throwsIllegalArgumentException() {
         // Arrange
         WebDriverConfig config = createConfig();
-        ChromiumConfig chromium = new ChromiumConfig();
-        config.maximize = false;
-        config.windowSize = Optional.of(new Dimension(3840, 2160));
-        chromium.executable = Optional.empty();
-        chromium.arguments = List.of("--window-size=800,600", "--foo");
+        config.windowSize = Optional.of(new Dimension(800, 0));
         FactoryTestHelper.setWebDriverConfig(factory, config);
-        setInjectedConfigField(chromium);
-
         // Act
-        ChromeOptions options = factory.buildOptions();
-
-        // Assert
-        assertNotNull(options);
-        List<String> args = extractArguments(options);
-        assertEquals(2, args.size());
-        assertTrue(args.contains("--foo"));
-        assertTrue(args.contains("--window-size=800,600"));
-        assertFalse(args.contains("--window-size=3840,2160"));
-    }
-
-    @Test
-    public void testBuildOptions_givenNegativeWindowSize_throwsIllegalArgumentException() {
-        // Arrange
-        WebDriverConfig config = createConfig();
-        config.windowSize = Optional.of(new Dimension(-800, -600));
-        FactoryTestHelper.setWebDriverConfig(factory, config);
-
-        // Act & Assert
-        var e = assertThrows(IllegalArgumentException.class, () -> factory.buildOptions());
-        assertEquals("Window width and height must be greater than 0: -800x-600", e.getMessage());
+        factory.buildOptions();
     }
 
     private static WebDriverConfig createConfig() {
         WebDriverConfig config = new WebDriverConfig();
 
-        config.type = WebDriverType.CHROME;
+        config.type = WebDriverType.EDGE;
         config.spi = Optional.empty();
 
         config.headless = false;
@@ -231,17 +206,17 @@ public class ChromeDriverFactoryTest {
     }
 
     private void setInjectedConfigField(ChromiumConfig config) {
-        FactoryTestHelper.setInjectedConfigField(factory, "chromeConfig", config);
+        FactoryTestHelper.setInjectedConfigField(factory, "edgeConfig", config);
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> extractChromeOptions(ChromeOptions options) {
-        Object raw = options.asMap().get("goog:chromeOptions");
+    private Map<String, Object> extractEdgeOptions(EdgeOptions options) {
+        Object raw = options.asMap().get("ms:edgeOptions");
         return (raw instanceof Map) ? (Map<String, Object>) raw : Map.of();
     }
 
-    private List<String> extractArguments(ChromeOptions options) {
-        Object args = extractChromeOptions(options).get("args");
+    private List<String> extractArguments(EdgeOptions options) {
+        Object args = extractEdgeOptions(options).get("args");
         if (args instanceof List) {
             @SuppressWarnings("unchecked")
             List<String> list = (List<String>) args;

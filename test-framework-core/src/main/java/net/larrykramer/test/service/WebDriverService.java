@@ -38,7 +38,7 @@ import net.larrykramer.test.cdi.ScenarioScoped;
 import net.larrykramer.test.config.GridConfig;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.factory.WebDriverFactory;
+import net.larrykramer.test.webdriver.WebDriverFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.*;
 import org.openqa.selenium.remote.RemoteWebDriver;

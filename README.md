@@ -159,7 +159,7 @@ Common configuration properties include:
 For the complete list of driver-specific, proxy, and advanced settings, see the configuration and driver classes under the
 [config](test-framework-core/src/main/java/net/larrykramer/test/config)
 and
-[factory](test-framework-core/src/main/java/net/larrykramer/test/factory)
+[webdriver](test-framework-core/src/main/java/net/larrykramer/test/webdriver)
 packages.
 
 ## Continuous Integration

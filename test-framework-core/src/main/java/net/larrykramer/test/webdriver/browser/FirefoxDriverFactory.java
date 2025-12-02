@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.factory.browser;
+package net.larrykramer.test.webdriver.browser;
 
 import java.math.BigDecimal;
 
@@ -28,7 +28,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import net.larrykramer.test.config.FirefoxConfig;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.factory.WebDriverFactory;
+import net.larrykramer.test.webdriver.WebDriverFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
