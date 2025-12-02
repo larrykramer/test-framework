@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ChromeDriverFactoryTest" type="JUnit" factoryName="JUnit" folderName="Factory">
+  <configuration default="false" name="ChromeDriverFactoryTest" type="JUnit" factoryName="JUnit" folderName="WebDriver">
     <module name="test-framework-core" />
-    <option name="PACKAGE_NAME" value="net.larrykramer.test.factory.browser" />
-    <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.factory.browser.ChromeDriverFactoryTest" />
+    <option name="PACKAGE_NAME" value="net.larrykramer.test.webdriver.browser" />
+    <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.webdriver.browser.ChromeDriverFactoryTest" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
     <method v="2">

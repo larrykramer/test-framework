@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.factory;
+package net.larrykramer.test.webdriver;
 
 import java.lang.reflect.Field;
 

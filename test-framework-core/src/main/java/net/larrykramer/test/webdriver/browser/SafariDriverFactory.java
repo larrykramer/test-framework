@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.factory.browser;
+package net.larrykramer.test.webdriver.browser;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.factory.WebDriverFactory;
+import net.larrykramer.test.webdriver.WebDriverFactory;
 import net.larrykramer.test.util.OperatingSystem;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.safari.SafariDriver;

@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.factory.browser;
+package net.larrykramer.test.webdriver.browser;
 
 import java.util.Optional;
 import java.util.logging.*;
 
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.factory.FactoryTestHelper;
+import net.larrykramer.test.webdriver.FactoryTestHelper;
 import net.larrykramer.test.util.OperatingSystem;
 import org.junit.Before;
 import org.junit.Test;

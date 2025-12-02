@@ -34,7 +34,7 @@ import jakarta.enterprise.util.TypeLiteral;
 import net.larrykramer.test.config.GridConfig;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.factory.WebDriverFactory;
+import net.larrykramer.test.webdriver.WebDriverFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

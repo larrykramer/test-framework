@@ -20,10 +20,10 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.factory.browser;
+package net.larrykramer.test.webdriver.browser;
 
 import net.larrykramer.test.config.ChromiumConfig;
-import net.larrykramer.test.factory.WebDriverFactory;
+import net.larrykramer.test.webdriver.WebDriverFactory;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.chromium.ChromiumOptions;
 

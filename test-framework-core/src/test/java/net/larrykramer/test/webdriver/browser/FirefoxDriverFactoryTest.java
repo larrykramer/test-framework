@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.factory.browser;
+package net.larrykramer.test.webdriver.browser;
 
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ import java.util.Optional;
 import net.larrykramer.test.config.FirefoxConfig;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.factory.FactoryTestHelper;
+import net.larrykramer.test.webdriver.FactoryTestHelper;
 import org.junit.Before;
 import org.junit.Test;
 import org.openqa.selenium.WebDriver;
