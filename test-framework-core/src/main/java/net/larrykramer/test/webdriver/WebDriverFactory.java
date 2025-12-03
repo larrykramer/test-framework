@@ -23,16 +23,17 @@
 package net.larrykramer.test.webdriver;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.StringJoiner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.inject.Inject;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
-import org.openqa.selenium.MutableCapabilities;
-import org.openqa.selenium.Proxy;
-import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.*;
 
 import static org.openqa.selenium.remote.CapabilityType.ACCEPT_INSECURE_CERTS;
 import static org.openqa.selenium.remote.CapabilityType.PROXY;
@@ -41,7 +42,7 @@ import static org.openqa.selenium.remote.CapabilityType.PROXY;
  * Base abstraction for all Selenium WebDriver factories that are capable of
  * building a driver instance from a {@code WebDriverConfig}.
  * <p>
- * The factory coordinates three key responsibilities:
+ * The factory coordinates four key responsibilities:
  * <ul>
  * <li>Translating a {@link WebDriverConfig} into driver-specific
  *   {@link MutableCapabilities}
@@ -49,6 +50,8 @@ import static org.openqa.selenium.remote.CapabilityType.PROXY;
  *   certificate support and proxy handling
  * <li>Producing a fully constructed {@code WebDriver} instance for the
  *   requested {@code WebDriverType}
+ * <li>Applying runtime configuration to the created driver, such as implicit
+ *  wait timeouts
  * </ul>
  *
  * All concrete subclasses of this factory must be CDI-managed beans annotated
@@ -66,6 +69,8 @@ import static org.openqa.selenium.remote.CapabilityType.PROXY;
  * @see WebDriverType
  */
 public abstract class WebDriverFactory<T extends MutableCapabilities> {
+    protected static final Logger LOGGER = Logger.getLogger(WebDriverFactory.class.getName());
+
     @Inject
     @ConfigProperties
     protected WebDriverConfig config;
@@ -84,6 +89,48 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
      * @return a WebDriver instance
      */
     public abstract WebDriver createWebDriver();
+
+    /**
+     * Applies post-construction configuration to the supplied WebDriver.
+     * <p>
+     * The default implementation sets the implicit wait timeout based on the
+     * configured {@link WebDriverConfig#implicitTimeout} value. Negative
+     * timeout values are ignored and no implicit wait is applied.
+     * <p>
+     * This method is invoked by
+     * {@link net.larrykramer.test.service.WebDriverService WebDriverService}
+     * immediately after a WebDriver has been created (either locally or
+     * remotely). Subclasses are expected to override this method to apply
+     * additional WebDriver-specific configuration, for example:
+     * <ul>
+     * <li>Deleting cookies
+     * <li>Setting an initial window size
+     * <li>Maximizing or otherwise manipulating the browser window
+     * </ul>
+     *
+     * Implementations should choose an appropriate failure policy for these
+     * operations based on the capabilities and quirks of the underlying
+     * WebDriver:
+     * <ul>
+     * <li>For WebDrivers where configuration operations are known to be
+     *    unreliable or unsupported, it may be preferable to catch
+     *   {@link org.openqa.selenium.WebDriverException WebDriverException}, log
+     *   the failure, and continue.
+     * <li>For WebDrivers where such configuration operations are considered
+     *   essential to test correctness, implementations may allow exceptions to
+     *   propagate in order to fail fast when the environment is misconfigured.
+     * </ul>
+     *
+     * @param driver the WebDriver instance to configure
+     */
+    public void configureWebDriver(WebDriver driver) {
+        Duration timeout = Duration.ofMillis(config.implicitTimeout);
+        if (timeout.isNegative()) {
+            LOGGER.log(Level.WARNING, "Ignoring negative implicit timeout {0}", timeout);
+            return;
+        }
+        driver.manage().timeouts().implicitlyWait(timeout);
+    }
 
     /**
      * Returns the WebDriver options (capabilities) after augmenting them with
@@ -119,6 +166,26 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
      */
     protected T buildOptions() {
         return null;
+    }
+
+    /**
+     * Deletes all cookies for the given WebDriver in a lenient manner.
+     * <p>
+     * By default, this method logs and ignores {@link WebDriverException} to
+     * avoid failing WebDriver creation when a particular implementation does
+     * not support cookie deletion reliably (e.g. some remote or vendor-specific
+     * WebDrivers).
+     *
+     * @param options the {@link WebDriver.Options} for the driver; must not be
+     *                {@code null}
+     */
+    protected void deleteAllCookies(WebDriver.Options options) {
+        try {
+            options.deleteAllCookies();
+        } catch (WebDriverException e) {
+            LOGGER.log(Level.WARNING, "Unable to delete all cookies");
+            LOGGER.throwing(getClass().getName(), "deleteAllCookies", e);
+        }
     }
 
     private void addProxy(T options) {
