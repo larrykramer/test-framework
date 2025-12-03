@@ -27,10 +27,12 @@ import java.math.BigDecimal;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import net.larrykramer.test.config.FirefoxConfig;
+import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
 import net.larrykramer.test.webdriver.WebDriverFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
@@ -60,6 +62,32 @@ public final class FirefoxDriverFactory extends WebDriverFactory<FirefoxOptions>
     @Override
     public WebDriver createWebDriver() {
         return new FirefoxDriver(getOptions());
+    }
+
+    /**
+     * Applies Firefox-specific post-construction configuration to the supplied
+     * WebDriver.
+     * <p>
+     * In addition to the common configuration from the base implementation,
+     * this method deletes all cookies and applies window sizing/maximize based
+     * on {@link WebDriverConfig}. Failures in window operations are treated as
+     * fatal; any {@link WebDriverException} raised by window resizing or
+     * maximization is allowed to propagate to signal a misconfigured
+     * environment.
+     *
+     * @param driver the Firefox WebDriver instance to configure
+     */
+    @Override
+    public void configureWebDriver(WebDriver driver) {
+        super.configureWebDriver(driver); // apply common config
+
+        WebDriver.Options options = driver.manage();
+        deleteAllCookies(options);
+        if (config.windowSize.isPresent()) {
+            options.window().setSize(config.windowSize.get());
+        } else if (config.maximize && !config.headless) {
+            options.window().maximize();
+        }
     }
 
     /**
