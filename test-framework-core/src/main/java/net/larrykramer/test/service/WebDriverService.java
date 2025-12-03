@@ -23,7 +23,6 @@
 package net.larrykramer.test.service;
 
 import java.net.*;
-import java.time.Duration;
 import java.util.*;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
@@ -187,7 +186,7 @@ public class WebDriverService {
             throw new IllegalStateException("Unable to create WebDriver using factory " + name);
         }
 
-        configureWebDriver(driver);
+        factory.configureWebDriver(driver);
         LOGGER.log(Level.CONFIG, "Created WebDriver {0}", driver);
         return driver;
     }
@@ -281,38 +280,6 @@ public class WebDriverService {
      * Resolve the WebDriver factory based on the configuration properties.
      * See the constructor for map construction.
      */
-    private void configureWebDriver(WebDriver driver) {
-        WebDriver.Options options = driver.manage();
-
-        Duration timeout = Duration.ofMillis(webDriverConfig.implicitTimeout);
-        if (timeout.isNegative()) {
-            LOGGER.log(Level.WARNING, "Unable to set implicit timeout to a negative number");
-            timeout = Duration.ZERO;
-        }
-        LOGGER.log(Level.FINER, "Setting implicit timeout to {0}", timeout);
-        options.timeouts().implicitlyWait(timeout);
-
-        try {
-            options.deleteAllCookies();
-        } catch (WebDriverException e) {
-            LOGGER.log(Level.WARNING, "Unable to delete all cookies");
-            LOGGER.throwing(getClass().getName(), "configureWebDriver", e);
-        }
-
-        try {
-            if (webDriverConfig.windowSize.isPresent()) {
-                options.window().setSize(webDriverConfig.windowSize.get());
-            } else if ((!webDriverConfig.headless || webDriverConfig.type == WebDriverType.SAFARI)
-                    && webDriverConfig.maximize) {
-                options.window().maximize();
-            }
-        } catch (WebDriverException e) {
-            // No warning is logged, as window size and maximize operations aren't supported by all
-            // WebDrivers.
-            LOGGER.throwing(getClass().getName(), "configureWebDriver", e);
-        }
-    }
-
     private WebDriverFactory<?> getWebDriverFactory() {
         var factoryMap = factories.get(webDriverConfig.type);
         if (factoryMap == null) {

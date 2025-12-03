@@ -25,7 +25,6 @@ package net.larrykramer.test.service;
 import java.lang.annotation.Annotation;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.time.Duration;
 import java.util.*;
 import java.util.logging.*;
 
@@ -35,12 +34,9 @@ import net.larrykramer.test.config.GridConfig;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
 import net.larrykramer.test.webdriver.WebDriverFactory;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockedConstruction;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openqa.selenium.*;
 import org.openqa.selenium.remote.CapabilityType;
@@ -58,23 +54,10 @@ public class WebDriverServiceTest {
     @Mock
     private WebDriver mockDriver;
 
-    @Mock
-    private WebDriver.Options mockOptions;
-    @Mock
-    private WebDriver.Timeouts mockTimeouts;
-    @Mock
-    private WebDriver.Window mockWindow;
-
-    @Before
-    public void setUp() {
-        stubWebDriver(mockDriver);
-    }
-
     @Test
     public void testCreateWebDriver_withLocalConfig_returnsConfiguredWebDriver() {
         // Arrange
         WebDriverConfig config = createConfig(WebDriverType.CHROME);
-        config.implicitTimeout = 500L;
         stubFactory(mockFactory, config);
         WebDriverService service = createService(config, null, mockFactory);
         // Act
@@ -82,113 +65,7 @@ public class WebDriverServiceTest {
         // Assert
         assertSame(mockDriver, result);
         verify(mockFactory).createWebDriver();
-        verify(mockTimeouts).implicitlyWait(Duration.ofMillis(500L));
-        verify(mockOptions).deleteAllCookies();
-        verify(mockWindow, never()).maximize();
-        verify(mockWindow, never()).setSize(any(Dimension.class));
-    }
-
-    @Test
-    public void testCreateWebDriver_givenNegativeImplicitTimeout_usesZeroDuration() {
-        // Arrange
-        WebDriverConfig config = createConfig(WebDriverType.CHROME);
-        config.implicitTimeout = -10L;
-        stubFactory(mockFactory, config);
-        WebDriverService service = createService(config, null, mockFactory);
-        // Act
-        WebDriver result = service.createWebDriver();
-        // Assert
-        assertSame(mockDriver, result);
-        verify(mockTimeouts).implicitlyWait(Duration.ZERO);
-    }
-
-    @Test
-    public void testCreateWebDriver_givenWindowSizeAndMaximizeAreConfigured_setsWindowSize() {
-        // Arrange
-        WebDriverConfig config = createConfig(WebDriverType.CHROME);
-        config.maximize = true;
-        config.windowSize = Optional.of(new Dimension(1920, 1080));
-        stubFactory(mockFactory, config);
-        WebDriverService service = createService(config, null, mockFactory);
-
-        // Act
-        WebDriver result = service.createWebDriver();
-
-        // Assert
-        assertSame(mockDriver, result);
-
-        ArgumentCaptor<Dimension> captor = ArgumentCaptor.forClass(Dimension.class);
-        verify(mockWindow).setSize(captor.capture());
-        Dimension windowSize = captor.getValue();
-        assertEquals(1920, windowSize.width);
-        assertEquals(1080, windowSize.height);
-
-        verify(mockWindow, never()).maximize();
-    }
-
-    @Test
-    public void testCreateWebDriver_givenMaximizeWithHeadlessChrome_doesNotMaximize() {
-        // Arrange
-        WebDriverConfig config = createConfig(WebDriverType.CHROME);
-        config.maximize = true;
-        config.headless = true;
-        stubFactory(mockFactory, config);
-        WebDriverService service = createService(config, null, mockFactory);
-        // Act
-        WebDriver result = service.createWebDriver();
-        // Assert
-        assertSame(mockDriver, result);
-        verify(mockWindow, never()).maximize();
-    }
-
-    @Test
-    public void testCreateWebDriver_givenMaximizeWithHeadlessSafari_maximizesWindow() {
-        // Arrange
-        WebDriverConfig config = createConfig(WebDriverType.SAFARI);
-        config.maximize = true;
-        config.headless = true;
-        stubFactory(mockFactory, config);
-        WebDriverService service = createService(config, null, mockFactory);
-        // Act
-        WebDriver result = service.createWebDriver();
-        // Assert
-        assertSame(mockDriver, result);
-        verify(mockWindow).maximize();
-    }
-
-    @Test
-    public void testCreateWebDriver_whenDeleteAllCookiesThrows_doesNotPropagateException() {
-        // Arrange
-        WebDriverConfig config = createConfig(WebDriverType.CHROME);
-        stubFactory(mockFactory, config);
-        doThrow(new WebDriverException("deleteAllCookies")).when(mockOptions).deleteAllCookies();
-
-        WebDriverService service = createService(config, null, mockFactory);
-
-        // Act
-        WebDriver result = service.createWebDriver();
-
-        // Assert
-        assertSame(mockDriver, result);
-        verify(mockOptions).deleteAllCookies();
-    }
-
-    @Test
-    public void testCreateWebDriver_whenMaximizeThrows_doesNotPropagateException() {
-        // Arrange
-        WebDriverConfig config = createConfig(WebDriverType.CHROME);
-        config.maximize = true;
-        stubFactory(mockFactory, config);
-        doThrow(new WebDriverException("maximize")).when(mockWindow).maximize();
-
-        WebDriverService service = createService(config, null, mockFactory);
-
-        // Act
-        WebDriver result = service.createWebDriver();
-
-        // Assert
-        assertSame(mockDriver, result);
-        verify(mockWindow).maximize();
+        verify(mockFactory).configureWebDriver(mockDriver);
     }
 
     @Test
@@ -201,6 +78,7 @@ public class WebDriverServiceTest {
         // Act & Assert
         var e = assertThrows(IllegalStateException.class, service::createWebDriver);
         assertTrue(e.getMessage().startsWith("Unable to create WebDriver using factory "));
+        verify(mockFactory, never()).configureWebDriver(any());
     }
 
     @Test
@@ -263,7 +141,9 @@ public class WebDriverServiceTest {
         // Assert
         assertSame(mockDriver, result);
         verify(mockSecondSPIFactory).createWebDriver();
+        verify(mockSecondSPIFactory).configureWebDriver(mockDriver);
         verify(mockFirstSPIFactory, never()).createWebDriver();
+        verify(mockFirstSPIFactory, never()).configureWebDriver(any());
     }
 
     @Test
@@ -287,7 +167,9 @@ public class WebDriverServiceTest {
         // Assert
         assertSame(mockDriver, result);
         verify(mockSecondFactory).createWebDriver();
+        verify(mockSecondFactory).configureWebDriver(mockDriver);
         verify(mockFirstFactory, never()).createWebDriver();
+        verify(mockFirstFactory, never()).configureWebDriver(any());
     }
 
     @Test
@@ -354,7 +236,6 @@ public class WebDriverServiceTest {
     public void testCreateWebDriver_whenGridIsConfigured_createsRemoteWebDriverWithCapabilities() {
         // Arrange
         WebDriverConfig config = createConfig(WebDriverType.FIREFOX);
-        config.implicitTimeout = 100L;
         GridConfig grid = createGridConfig();
         grid.uri = Optional.of(URI.create("https://localhost:4444"));
         grid.browserVersion = Optional.of("140.5.0");
@@ -369,7 +250,8 @@ public class WebDriverServiceTest {
 
         List<Object> capturedArguments = new ArrayList<>();
 
-        try (var mocked = mockConstruction(RemoteWebDriver.class, stubRemote(capturedArguments))) {
+        try (var mocked = mockConstruction(RemoteWebDriver.class,
+                (mock, context) -> capturedArguments.addAll(context.arguments()))) {
             WebDriverService service = createService(config, grid, mockFactory);
 
             // Act
@@ -377,6 +259,8 @@ public class WebDriverServiceTest {
 
             // Assert
             assertSame(mocked.constructed().getFirst(), result);
+            verify(mockFactory, never()).createWebDriver();
+            verify(mockFactory).configureWebDriver(result);
         }
 
         assertEquals(2, capturedArguments.size());
@@ -390,10 +274,6 @@ public class WebDriverServiceTest {
         assertEquals("suite", capturedOptions.getCapability("applicationName"));
         assertEquals("suite", capturedOptions.getCapability("se:applicationName"));
         assertEquals("value", capturedOptions.getCapability("custom"));
-
-        verify(mockFactory, never()).createWebDriver();
-        verify(mockTimeouts).implicitlyWait(Duration.ofMillis(100L));
-        verify(mockOptions).deleteAllCookies();
     }
 
     @Test
@@ -409,16 +289,15 @@ public class WebDriverServiceTest {
 
         List<Object> capturedArguments = new ArrayList<>();
 
-        try (var mocked = mockConstruction(RemoteWebDriver.class, stubRemote(capturedArguments))) {
+        try (var mocked = mockConstruction(RemoteWebDriver.class,
+                (mock, context) -> capturedArguments.addAll(context.arguments()))) {
             WebDriverService service = createService(config, grid, mockFactory);
 
             // Act
-            WebDriver result = service.createWebDriver();
-
-            // Assert
-            assertSame(mocked.constructed().getFirst(), result);
+            service.createWebDriver();
         }
 
+        // Assert
         assertEquals(2, capturedArguments.size());
 
         MutableCapabilities options = (MutableCapabilities) capturedArguments.get(1);
@@ -440,16 +319,15 @@ public class WebDriverServiceTest {
 
         List<Object> capturedArguments = new ArrayList<>();
 
-        try (var mocked = mockConstruction(RemoteWebDriver.class, stubRemote(capturedArguments))) {
+        try (var mocked = mockConstruction(RemoteWebDriver.class,
+                (mock, context) -> capturedArguments.addAll(context.arguments()))) {
             WebDriverService service = createService(config, grid, mockFactory);
 
             // Act
-            WebDriver result = service.createWebDriver();
-
-            // Assert
-            assertSame(mocked.constructed().getFirst(), result);
+            service.createWebDriver();
         }
 
+        // Assert
         assertEquals(2, capturedArguments.size());
 
         MutableCapabilities capturedOptions = (MutableCapabilities) capturedArguments.get(1);
@@ -484,7 +362,7 @@ public class WebDriverServiceTest {
         logger.setLevel(Level.INFO);
         logger.setUseParentHandlers(false);
 
-        try (var mocked = mockConstruction(RemoteWebDriver.class, stubRemote(new ArrayList<>()))) {
+        try (var mocked = mockConstruction(RemoteWebDriver.class)) {
             WebDriverService service = createService(config, grid, mockFactory);
 
             // Act
@@ -532,19 +410,6 @@ public class WebDriverServiceTest {
     private void stubFactory(WebDriverFactory<?> factory, WebDriverConfig config) {
         when(factory.getType()).thenReturn(config.type);
         when(factory.createWebDriver()).thenReturn(mockDriver);
-    }
-
-    private void stubWebDriver(WebDriver driver) {
-        when(driver.manage()).thenReturn(mockOptions);
-        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
-        when(mockOptions.window()).thenReturn(mockWindow);
-    }
-
-    private MockedConstruction.MockInitializer<RemoteWebDriver> stubRemote(List<Object> args) {
-        return (mock, context) -> {
-            stubWebDriver(mock);
-            args.addAll(context.arguments());
-        };
     }
 
     private static WebDriverConfig createConfig(WebDriverType type) {
