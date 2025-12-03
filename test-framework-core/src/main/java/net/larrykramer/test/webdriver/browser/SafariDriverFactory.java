@@ -23,13 +23,14 @@
 package net.larrykramer.test.webdriver.browser;
 
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
 import net.larrykramer.test.webdriver.WebDriverFactory;
 import net.larrykramer.test.util.OperatingSystem;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.safari.SafariDriver;
 import org.openqa.selenium.safari.SafariOptions;
 
@@ -43,8 +44,6 @@ import org.openqa.selenium.safari.SafariOptions;
  */
 @ApplicationScoped
 public final class SafariDriverFactory extends WebDriverFactory<SafariOptions> {
-    private static final Logger LOGGER = Logger.getLogger(SafariDriverFactory.class.getName());
-
     /**
      * {@inheritDoc}
      */
@@ -71,6 +70,36 @@ public final class SafariDriverFactory extends WebDriverFactory<SafariOptions> {
                     "Safari local execution not supported on this platform");
         }
         return new SafariDriver(getOptions());
+    }
+
+    /**
+     * Applies Safari-specific post-construction configuration to the supplied
+     * WebDriver.
+     * <p>
+     * In addition to the common configuration from the base implementation, this
+     * method applies window sizing/maximize based on {@link WebDriverConfig},
+     * but does not delete cookies on startup. Because Safari is sensitive to
+     * window operations during startup, failures from window sizing/maximize
+     * may be caught and logged rather than treated as fatal.
+     *
+     * @param driver the Safari WebDriver instance to configure
+     */
+    @Override
+    public void configureWebDriver(WebDriver driver) {
+        // Deleting all cookies while Safari is still on the default Start Page causes the next
+        // WebDriver command to throw a NoSuchWindowException, which in turn crashes our test
+        // framework.
+        super.configureWebDriver(driver); // apply common config
+        try {
+            if (config.windowSize.isPresent()) {
+                driver.manage().window().setSize(config.windowSize.get());
+            } else if (config.maximize) {
+                driver.manage().window().maximize();
+            }
+        } catch (WebDriverException e) {
+            LOGGER.log(Level.FINER, "Ignoring Safari window operation failure");
+            LOGGER.throwing(getClass().getName(), "configureWebDriver", e);
+        }
     }
 
     /**

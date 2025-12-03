@@ -22,21 +22,25 @@
 
 package net.larrykramer.test.webdriver.browser;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.logging.*;
 
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.webdriver.FactoryTestHelper;
 import net.larrykramer.test.util.OperatingSystem;
+import net.larrykramer.test.webdriver.WebDriverFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.safari.SafariDriver;
 import org.openqa.selenium.safari.SafariOptions;
 
+import static net.larrykramer.test.webdriver.FactoryTestHelper.setWebDriverConfig;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -46,7 +50,7 @@ public class SafariDriverFactoryTest {
     @Before
     public void setUp() {
         factory = new SafariDriverFactory();
-        FactoryTestHelper.setWebDriverConfig(factory, createConfig());
+        setWebDriverConfig(factory, createConfig());
     }
 
     @Test
@@ -91,9 +95,102 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
+    public void testConfigureWebDriver_withWindowSize_setsImplicitWaitAndWindowSize() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        WebDriver.Window mockWindow = mock(WebDriver.Window.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+        when(mockOptions.window()).thenReturn(mockWindow);
+
+        WebDriverConfig config = createConfig();
+        config.implicitTimeout = 350L;
+        config.windowSize = Optional.of(new Dimension(1440, 900));
+        setWebDriverConfig(factory, config);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockTimeouts).implicitlyWait(Duration.ofMillis(350L));
+        verify(mockWindow).setSize(config.windowSize.get());
+        verify(mockWindow, never()).maximize();
+        verify(mockOptions, never()).deleteAllCookies();
+    }
+
+    @Test
+    public void testConfigureWebDriver_withMaximize_setsImplicitWaitAndMaximize() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        WebDriver.Window mockWindow = mock(WebDriver.Window.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+        when(mockOptions.window()).thenReturn(mockWindow);
+
+        WebDriverConfig config = createConfig();
+        config.implicitTimeout = 125L;
+        config.windowSize = Optional.empty();
+        config.maximize = true;
+        setWebDriverConfig(factory, config);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockTimeouts).implicitlyWait(Duration.ofMillis(125L));
+        verify(mockWindow).maximize();
+        verify(mockWindow, never()).setSize(any(Dimension.class));
+        verify(mockOptions, never()).deleteAllCookies();
+    }
+
+    @Test
+    public void testConfigureWebDriver_withoutWindowConfiguration_setsImplicitWaitOnly() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockTimeouts).implicitlyWait(Duration.ZERO);
+        verify(mockOptions, never()).deleteAllCookies();
+    }
+
+    @Test
+    public void testConfigureWebDriver_whenMaximizeThrows_doesNotPropagateException() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        WebDriver.Window mockWindow = mock(WebDriver.Window.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+        when(mockOptions.window()).thenReturn(mockWindow);
+        doThrow(new WebDriverException("maximize")).when(mockWindow).maximize();
+
+        WebDriverConfig config = createConfig();
+        config.maximize = true;
+        setWebDriverConfig(factory, config);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockWindow).maximize();
+    }
+
+    @Test
     public void testBuildOptions_whenHeadlessRequested_logsMessageAndReturnsSafariOptions() {
         // Arrange
-        Logger logger = Logger.getLogger(SafariDriverFactory.class.getName());
+        Logger logger = Logger.getLogger(WebDriverFactory.class.getName());
         Level originalLevel = logger.getLevel();
         boolean useParentHandlers = logger.getUseParentHandlers();
 
@@ -110,7 +207,7 @@ public class SafariDriverFactoryTest {
 
             WebDriverConfig config = createConfig();
             config.headless = true;
-            FactoryTestHelper.setWebDriverConfig(factory, config);
+            setWebDriverConfig(factory, config);
 
             // Act
             SafariOptions result = factory.buildOptions();
@@ -122,7 +219,7 @@ public class SafariDriverFactoryTest {
 
             LogRecord record = logRecordCaptor.getValue();
             assertEquals(Level.WARNING, record.getLevel());
-            assertTrue(record.getMessage().contains("Headless mode in Safari not supported"));
+            assertTrue(record.getMessage().startsWith("Headless mode in Safari not supported"));
         } finally {
             logger.removeHandler(mockLogHandler);
             logger.setLevel(originalLevel);
@@ -138,7 +235,7 @@ public class SafariDriverFactoryTest {
 
             WebDriverConfig config = createConfig();
             config.allowInsecureCerts = true;
-            FactoryTestHelper.setWebDriverConfig(factory, config);
+            setWebDriverConfig(factory, config);
 
             // Act
             SafariOptions result = factory.getOptions();
