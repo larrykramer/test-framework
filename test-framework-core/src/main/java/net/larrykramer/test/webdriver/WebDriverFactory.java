@@ -114,8 +114,7 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
      * <ul>
      * <li>For WebDrivers where configuration operations are known to be
      *    unreliable or unsupported, it may be preferable to catch
-     *   {@link org.openqa.selenium.WebDriverException WebDriverException}, log
-     *   the failure, and continue.
+     *   {@link WebDriverException}, log the failure, and continue.
      * <li>For WebDrivers where such configuration operations are considered
      *   essential to test correctness, implementations may allow exceptions to
      *   propagate in order to fail fast when the environment is misconfigured.
