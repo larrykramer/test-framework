@@ -130,7 +130,7 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testBuildOptions_withMaximizeTrue_doesNotAddWindowSizeArgument() {
+    public void testBuildOptions_withMaximizeTrueAndWindowSize_addsOnlyWindowSizeArgument() {
         // Arrange
         WebDriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
