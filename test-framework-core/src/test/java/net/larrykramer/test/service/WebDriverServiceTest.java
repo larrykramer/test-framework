@@ -384,6 +384,39 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    public void testCreateWebDriver_whenConfigureWebDriverThrows_quitsDriverAndPropagates() {
+        // Arrange
+        WebDriverConfig config = createConfig(WebDriverType.CHROME);
+        RuntimeException configureException = new RuntimeException("configure");
+        stubFactory(mockFactory, config);
+        doThrow(configureException).when(mockFactory).configureWebDriver(mockDriver);
+
+        WebDriverService service = createService(config, null, mockFactory);
+
+        // Act & Assert
+        var e = assertThrows(RuntimeException.class, service::createWebDriver);
+        assertSame(configureException, e);
+        verify(mockDriver).quit();
+    }
+
+    @Test
+    public void testCreateWebDriver_whenConfigureWebDriverAndQuitThrow_quitExceptionIsSuppressed() {
+        // Arrange
+        WebDriverConfig config = createConfig(WebDriverType.CHROME);
+        RuntimeException quitException = new RuntimeException("quite");
+        stubFactory(mockFactory, config);
+        doThrow(new RuntimeException("configure")).when(mockFactory).configureWebDriver(mockDriver);
+        doThrow(quitException).when(mockDriver).quit();
+
+        WebDriverService service = createService(config, null, mockFactory);
+
+        // Act & Assert
+        var e = assertThrows(RuntimeException.class, service::createWebDriver);
+        assertEquals(1, e.getSuppressed().length);
+        assertSame(quitException, e.getSuppressed()[0]);
+    }
+
+    @Test
     public void testDestroyWebDriver_withDriver_callsQuit() {
         WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
         service.destroyWebDriver(mockDriver);

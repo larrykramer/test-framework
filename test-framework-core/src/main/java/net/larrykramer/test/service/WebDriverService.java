@@ -186,9 +186,18 @@ public class WebDriverService {
             throw new IllegalStateException("Unable to create WebDriver using factory " + name);
         }
 
-        factory.configureWebDriver(driver);
-        LOGGER.log(Level.CONFIG, "Created WebDriver {0}", driver);
-        return driver;
+        try {
+            factory.configureWebDriver(driver);
+            LOGGER.log(Level.CONFIG, "Created WebDriver {0}", driver);
+            return driver;
+        } catch (Throwable t) {
+            try {
+                driver.quit();
+            } catch (Throwable x) {
+                t.addSuppressed(x);
+            }
+            throw t;
+        }
     }
 
     /**
