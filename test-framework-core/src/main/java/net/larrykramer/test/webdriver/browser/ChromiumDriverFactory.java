@@ -90,10 +90,13 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
             // Let the browser decide which headless implementation to use.
             options.addArguments("--headless");
         }
+
+        if (hasWindowSizeArg || hasMaximizedArg) {
+            // window-size or start-maximized argument flag already specified.
+            // Don't override either flag.
+            return;
+        }
         if (config.windowSize.isPresent()) {
-            if (hasWindowSizeArg) {
-                return;
-            }
             Dimension windowSize = config.windowSize.get();
             if (windowSize.width <= 0 || windowSize.height <= 0) {
                 throw new IllegalArgumentException("Window width and height must be "
@@ -101,7 +104,7 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
                         + windowSize.width + "x" + windowSize.height);
             }
             options.addArguments("--window-size=" + windowSize.width + "," + windowSize.height);
-        } else if (config.maximize && !config.headless && !hasMaximizedArg) {
+        } else if (config.maximize && !config.headless) {
             // Only apply start-maximized if not headless and not already specified.
             // Headless Chrome usually ignores start-maximized and defaults to 800x600 unless
             // window-size is set.
