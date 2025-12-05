@@ -138,9 +138,11 @@ public class WebDriverService {
      * If {@link GridConfig#uri} is present, a remote session is created with a
      * {@link RemoteWebDriver} and the configured capabilities; otherwise a
      * local WebDriver is created via the resolved {@link WebDriverFactory}.
-     * After creation, the WebDriver is configured with the implicit wait,
-     * cookies are cleared, and the window is sized or maximized per
-     * configuration.
+     * After creation, the selected {@link WebDriverFactory} is given an
+     * opportunity to perform driver-specific configuration via
+     * {@link WebDriverFactory#configureWebDriver(WebDriver)}. If configuration
+     * or logging fails, this method attempts to quit the driver before
+     * rethrowing the original error.
      *
      * @return an initialized WebDriver bound to the current scenario scope
      * @throws IllegalArgumentException if the configured WebDriver type is
