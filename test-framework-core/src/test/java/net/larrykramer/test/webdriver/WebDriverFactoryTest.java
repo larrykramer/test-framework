@@ -23,17 +23,18 @@
 package net.larrykramer.test.webdriver;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.logging.*;
 
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
 import org.junit.Test;
-import org.openqa.selenium.MutableCapabilities;
-import org.openqa.selenium.Proxy;
-import org.openqa.selenium.WebDriver;
+import org.mockito.ArgumentCaptor;
+import org.openqa.selenium.*;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 import static org.openqa.selenium.remote.CapabilityType.ACCEPT_INSECURE_CERTS;
 import static org.openqa.selenium.remote.CapabilityType.PROXY;
 
@@ -83,6 +84,48 @@ public class WebDriverFactoryTest {
         assertSame(mockDriver, result);
         assertNull(factory.lastOptions);
         assertSame(config, factory.config);
+    }
+
+    @Test
+    public void testConfigureWebDriver_withPositiveImplicitTimeout_setsImplicitWait() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+
+        WebDriverConfig config = createConfig();
+        config.implicitTimeout = 500L;
+
+        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, config, null);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockTimeouts).implicitlyWait(Duration.ofMillis(500L));
+    }
+
+    @Test
+    public void testConfigureWebDriver_withNegativeImplicitTimeout_doesNotSetImplicitWait() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+
+        WebDriverConfig config = createConfig();
+        config.implicitTimeout = -10L;
+
+        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, config, null);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockTimeouts, never()).implicitlyWait(any(Duration.class));
     }
 
     @Test
@@ -364,6 +407,55 @@ public class WebDriverFactoryTest {
 
         // Act
         factory.getOptions();
+    }
+
+    @Test
+    public void testDeleteAllCookies_whenSuccessful_invokesOptionsDeleteAllCookies() {
+        // Arrange
+        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, createConfig(), null);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        // Act
+        factory.deleteAllCookies(mockOptions);
+        // Assert
+        verify(mockOptions).deleteAllCookies();
+    }
+
+    @Test
+    public void testDeleteAllCookies_whenDeleteThrows_doesNotPropagateException() {
+        // Arrange
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        doThrow(new WebDriverException("deleteAllCookies")).when(mockOptions).deleteAllCookies();
+
+        Logger logger = Logger.getLogger(WebDriverFactory.class.getName());
+        Level originalLevel = logger.getLevel();
+        boolean useParentHandlers = logger.getUseParentHandlers();
+
+        Handler mockLogHandler = mock(Handler.class);
+        ArgumentCaptor<LogRecord> logRecordCaptor = ArgumentCaptor.forClass(LogRecord.class);
+
+        logger.addHandler(mockLogHandler);
+        logger.setLevel(Level.WARNING);
+        logger.setUseParentHandlers(false);
+
+        try {
+            SPIWebDriverFactory factory = new SPIWebDriverFactory(null, createConfig(), null);
+
+            // Act
+            factory.deleteAllCookies(mockOptions);
+
+            // Assert
+            verify(mockOptions).deleteAllCookies();
+
+            verify(mockLogHandler).publish(logRecordCaptor.capture());
+
+            LogRecord record = logRecordCaptor.getValue();
+            assertEquals(Level.WARNING, record.getLevel());
+            assertEquals("Unable to delete all cookies", record.getMessage());
+        } finally {
+            logger.removeHandler(mockLogHandler);
+            logger.setLevel(originalLevel);
+            logger.setUseParentHandlers(useParentHandlers);
+        }
     }
 
     private static WebDriverConfig createConfig() {

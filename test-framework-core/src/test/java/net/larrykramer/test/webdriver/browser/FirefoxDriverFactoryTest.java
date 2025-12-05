@@ -22,6 +22,7 @@
 
 package net.larrykramer.test.webdriver.browser;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,15 +30,18 @@ import java.util.Optional;
 import net.larrykramer.test.config.FirefoxConfig;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.webdriver.FactoryTestHelper;
 import org.junit.Before;
 import org.junit.Test;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
+import static net.larrykramer.test.webdriver.FactoryTestHelper.setInjectedConfigField;
+import static net.larrykramer.test.webdriver.FactoryTestHelper.setWebDriverConfig;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.*;
 
 public class FirefoxDriverFactoryTest {
     private FirefoxDriverFactory factory;
@@ -46,12 +50,12 @@ public class FirefoxDriverFactoryTest {
     public void setUp() {
         factory = new FirefoxDriverFactory();
 
-        FactoryTestHelper.setWebDriverConfig(factory, createConfig());
+        setWebDriverConfig(factory, createConfig());
 
         FirefoxConfig firefox = new FirefoxConfig();
         firefox.userPrefs = Map.of();
         firefox.executable = Optional.empty();
-        setInjectedConfigField(firefox);
+        setFirefoxConfig(firefox);
     }
 
     @Test
@@ -76,11 +80,134 @@ public class FirefoxDriverFactoryTest {
     }
 
     @Test
+    public void testConfigureWebDriver_withWindowSize_appliesFirefoxSpecificConfiguration() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        WebDriver.Window mockWindow = mock(WebDriver.Window.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+        when(mockOptions.window()).thenReturn(mockWindow);
+
+        WebDriverConfig config = createConfig();
+        config.implicitTimeout = 150L;
+        config.headless = false;
+        config.maximize = true;
+        config.windowSize = Optional.of(new Dimension(1280, 720));
+        setWebDriverConfig(factory, config);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockTimeouts).implicitlyWait(Duration.ofMillis(150L));
+        verify(mockOptions).deleteAllCookies();
+        verify(mockWindow).setSize(config.windowSize.get());
+        verify(mockWindow, never()).maximize();
+    }
+
+    @Test
+    public void testConfigureWebDriver_withMaximizeFalseAndNoWindowSize_doesNotChangeWindowSize() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        WebDriver.Window mockWindow = mock(WebDriver.Window.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+        when(mockOptions.window()).thenReturn(mockWindow);
+
+        WebDriverConfig config = createConfig();
+        config.maximize = false;
+        config.windowSize = Optional.empty();
+        setWebDriverConfig(factory, config);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockWindow, never()).maximize();
+        verify(mockWindow, never()).setSize(any(Dimension.class));
+    }
+
+    @Test
+    public void testConfigureWebDriver_whenMaximizeTrueAndHeadlessModeIsDisabled_maximizesWindow() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        WebDriver.Window mockWindow = mock(WebDriver.Window.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+        when(mockOptions.window()).thenReturn(mockWindow);
+
+        WebDriverConfig config = createConfig();
+        config.headless = false;
+        config.maximize = true;
+        config.windowSize = Optional.empty();
+        setWebDriverConfig(factory, config);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockWindow).maximize();
+        verify(mockWindow, never()).setSize(any(Dimension.class));
+    }
+
+    @Test
+    public void testConfigureWebDriver_whenHeadlessModeIsEnabled_doesNotMaximizeWindow() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        WebDriver.Window mockWindow = mock(WebDriver.Window.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+        when(mockOptions.window()).thenReturn(mockWindow);
+
+        WebDriverConfig config = createConfig();
+        config.headless = true;
+        config.maximize = true;
+        config.windowSize = Optional.empty();
+        setWebDriverConfig(factory, config);
+
+        // Act
+        factory.configureWebDriver(mockDriver);
+
+        // Assert
+        verify(mockWindow, never()).maximize();
+        verify(mockWindow, never()).setSize(any(Dimension.class));
+    }
+
+    @Test(expected = WebDriverException.class)
+    public void testConfigureWebDriver_whenMaximizeThrows_propagatesException() {
+        // Arrange
+        WebDriver mockDriver = mock(WebDriver.class);
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
+        WebDriver.Window mockWindow = mock(WebDriver.Window.class);
+        when(mockDriver.manage()).thenReturn(mockOptions);
+        when(mockOptions.timeouts()).thenReturn(mockTimeouts);
+        when(mockOptions.window()).thenReturn(mockWindow);
+        doThrow(new WebDriverException("maximize")).when(mockWindow).maximize();
+
+        WebDriverConfig config = createConfig();
+        config.maximize = true;
+        setWebDriverConfig(factory, config);
+
+        // Act & Assert
+        // Exception is propagated.
+        factory.configureWebDriver(mockDriver);
+    }
+
+    @Test
     public void testBuildOptions_whenHeadlessModeIsEnabled_addsHeadlessArgument() {
         // Arrange
         WebDriverConfig config = createConfig();
         config.headless = true;
-        FactoryTestHelper.setWebDriverConfig(factory, config);
+        setWebDriverConfig(factory, config);
 
         // Act
         FirefoxOptions options = factory.buildOptions();
@@ -118,7 +245,7 @@ public class FirefoxDriverFactoryTest {
         FirefoxConfig firefox = new FirefoxConfig();
         firefox.userPrefs = userPrefs;
         firefox.executable = Optional.empty();
-        setInjectedConfigField(firefox);
+        setFirefoxConfig(firefox);
 
         // Act
         FirefoxOptions result = factory.buildOptions();
@@ -156,7 +283,7 @@ public class FirefoxDriverFactoryTest {
         FirefoxConfig firefox = new FirefoxConfig();
         firefox.userPrefs = Map.of();
         firefox.executable = Optional.of("/custom/firefox");
-        setInjectedConfigField(firefox);
+        setFirefoxConfig(firefox);
 
         // Act
         FirefoxOptions result = factory.buildOptions();
@@ -189,8 +316,8 @@ public class FirefoxDriverFactoryTest {
         return config;
     }
 
-    private void setInjectedConfigField(FirefoxConfig config) {
-        FactoryTestHelper.setInjectedConfigField(factory, "firefoxConfig", config);
+    private void setFirefoxConfig(FirefoxConfig config) {
+        setInjectedConfigField(factory, "firefoxConfig", config);
     }
 
     @SuppressWarnings("unchecked")
