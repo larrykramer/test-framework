@@ -57,7 +57,7 @@ public class WebDriverReferenceTest {
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
         // Act
         WebDriverReference result = new WebDriverReference(mockWrappedDriver);
-        // Assertf
+        // Assert
         assertSame(mockWrappedDriver, result.get());
         assertSame(mockDriver, result.getUnderlyingDriver());
     }
@@ -152,6 +152,17 @@ public class WebDriverReferenceTest {
         driverRef.set(mockWrappedDriver);
         // Act & Assert
         assertSame(mockDriver, driverRef.get(JavascriptExecutor.class));
+    }
+
+    @Test
+    public void testGetClass_whenWrappedAndUnderlyingImplementInterface_prefersWrappedDriver() {
+        // Arrange
+        WebDriver mockDriver = mockWebDriver(TakesScreenshot.class);
+        WebDriver mockWrappedDriver = mockWebDriver(WrapsDriver.class, TakesScreenshot.class);
+        when(((WrapsDriver) mockWrappedDriver).getWrappedDriver()).thenReturn(mockDriver);
+        driverRef.set(mockWrappedDriver);
+        // Act & Assert
+        assertSame(mockWrappedDriver, driverRef.get(TakesScreenshot.class));
     }
 
     @Test
