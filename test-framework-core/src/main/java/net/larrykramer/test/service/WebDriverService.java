@@ -38,10 +38,12 @@ import net.larrykramer.test.config.GridConfig;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
 import net.larrykramer.test.webdriver.WebDriverFactory;
+import net.larrykramer.test.webdriver.WebDriverReference;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.*;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import static net.larrykramer.test.util.SharedUtils.identityToString;
 import static org.openqa.selenium.remote.CapabilityType.BROWSER_NAME;
 import static org.openqa.selenium.remote.CapabilityType.BROWSER_VERSION;
 import static org.openqa.selenium.remote.CapabilityType.PLATFORM_NAME;
@@ -63,9 +65,10 @@ import static org.openqa.selenium.remote.CapabilityType.PLATFORM_NAME;
  * and remote execution on a Selenium Grid by instantiating a
  * {@link RemoteWebDriver} with the capabilities derived from the configuration.
  * <p>
- * Complementing the producer, the {@link #destroyWebDriver(WebDriver)} disposer
- * method ensures WebDriver sessions are terminated and resources are released,
- * while gracefully handling any driver-specific shutdown errors.
+ * Complementing the producer, the
+ * {@linkplain #disposeWebDriver(WebDriverReference) disposer} method ensures
+ * WebDriver sessions are terminated and resources are released, while
+ * gracefully handling any driver-specific shutdown errors.
  */
 @ApplicationScoped
 public class WebDriverService {
@@ -124,8 +127,9 @@ public class WebDriverService {
     }
 
     /**
-     * Produces a scenario-scoped {@link WebDriver} according to
-     * {@link WebDriverConfig} and the available factories.
+     * Produces a scenario-scoped {@link WebDriverReference} that encapsulates a
+     * {@link WebDriver} created according to {@link WebDriverConfig} and the
+     * available factories.
      * <p>
      * Resolution rules:
      * <ul>
@@ -144,7 +148,8 @@ public class WebDriverService {
      * or logging fails, this method attempts to quit the driver before
      * rethrowing the original error.
      *
-     * @return an initialized WebDriver bound to the current scenario scope
+     * @return a reference to an initialized WebDriver bound to the current
+     *         scenario scope
      * @throws IllegalArgumentException if the configured WebDriver type is
      *                                  unsupported, no matching SPI factory is
      *                                  found, the SPI class name is missing
@@ -157,7 +162,7 @@ public class WebDriverService {
      */
     @Produces
     @ScenarioScoped
-    public WebDriver createWebDriver() {
+    public WebDriverReference createWebDriver() {
         WebDriverFactory<?> factory = getWebDriverFactory();
         if (factory == null) {
             String msg;
@@ -190,8 +195,8 @@ public class WebDriverService {
 
         try {
             factory.configureWebDriver(driver);
-            LOGGER.log(Level.CONFIG, "Created WebDriver {0}", driver);
-            return driver;
+            LOGGER.log(Level.CONFIG, "Created WebDriver {0}", identityToString(driver));
+            return new WebDriverReference(driver);
         } catch (Throwable t) {
             try {
                 driver.quit();
@@ -203,23 +208,46 @@ public class WebDriverService {
     }
 
     /**
-     * Disposes a scenario-scoped {@link WebDriver} by invoking
-     * {@link WebDriver#quit()}.
+     * Disposes the scenario-scoped WebDriver produced by this service by
+     * invoking {@link WebDriver#quit()}.
      * <p>
-     * This method is idempotent and safe to call with {@code null}. Any
-     * exceptions thrown by the underlying WebDriver during quit are caught and
-     * logged.
+     * This method is idempotent and safe to call with {@code null} or with a
+     * {@link WebDriverReference} that was never initialized. Any exceptions
+     * thrown by the underlying WebDriver during quit are caught and logged.
      *
-     * @param driver the WebDriver instance to dispose; may be {@code null}
+     * @param driverRef the WebDriver reference to dispose; may be {@code null}
      */
-    public void destroyWebDriver(@Disposes WebDriver driver) {
+    public void disposeWebDriver(@Disposes WebDriverReference driverRef) {
+        if (driverRef == null) {
+            return;
+        }
+
+        WebDriver driver = null;
         try {
+            try {
+                // Use the wrapped driver instead of the unwrapped driver.
+                // If a factory returns a wrapper (e.g., EventFiringWebDriver or other WrapsDriver
+                // decorators), calling quit() on the underlying unwrapped driver may bypass
+                // wrapper-specific cleanup.
+                driver = driverRef.get();
+            } catch (IllegalStateException ignored) {
+                // The reference was never initialized; safe to ignore.
+            }
             if (driver != null) {
                 driver.quit();
+                LOGGER.log(Level.CONFIG, "Disposed WebDriver {0}", identityToString(driver));
             }
         } catch (Throwable t) {
-            LOGGER.log(Level.WARNING, "Unable to destroy WebDriver {0}", driver);
-            LOGGER.throwing(getClass().getName(), "destroyWebDriver", t);
+            LOGGER.log(Level.WARNING, "Unable to dispose WebDriver {0}", identityToString(driver));
+            LOGGER.throwing(getClass().getName(), "disposeWebDriver", t);
+        } finally {
+            try {
+                driverRef.clear();
+            } catch (Throwable ignored) {
+                // If we can't clear the reference, the reference is likely broken in an
+                // unrecoverable way.
+                // It is safe to ignore as we are cleaning up.
+            }
         }
     }
 

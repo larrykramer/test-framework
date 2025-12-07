@@ -86,7 +86,19 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
      * Produces a driver-specific {@link WebDriver} using the capabilities
      * derived from {@link #getOptions()}.
      *
-     * @return a WebDriver instance
+     * @implSpec
+     * Implementations must always create and return a <em>new</em>, unmanaged
+     * {@link WebDriver} instance on each invocation. The returned driver must
+     * not be cached, pooled, or shared between calls, and its lifecycle must
+     * not be managed by the factory (for example, implementations must not call
+     * {@link WebDriver#quit()} on the returned instance).
+     * <p>
+     * Ownership of the returned driver, including responsibility for eventually
+     * invoking {@link WebDriver#quit()}, is transferred to
+     * {@link net.larrykramer.test.service.WebDriverService WebDriverService},
+     * which assumes full control of the driver's lifecycle.
+     *
+     * @return a new WebDriver instance; never a reused or shared instance
      */
     public abstract WebDriver createWebDriver();
 

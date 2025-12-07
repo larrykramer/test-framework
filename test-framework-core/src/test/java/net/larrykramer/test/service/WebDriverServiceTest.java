@@ -34,6 +34,7 @@ import net.larrykramer.test.config.GridConfig;
 import net.larrykramer.test.config.WebDriverConfig;
 import net.larrykramer.test.config.WebDriverType;
 import net.larrykramer.test.webdriver.WebDriverFactory;
+import net.larrykramer.test.webdriver.WebDriverReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -60,10 +61,15 @@ public class WebDriverServiceTest {
         WebDriverConfig config = createConfig(WebDriverType.CHROME);
         stubFactory(mockFactory, config);
         WebDriverService service = createService(config, null, mockFactory);
+
         // Act
-        WebDriver result = service.createWebDriver();
+        WebDriverReference driverRef = service.createWebDriver();
+
         // Assert
-        assertSame(mockDriver, result);
+        assertNotNull(driverRef);
+        WebDriver driver = driverRef.get();
+
+        assertSame(mockDriver, driver);
         verify(mockFactory).createWebDriver();
         verify(mockFactory).configureWebDriver(mockDriver);
     }
@@ -136,10 +142,13 @@ public class WebDriverServiceTest {
         service = createService(config, null, mockFirstSPIFactory, mockSecondSPIFactory);
 
         // Act
-        WebDriver result = service.createWebDriver();
+        WebDriverReference driverRef = service.createWebDriver();
 
         // Assert
-        assertSame(mockDriver, result);
+        assertNotNull(driverRef);
+        WebDriver driver = driverRef.get();
+
+        assertSame(mockDriver, driver);
         verify(mockSecondSPIFactory).createWebDriver();
         verify(mockSecondSPIFactory).configureWebDriver(mockDriver);
         verify(mockFirstSPIFactory, never()).createWebDriver();
@@ -162,10 +171,13 @@ public class WebDriverServiceTest {
         WebDriverService service = createService(config, null, mockFirstFactory, mockSecondFactory);
 
         // Act
-        WebDriver result = service.createWebDriver();
+        WebDriverReference driverRef = service.createWebDriver();
 
         // Assert
-        assertSame(mockDriver, result);
+        assertNotNull(driverRef);
+        WebDriver driver = driverRef.get();
+
+        assertSame(mockDriver, driver);
         verify(mockSecondFactory).createWebDriver();
         verify(mockSecondFactory).configureWebDriver(mockDriver);
         verify(mockFirstFactory, never()).createWebDriver();
@@ -255,12 +267,15 @@ public class WebDriverServiceTest {
             WebDriverService service = createService(config, grid, mockFactory);
 
             // Act
-            WebDriver result = service.createWebDriver();
+            WebDriverReference driverRef = service.createWebDriver();
 
             // Assert
-            assertSame(mocked.constructed().getFirst(), result);
+            assertNotNull(driverRef);
+            WebDriver driver = driverRef.get();
+
+            assertSame(mocked.constructed().getFirst(), driver);
             verify(mockFactory, never()).createWebDriver();
-            verify(mockFactory).configureWebDriver(result);
+            verify(mockFactory).configureWebDriver(driver);
         }
 
         assertEquals(2, capturedArguments.size());
@@ -417,27 +432,92 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testDestroyWebDriver_withDriver_callsQuit() {
-        WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
-        service.destroyWebDriver(mockDriver);
-        verify(mockDriver).quit();
-    }
-
-    @Test
-    public void testDestroyWebDriver_withNullDriver_doesNothing() {
-        WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
-        service.destroyWebDriver(null);
-    }
-
-    @Test
-    public void testDestroyWebDriver_whenQuitThrows_doesNotPropagateException() {
+    public void testDisposeWebDriver_withDriverRef_callsQuit() {
         // Arrange
         WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
-        doThrow(new RuntimeException("quit")).when(mockDriver).quit();
+        WebDriverReference mockRef = mock(WebDriverReference.class);
+        when(mockRef.get()).thenReturn(mockDriver);
         // Act
-        service.destroyWebDriver(mockDriver);
+        service.disposeWebDriver(mockRef);
         // Assert
         verify(mockDriver).quit();
+        verify(mockRef).clear();
+    }
+
+    @Test
+    public void testDisposeWebDriver_withWrappedDriver_callsWrappedDriverQuit() {
+        // Arrange
+        var settings = withSettings().extraInterfaces(WrapsDriver.class);
+        WebDriver mockWrappedDriver = mock(WebDriver.class, settings);
+        when(((WrapsDriver) mockWrappedDriver).getWrappedDriver()).thenReturn(mockDriver);
+
+        WebDriverReference driverRef = new WebDriverReference(mockWrappedDriver);
+
+        WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
+
+        // Act
+        service.disposeWebDriver(driverRef);
+
+        // Assert
+        verify(mockWrappedDriver).quit();
+        verify(mockDriver, never()).quit();
+    }
+
+    @Test
+    public void testDisposeWebDriver_withNullDriverRef_doesNothing() {
+        WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
+        service.disposeWebDriver(null);
+    }
+
+    @Test
+    public void testDisposeWebDriver_withEmptyWebDriverReference_doesNothing() {
+        // Arrange
+        // We simulate the specific exception thrown by an empty reference.
+        WebDriverReference mockRef = mock(WebDriverReference.class);
+        var ise = new IllegalStateException("WebDriverReference not initialized");
+        doThrow(ise).when(mockRef).get();
+
+        WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
+
+        // Act
+        service.disposeWebDriver(mockRef);
+
+        // Assert
+        verify(mockDriver, never()).quit();
+        verify(mockRef).clear();
+    }
+
+    @Test
+    public void testDisposeWebDriver_whenDriverQuitThrows_doesNotPropagateException() {
+        // Arrange
+        WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
+        WebDriverReference driverRef = new WebDriverReference(mockDriver);
+        doThrow(new RuntimeException("quit")).when(mockDriver).quit();
+        // Act
+        service.disposeWebDriver(driverRef);
+        // Assert
+        verify(mockDriver).quit();
+    }
+
+    @Test
+    public void testDisposeWebDriver_whenReferenceThrows_doesNotPropagateException() {
+        // Arrange
+        // Simulate the reference throwing on ALL method calls. This could happen if the reference
+        // is broken in an unrecoverable way (e.g., the CDI proxy is failing).
+        WebDriverReference mockRef = mock(WebDriverReference.class);
+        RuntimeException re = new RuntimeException("Broken WebDriverReference");
+        doThrow(re).when(mockRef).get();
+        doThrow(re).when(mockRef).clear();
+
+        WebDriverService service = createService(createConfig(WebDriverType.CHROME), null);
+
+        // Act
+        service.disposeWebDriver(mockRef);
+
+        // Assert
+        verify(mockRef).get();
+        verify(mockDriver, never()).quit();
+        verify(mockRef).clear();
     }
 
     private void stubFactory(WebDriverFactory<?> factory, WebDriverConfig config) {
