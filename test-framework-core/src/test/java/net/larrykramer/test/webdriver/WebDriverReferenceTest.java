@@ -22,6 +22,8 @@
 
 package net.larrykramer.test.webdriver;
 
+import java.util.Optional;
+
 import net.larrykramer.test.categories.SmokeTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -237,6 +239,41 @@ public class WebDriverReferenceTest {
         driverRef.set(mockWrappedDriver);
         // Act
         driverRef.as(JavascriptExecutor.class);
+    }
+
+    @Test
+    public void testTryAs_whenDriverImplementsInterface_returnsOptionalWithDriver() {
+        // Arrange
+        WebDriver mockDriver = mockWebDriver(TakesScreenshot.class);
+        driverRef.set(mockDriver);
+        // Act
+        Optional<TakesScreenshot> result = driverRef.tryAs(TakesScreenshot.class);
+        // Assert
+        assertTrue(result.isPresent());
+        assertSame(mockDriver, result.get());
+    }
+
+    @Test
+    public void testTryAs_whenWrappedDriverMissingInterface_returnsOptionalWithUnderlyingDriver() {
+        // Arrange
+        WebDriver mockDriver = mockWebDriver(JavascriptExecutor.class);
+        WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
+        driverRef.set(mockWrappedDriver);
+        // Act
+        Optional<JavascriptExecutor> result = driverRef.tryAs(JavascriptExecutor.class);
+        // Assert
+        assertTrue(result.isPresent());
+        assertSame(mockDriver, result.get());
+    }
+
+    @Test
+    public void testTryAs_whenNoDriverImplementsInterface_returnEmptyOptional() {
+        // Arrange
+        WebDriver mockDriver = mockWebDriver(); // implements nothing extra
+        WebDriver mockWrappedDriver = createWrapsDriver(mockDriver); // implements nothing extra
+        driverRef.set(mockWrappedDriver);
+        // Act & Assert
+        assertFalse(driverRef.tryAs(TakesScreenshot.class).isPresent());
     }
 
     @Test

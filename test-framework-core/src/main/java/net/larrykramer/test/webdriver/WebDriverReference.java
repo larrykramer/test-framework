@@ -23,6 +23,7 @@
 package net.larrykramer.test.webdriver;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -192,6 +193,32 @@ public class WebDriverReference {
      */
     public <T> T as(Class<T> interfaceClass) {
         return interfaceClass.cast(get(interfaceClass));
+    }
+
+    /**
+     * Attempts to view the current WebDriver as the specified type.
+     * <p>
+     * This is a non-throwing variant of {@link #as(Class)}: it tries to obtain
+     * the current driver as the requested interface (checking the wrapped
+     * driver first and then the underlying unwrapped driver), but returns
+     * {@link Optional#empty()} instead of throwing a {@link ClassCastException}
+     * when the driver does not implement the given type.
+     *
+     * @param <T>            the interface or class that the driver is expected
+     *                       to implement
+     * @param interfaceClass the interface or class token; must not be
+     *                       {@code null}
+     * @return an {@code Optional} containing the current WebDriver as
+     *         {@code T} if supported; otherwise {@code Optional.empty()}
+     * @throws IllegalStateException if no WebDriver has been set
+     * @see #as(Class)
+     */
+    public <T> Optional<T> tryAs(Class<T> interfaceClass) {
+        try {
+            return Optional.of(as(interfaceClass));
+        } catch (ClassCastException e) {
+            return Optional.empty();
+        }
     }
 
     /**
