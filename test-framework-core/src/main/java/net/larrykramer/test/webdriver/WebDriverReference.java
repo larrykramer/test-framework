@@ -149,7 +149,7 @@ public class WebDriverReference {
      * @return the current WebDriver that also implements {@code interfaceClass}
      * @throws ClassCastException    if the current driver does not implement
      *                               {@code interfaceClass} on either the
-     *                               wrapped or underlying driver
+     *                               wrapped or underlying unwrapped driver
      * @throws IllegalStateException if no WebDriver has been set
      * @throws NullPointerException  if {@code interfaceClass} is {@code null}
      */
@@ -187,8 +187,9 @@ public class WebDriverReference {
      * @return the current WebDriver as {@code T}
      * @throws ClassCastException    if the current driver does not implement
      *                               {@code interfaceClass} on either the
-     *                               wrapped or underlying driver
+     *                               wrapped or underlying unwrapped driver
      * @throws IllegalStateException if no WebDriver has been set
+     * @throws NullPointerException  if {@code interfaceClass} is {@code null}
      * @see #get(Class)
      */
     public <T> T as(Class<T> interfaceClass) {
@@ -211,6 +212,7 @@ public class WebDriverReference {
      * @return an {@code Optional} containing the current WebDriver as
      *         {@code T} if supported; otherwise {@code Optional.empty()}
      * @throws IllegalStateException if no WebDriver has been set
+     * @throws NullPointerException  if {@code interfaceClass} is {@code null}
      * @see #as(Class)
      */
     public <T> Optional<T> tryAs(Class<T> interfaceClass) {
