@@ -34,7 +34,7 @@ import org.openqa.selenium.WrapsDriver;
 import static net.larrykramer.test.util.SharedUtils.identityToString;
 
 /**
- * Holder for a Selenium {@link WebDriver} instance used within scenario scope.
+ * Holder for a Selenium {@code WebDriver} instance used within scenario scope.
  * <p>
  * This CDI bean provides an indirection layer between components that create a
  * {@code WebDriver} and components that use it. A WebDriver can be given
@@ -53,10 +53,9 @@ import static net.larrykramer.test.util.SharedUtils.identityToString;
  * <li>Framework code calls {@link #clear()} when the scenario ends.
  * </ul>
  *
- * This class itself is {@linkplain Vetoed vetoed} from CDI discovery and is
- * exposed as a scenario-scoped CDI bean via the
- * {@code @Produces @ScenarioScoped} producer method in
- * {@code WebDriverService}.
+ * This class itself is vetoed from CDI discovery and is exposed as a
+ * scenario-scoped CDI bean via the {@code @Produces @ScenarioScoped} producer
+ * method in {@code WebDriverService}.
  *
  * @see net.larrykramer.test.service.WebDriverService WebDriverService
  */
@@ -82,7 +81,8 @@ public class WebDriverReference {
     }
 
     /**
-     * Creates a new {@code WebDriverReference} with the given WebDriver.
+     * Creates a new {@code WebDriverReference} with the given
+     * {@code WebDriver}.
      *
      * @param driver the WebDriver to hold; must not be {@code null}
      * @throws NullPointerException if {@code driver} is {@code null}
@@ -95,18 +95,17 @@ public class WebDriverReference {
     /**
      * Sets the reference to {@code driver}.
      * <p>
-     * This method unwraps the given {@code WebDriver} by following any chain of
-     * {@link WrapsDriver} to the ultimate wrapped driver.
+     * This method unwraps the given {@code WebDriver} by following any chain
+     * of {@code WrapsDriver} to the ultimate wrapped driver.
      *
      * @param driver the WebDriver to hold; must not be {@code null}
      * @throws NullPointerException if {@code driver} is {@code null}
-     * @apiNote This method assumes that the given driver is not a CDI proxy and
-     *          relies on the contract of
-     *          {@link WebDriverFactory#createWebDriver()}, which specifies that
-     *          factories return a new, unmanaged (non-CDI-proxied)
-     *          {@link WebDriver} instance. Framework code must therefore pass
-     *          the concrete driver instance returned by the factory into this
-     *          method.
+     * @apiNote This method assumes that the given driver is not a CDI proxy
+     *          and relies on the contract of {@link DriverFactory#create()},
+     *          which specifies that factories return a new, unmanaged
+     *          (non-CDI-proxied) {@code WebDriver} instance. Framework code
+     *          must therefore pass the concrete {@code WebDriver} instance
+     *          returned by the factory into this method.
      */
     public void set(WebDriver driver) {
         this.driver = Objects.requireNonNull(driver);
@@ -116,11 +115,11 @@ public class WebDriverReference {
     /**
      * Returns the current WebDriver.
      * <p>
-     * This returns the concrete {@link WebDriver} instance that was last given
+     * This returns the concrete {@code WebDriver} instance that was last given
      * to {@link #set(WebDriver)} (or the constructor), without any additional
      * unwrapping. In contrast, {@link #getUnderlyingDriver()} returns the
      * underlying delegate obtained from that instance (following
-     * {@link WrapsDriver} chains).
+     * {@code WrapsDriver} chains).
      *
      * @return the current WebDriver
      * @throws IllegalStateException if no WebDriver has been set
@@ -202,7 +201,7 @@ public class WebDriverReference {
      * This is a non-throwing variant of {@link #as(Class)}: it tries to obtain
      * the current driver as the requested interface (checking the wrapped
      * driver first and then the underlying unwrapped driver), but returns
-     * {@link Optional#empty()} instead of throwing a {@link ClassCastException}
+     * {@link Optional#empty()} instead of throwing a {@code ClassCastException}
      * when the driver does not implement the given type.
      *
      * @param <T>            the interface or class that the driver is expected
@@ -229,13 +228,15 @@ public class WebDriverReference {
      * <strong>Usage note:</strong><br>
      * This method should only be used when you strictly need access to
      * vendor-specific methods and explicitly want to bypass any registered
-     * {@link WrapsDriver}-based wrappers. For standard WebDriver interactions
+     * {@code WrapsDriver}-based wrappers. For standard WebDriver interactions
      * (including Selenium extension interfaces such as {@code TakesScreenshot},
      * {@code JavascriptExecutor}, etc.), prefer {@link #get()} or
      * {@link #get(Class)}.
      *
      * @return the underlying unwrapped driver of the current WebDriver
      * @throws IllegalStateException if no WebDriver has been set
+     * @see #get()
+     * @see #get(Class)
      */
     public WebDriver getUnderlyingDriver() {
         if (underlyingDriver == null) {

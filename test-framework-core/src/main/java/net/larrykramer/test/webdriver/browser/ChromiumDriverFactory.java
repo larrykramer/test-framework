@@ -23,7 +23,7 @@
 package net.larrykramer.test.webdriver.browser;
 
 import net.larrykramer.test.config.ChromiumConfig;
-import net.larrykramer.test.webdriver.WebDriverFactory;
+import net.larrykramer.test.webdriver.DriverFactory;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chromium.ChromiumOptions;
@@ -33,7 +33,7 @@ import org.openqa.selenium.chromium.ChromiumOptions;
  * and Microsoft Edge.
  * <p>
  * This sealed class centralizes the option handling that translates a
- * {@link ChromiumConfig} into {@link ChromiumOptions} prior to driver
+ * {@code ChromiumConfig} into {@code ChromiumOptions} prior to driver
  * creation.
  *
  * @param <T> the concrete Chromium options type
@@ -42,17 +42,17 @@ import org.openqa.selenium.chromium.ChromiumOptions;
  * @see EdgeDriverFactory
  */
 abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
-        extends WebDriverFactory<T>
+        extends DriverFactory<T>
         permits ChromeDriverFactory, EdgeDriverFactory {
     /**
-     * Applies Chromium-specific post-construction configuration to the supplied
-     * WebDriver.
+     * Applies Chromium-specific post-construction configuration to the
+     * given {@code WebDriver}.
      *
-     * @param driver the Chromium-based WebDriver instance to configure
+     * @param driver the Chromium-based {@code WebDriver} instance to configure
      */
     @Override
-    public void configureWebDriver(WebDriver driver) {
-        super.configureWebDriver(driver); // apply common config
+    public void configure(WebDriver driver) {
+        super.configure(driver); // apply common config
         deleteAllCookies(driver.manage());
         // Window sizing is handled via buildChromiumOptions, so no sizing is needed here.
     }
@@ -62,7 +62,8 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
      *
      * @param options        the Chromium options that should be configured
      * @param chromiumConfig the Chromium-specific configuration
-     * @throws IllegalArgumentException if the configured window width or height is negative or 0
+     * @throws IllegalArgumentException if the configured window width or
+     *                                  height is negative or 0
      */
     protected void buildChromiumOptions(T options, ChromiumConfig chromiumConfig) {
         chromiumConfig.executable.ifPresent(options::setBinary);

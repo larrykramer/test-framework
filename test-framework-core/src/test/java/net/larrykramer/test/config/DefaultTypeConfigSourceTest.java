@@ -36,7 +36,7 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.*;
 
 @RunWith(Enclosed.class)
-public class DefaultWebDriverConfigSourceTest {
+public class DefaultTypeConfigSourceTest {
     @RunWith(Parameterized.class)
     public static class ParameterizedTest {
         private final String osName;
@@ -85,13 +85,13 @@ public class DefaultWebDriverConfigSourceTest {
 
                 // Act
                 String result;
-                result = IsolatedClassLoader.doInvoke(DefaultWebDriverConfigSource.class, clazz -> {
-                    // Reflectively invoke 'new DefaultWebDriverConfigSource().getValue' and return
+                result = IsolatedClassLoader.doInvoke(DefaultTypeConfigSource.class, clazz -> {
+                    // Reflectively invoke 'new DefaultTypeConfigSource().getValue' and return
                     // its result. A String from the bootstrap loader can cross the class-loader
                     // boundaries without adaptation.
                     final Object instance = clazz.getConstructor().newInstance();
                     final Method method = clazz.getMethod("getValue", String.class);
-                    return (String) method.invoke(instance, "webdriver.type");
+                    return (String) method.invoke(instance, "driver.type");
                 });
 
                 // Assert
@@ -101,11 +101,11 @@ public class DefaultWebDriverConfigSourceTest {
     }
 
     public static class NonParameterizedTest {
-        private DefaultWebDriverConfigSource configSource;
+        private DefaultTypeConfigSource configSource;
 
         @Before
         public void setUp() {
-            configSource = new DefaultWebDriverConfigSource();
+            configSource = new DefaultTypeConfigSource();
         }
 
         @Test
@@ -115,8 +115,8 @@ public class DefaultWebDriverConfigSourceTest {
             // Assert
             assertNotNull(properties);
             assertEquals(1, properties.size());
-            assertTrue(properties.containsKey("webdriver.type"));
-            assertNotNull(properties.get("webdriver.type"));
+            assertTrue(properties.containsKey("driver.type"));
+            assertNotNull(properties.get("driver.type"));
         }
 
         @Test
@@ -125,7 +125,7 @@ public class DefaultWebDriverConfigSourceTest {
             Set<String> propertyNames = configSource.getPropertyNames();
             // Assert
             assertNotNull(propertyNames);
-            assertEquals(Set.of("webdriver.type"), propertyNames);
+            assertEquals(Set.of("driver.type"), propertyNames);
         }
 
         @Test

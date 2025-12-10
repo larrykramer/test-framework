@@ -27,8 +27,8 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.logging.*;
 
-import net.larrykramer.test.config.WebDriverConfig;
-import net.larrykramer.test.config.WebDriverType;
+import net.larrykramer.test.config.DriverConfig;
+import net.larrykramer.test.config.DriverType;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.openqa.selenium.*;
@@ -38,56 +38,56 @@ import static org.mockito.Mockito.*;
 import static org.openqa.selenium.remote.CapabilityType.ACCEPT_INSECURE_CERTS;
 import static org.openqa.selenium.remote.CapabilityType.PROXY;
 
-public class WebDriverFactoryTest {
+public class DriverFactoryTest {
     @Test
-    public void testGetType_givenSPIFactory_returnsSPITypeAndRejectsCanonicalName() {
+    public void testGetDriverType_givenSPIFactory_returnsSPIDriverTypeAndRejectsCanonicalName() {
         // Arrange
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, null, null);
+        SPIDriverFactory factory = new SPIDriverFactory(null, null, null);
         // Act
-        WebDriverType result = factory.getType();
+        DriverType result = factory.getDriverType();
         // Assert
-        assertEquals(WebDriverType.SPI, result);
+        assertEquals(DriverType.SPI, result);
         var e = assertThrows(UnsupportedOperationException.class, result::getCanonicalName);
         assertEquals("SPI does not have a canonical driver name", e.getMessage());
     }
 
     @Test
-    public void testCreateWebDriver_withConfig_invokesSubclassAndReturnsWebDriver() {
+    public void testCreate_withConfig_invokesSubclassAndReturnsWebDriver() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
         WebDriver mockDriver = mock(WebDriver.class);
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.allowInsecureCerts = true;
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, mockDriver);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, mockDriver);
 
         // Act
-        WebDriver result = factory.createWebDriver();
+        WebDriver result = factory.create();
 
         // Assert
         assertSame(mockDriver, result);
-        assertSame(options, factory.lastOptions);
+        assertSame(options, factory.lastCapabilities);
         assertSame(config, factory.config);
-        assertEquals(Boolean.TRUE, factory.lastOptions.getCapability(ACCEPT_INSECURE_CERTS));
-        assertNull(factory.lastOptions.getCapability(PROXY));
+        assertEquals(Boolean.TRUE, factory.lastCapabilities.getCapability(ACCEPT_INSECURE_CERTS));
+        assertNull(factory.lastCapabilities.getCapability(PROXY));
     }
 
     @Test
-    public void testCreateWebDriver_withNullOptions_passesNullToSubclass() {
+    public void testCreate_withNullOptions_passesNullToSubclass() {
         // Arrange
         WebDriver mockDriver = mock(WebDriver.class);
-        WebDriverConfig config = createConfig();
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, config, mockDriver);
+        DriverConfig config = createConfig();
+        SPIDriverFactory factory = new SPIDriverFactory(null, config, mockDriver);
         // Act
-        WebDriver result = factory.createWebDriver();
+        WebDriver result = factory.create();
         // Assert
         assertSame(mockDriver, result);
-        assertNull(factory.lastOptions);
+        assertNull(factory.lastCapabilities);
         assertSame(config, factory.config);
     }
 
     @Test
-    public void testConfigureWebDriver_withPositiveImplicitTimeout_setsImplicitWait() {
+    public void testConfigure_withPositiveImplicitTimeout_setsImplicitWait() {
         // Arrange
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
@@ -95,20 +95,20 @@ public class WebDriverFactoryTest {
         when(mockDriver.manage()).thenReturn(mockOptions);
         when(mockOptions.timeouts()).thenReturn(mockTimeouts);
 
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.implicitTimeout = 500L;
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
 
         // Act
-        factory.configureWebDriver(mockDriver);
+        factory.configure(mockDriver);
 
         // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(500L));
     }
 
     @Test
-    public void testConfigureWebDriver_withNegativeImplicitTimeout_doesNotSetImplicitWait() {
+    public void testConfigure_withNegativeImplicitTimeout_doesNotSetImplicitWait() {
         // Arrange
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
@@ -116,59 +116,59 @@ public class WebDriverFactoryTest {
         when(mockDriver.manage()).thenReturn(mockOptions);
         when(mockOptions.timeouts()).thenReturn(mockTimeouts);
 
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.implicitTimeout = -10L;
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
 
         // Act
-        factory.configureWebDriver(mockDriver);
+        factory.configure(mockDriver);
 
         // Assert
         verify(mockTimeouts, never()).implicitlyWait(any(Duration.class));
     }
 
     @Test
-    public void testGetOptions_givenDefaultImplementation_returnsNull() {
+    public void testGetCapabilities_givenDefaultImplementation_returnsNull() {
         // Arrange
-        WebDriverFactory<MutableCapabilities> factory = new WebDriverFactory<>() {
+        DriverFactory<MutableCapabilities> factory = new DriverFactory<>() {
             @Override
-            public WebDriverType getType() {
+            public DriverType getDriverType() {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public WebDriver createWebDriver() {
+            public WebDriver create() {
                 throw new UnsupportedOperationException();
             }
         };
         // Act & Assert
-        assertNull(factory.getOptions());
+        assertNull(factory.getCapabilities());
     }
 
     @Test
-    public void testGetOptions_whenBuildOptionsReturnsNull_returnsNull() {
+    public void testGetCapabilities_whenBuildOptionsReturnsNull_returnsNull() {
         // Arrange
-        WebDriverConfig config = createConfig();
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, config, null);
+        DriverConfig config = createConfig();
+        SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
         // Assert
         assertNull(result);
         assertSame(config, factory.config);
     }
 
     @Test
-    public void testGetOptions_givenAllowInsecureCertsIsFalse_setsCapabilityToFalse() {
+    public void testGetCapabilities_givenAllowInsecureCertsIsFalse_setsCapabilityToFalse() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.allowInsecureCerts = false;
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         assertSame(options, result);
@@ -177,16 +177,16 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenHttpProxyWithoutPort_setsHttpProxyOnly() {
+    public void testGetCapabilities_givenHttpProxyWithoutPort_setsHttpProxyOnly() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("http://proxy.example.com"));
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -198,16 +198,16 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenHttpProxyWithPort_setsHttpProxyWithPort() {
+    public void testGetCapabilities_givenHttpProxyWithPort_setsHttpProxyWithPort() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("//proxy.example.com:8181"));
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -217,16 +217,16 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenIPv6HttpProxy_setsHttpProxyWithBrackets() {
+    public void testGetCapabilities_givenIPv6HttpProxy_setsHttpProxyWithBrackets() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("http://[fe80::1]:8080"));
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -237,16 +237,16 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenHttpsProxy_setsHttpAndSslProxy() {
+    public void testGetCapabilities_givenHttpsProxy_setsHttpAndSslProxy() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://secure.example:8443"));
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -256,16 +256,16 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenSocksProxy_setsVersion5AndProxy() {
+    public void testGetCapabilities_givenSocksProxy_setsVersion5AndProxy() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://socks.example:1080"));
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -277,16 +277,16 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenSocks5Proxy_setsVersion5AndProxy() {
+    public void testGetCapabilities_givenSocks5Proxy_setsVersion5AndProxy() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("SOCKS5://socks.example:1080"));
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -298,16 +298,16 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenSocks4Proxy_setsVersion4() {
+    public void testGetCapabilities_givenSocks4Proxy_setsVersion4() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks4://legacy.example:9050"));
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -317,18 +317,18 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenSocksProxyWithCredentials_setsAuthentication() {
+    public void testGetCapabilities_givenSocksProxyWithCredentials_setsAuthentication() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://auth.example:1080"));
         config.proxyUser = Optional.of(" user ");
         config.proxyPassword = Optional.of(" pass ");
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -338,18 +338,18 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenSocksProxyWithMissingPassword_skipsAuthentication() {
+    public void testGetCapabilities_givenSocksProxyWithMissingPassword_skipsAuthentication() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://auth.example:1080"));
         config.proxyUser = Optional.of(" user ");
         config.proxyPassword = Optional.of("");
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -359,17 +359,17 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenEmptyNonProxyHosts_doesNotSetNoProxy() {
+    public void testGetCapabilities_givenEmptyNonProxyHosts_doesNotSetNoProxy() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://proxy.example.com:8443"));
         config.nonProxyHosts = Optional.of("");
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -378,17 +378,17 @@ public class WebDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenNonProxyHosts_trimsAndSetsNoProxy() {
+    public void testGetCapabilities_givenNonProxyHosts_trimsAndSetsNoProxy() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://proxy.example.com:8443"));
         config.nonProxyHosts = Optional.of(" |example.com|| internal.local | ");
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        MutableCapabilities result = factory.getOptions();
+        MutableCapabilities result = factory.getCapabilities();
 
         // Assert
         Proxy proxy = (Proxy) result.getCapability(PROXY);
@@ -397,22 +397,22 @@ public class WebDriverFactoryTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGetOptions_givenProxyWithUnsupportedScheme_throwsIllegalArgumentException() {
+    public void testGetCapabilities_givenUnsupportedProxyScheme_throwsIllegalArgumentException() {
         // Arrange
         MutableCapabilities options = new MutableCapabilities();
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("ftp://invalid.example:21"));
 
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
 
         // Act
-        factory.getOptions();
+        factory.getCapabilities();
     }
 
     @Test
     public void testDeleteAllCookies_whenSuccessful_invokesOptionsDeleteAllCookies() {
         // Arrange
-        SPIWebDriverFactory factory = new SPIWebDriverFactory(null, createConfig(), null);
+        SPIDriverFactory factory = new SPIDriverFactory(null, createConfig(), null);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         // Act
         factory.deleteAllCookies(mockOptions);
@@ -426,7 +426,7 @@ public class WebDriverFactoryTest {
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         doThrow(new WebDriverException("deleteAllCookies")).when(mockOptions).deleteAllCookies();
 
-        Logger logger = Logger.getLogger(WebDriverFactory.class.getName());
+        Logger logger = Logger.getLogger(DriverFactory.class.getName());
         Level originalLevel = logger.getLevel();
         boolean useParentHandlers = logger.getUseParentHandlers();
 
@@ -438,7 +438,7 @@ public class WebDriverFactoryTest {
         logger.setUseParentHandlers(false);
 
         try {
-            SPIWebDriverFactory factory = new SPIWebDriverFactory(null, createConfig(), null);
+            SPIDriverFactory factory = new SPIDriverFactory(null, createConfig(), null);
 
             // Act
             factory.deleteAllCookies(mockOptions);
@@ -458,10 +458,10 @@ public class WebDriverFactoryTest {
         }
     }
 
-    private static WebDriverConfig createConfig() {
-        WebDriverConfig config = new WebDriverConfig();
+    private static DriverConfig createConfig() {
+        DriverConfig config = new DriverConfig();
 
-        config.type = WebDriverType.SPI;
+        config.type = DriverType.SPI;
         config.spi = Optional.empty();
 
         config.headless = false;
@@ -481,32 +481,36 @@ public class WebDriverFactoryTest {
         return config;
     }
 
-    private static class SPIWebDriverFactory extends WebDriverFactory<MutableCapabilities> {
-        private final MutableCapabilities options;
+    private static class SPIDriverFactory extends DriverFactory<MutableCapabilities> {
+        private final MutableCapabilities capabilities;
         private final WebDriver driver;
 
-        MutableCapabilities lastOptions;
+        MutableCapabilities lastCapabilities;
 
-        SPIWebDriverFactory(MutableCapabilities options, WebDriverConfig config, WebDriver driver) {
-            this.options = options;
+        SPIDriverFactory(MutableCapabilities caps, DriverConfig config, WebDriver driver) {
+            this.capabilities = caps;
             this.config = config;
             this.driver = driver;
         }
 
         @Override
-        public WebDriverType getType() {
-            return WebDriverType.SPI;
+        public DriverType getDriverType() {
+            return DriverType.SPI;
         }
 
         @Override
-        public WebDriver createWebDriver() {
-            lastOptions = getOptions();
+        public WebDriver create() {
+            lastCapabilities = getCapabilities();
             return driver;
         }
 
         @Override
-        public MutableCapabilities buildOptions() {
-            return options;
+        public MutableCapabilities getCapabilities() {
+            // We must simulate the behavior of a real factory.
+            if (capabilities != null) {
+                applyCommonCapabilities(capabilities);
+            }
+            return capabilities;
         }
     }
 }

@@ -25,7 +25,7 @@ package net.larrykramer.test.webdriver.browser;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import net.larrykramer.test.config.ChromiumConfig;
-import net.larrykramer.test.config.WebDriverType;
+import net.larrykramer.test.config.DriverType;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chromium.ChromiumOptions;
@@ -33,45 +33,46 @@ import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 
 /**
- * Factory that constructs Microsoft Edge {@link WebDriver} instances.
+ * Factory that constructs Microsoft Edge {@code WebDriver} instances.
  */
 @ApplicationScoped
 public final class EdgeDriverFactory extends ChromiumDriverFactory<EdgeOptions> {
     @Inject
-    @ConfigProperties(prefix = "webdriver.edge")
+    @ConfigProperties(prefix = "driver.edge")
     private ChromiumConfig edgeConfig;
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public WebDriverType getType() {
-        return WebDriverType.EDGE;
+    public DriverType getDriverType() {
+        return DriverType.EDGE;
     }
 
     /**
-     * Produces a Microsoft Edge {@link WebDriver} using the capabilities
-     * derived from {@link #getOptions()}.
+     * Produces a Microsoft Edge {@code WebDriver} using the capabilities
+     * derived from {@link #getCapabilities()}.
      *
-     * @return a Microsoft Edge WebDriver instance
+     * @return a new Microsoft Edge {@code WebDriver} instance
      */
     @Override
-    public WebDriver createWebDriver() {
-        return new EdgeDriver(getOptions());
+    public WebDriver create() {
+        return new EdgeDriver(getCapabilities());
     }
 
 
     /**
-     * Creates the Edge-specific options from the shared Chromium and Microsoft
-     * Edge configuration settings.
+     * Returns the Microsoft Edge-specific capabilities from the shared
+     * Chromium and Microsoft Edge configuration settings.
      *
-     * @return the Edge-specific options
+     *  @return the Microsoft Edge-specific capabilities
      * @see ChromiumDriverFactory#buildChromiumOptions(ChromiumOptions, ChromiumConfig)
      */
     @Override
-    protected EdgeOptions buildOptions() {
+    public EdgeOptions getCapabilities() {
         final EdgeOptions options = new EdgeOptions();
         buildChromiumOptions(options, edgeConfig);
+        applyCommonCapabilities(options);
         return options;
     }
 }

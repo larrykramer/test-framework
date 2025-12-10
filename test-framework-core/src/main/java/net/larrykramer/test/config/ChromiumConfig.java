@@ -36,7 +36,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperties;
  * command-line arguments that are common to the underlying Chromium
  * architecture.
  */
-@ConfigProperties(prefix = "webdriver.chromium") // default prefix; can be overridden
+@ConfigProperties(prefix = "driver.chromium") // default prefix; can be overridden
 @Dependent
 public class ChromiumConfig {
     /**

@@ -22,23 +22,25 @@
 
 package net.larrykramer.test.webdriver.browser;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import net.larrykramer.test.config.ChromiumConfig;
-import net.larrykramer.test.config.WebDriverConfig;
-import net.larrykramer.test.config.WebDriverType;
+import net.larrykramer.test.config.DriverConfig;
+import net.larrykramer.test.config.DriverType;
 import org.junit.Before;
 import org.junit.Test;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
+import org.openqa.selenium.remote.CapabilityType;
 
-import static net.larrykramer.test.webdriver.FactoryTestHelper.setInjectedConfigField;
-import static net.larrykramer.test.webdriver.FactoryTestHelper.setWebDriverConfig;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setInjectedConfigField;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setWebDriverConfig;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -58,20 +60,20 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetDriverType_whenCalled_returnsEdgeWebDriverType() {
+    public void testGetDriverType_whenCalled_returnsEdgeDriverType() {
         // Act
-        WebDriverType result = factory.getType();
+        DriverType result = factory.getDriverType();
         // Assert
-        assertEquals(WebDriverType.EDGE, result);
+        assertEquals(DriverType.EDGE, result);
         assertEquals("MicrosoftEdge", result.getCanonicalName());
     }
 
     @Test
-    public void testCreateWebDriver_whenCalled_returnsWebDriverInstance() {
+    public void testCreate_whenCalled_returnsWebDriverInstance() {
         // Arrange
         try (var mocked = mockConstruction(EdgeDriver.class)) {
             // Act
-            WebDriver driver = factory.createWebDriver();
+            WebDriver driver = factory.create();
             // Assert
             assertEquals(1, mocked.constructed().size());
             assertSame(mocked.constructed().getFirst(), driver);
@@ -79,7 +81,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testConfigureWebDriver_whenCalled_appliesCommonAndChromiumConfiguration() {
+    public void testConfigure_whenCalled_appliesCommonAndChromiumConfiguration() {
         // Arrange
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
@@ -87,12 +89,12 @@ public class EdgeDriverFactoryTest {
         when(mockDriver.manage()).thenReturn(mockOptions);
         when(mockOptions.timeouts()).thenReturn(mockTimeouts);
 
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.implicitTimeout = 400L;
         setWebDriverConfig(factory, config);
 
         // Act
-        factory.configureWebDriver(mockDriver);
+        factory.configure(mockDriver);
 
         // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(400L));
@@ -101,9 +103,26 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testBuildOptions_withEdgeAndGlobalOptions_appliesExpectedEdgeOptions() {
+    public void testGetCapabilities_whenCalled_appliesCommonCapabilities() {
         // Arrange
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
+        config.allowInsecureCerts = true;
+        config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
+        setWebDriverConfig(factory, config);
+
+        // Act
+        EdgeOptions result = factory.getCapabilities();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(Boolean.TRUE, result.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
+        assertNotNull(result.getCapability(CapabilityType.PROXY));
+    }
+
+    @Test
+    public void testGetCapabilities_withEdgeAndGlobalOptions_appliesExpectedEdgeOptions() {
+        // Arrange
+        DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
         config.maximize = false;
@@ -113,7 +132,7 @@ public class EdgeDriverFactoryTest {
         setEdgeConfig(chromium);
 
         // Act
-        EdgeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.getCapabilities();
 
         // Assert
         assertNotNull(options);
@@ -128,9 +147,9 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testBuildOptions_withMaximizeTrueAndWindowSize_addsOnlyWindowSizeArgument() {
+    public void testGetCapabilities_withMaximizeTrueAndWindowSize_addsOnlyWindowSizeArgument() {
         // Arrange
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = false;
         config.maximize = true;
@@ -141,7 +160,7 @@ public class EdgeDriverFactoryTest {
         setEdgeConfig(chromium);
 
         // Act
-        EdgeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.getCapabilities();
 
         // Assert
         assertNotNull(options);
@@ -153,16 +172,16 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testBuildOptions_withMaximizeTrueAndNoWindowSize_addsStartMaximizedArgument() {
+    public void testGetCapabilities_withMaximizeTrueAndNoWindowSize_addsStartMaximizedArgument() {
         // Arrange
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.headless = false;
         config.maximize = true;
         config.windowSize = Optional.empty();
         setWebDriverConfig(factory, config);
 
         // Act
-        EdgeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.getCapabilities();
 
         // Assert
         assertNotNull(options);
@@ -173,9 +192,9 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testBuildOptions_withStartMaximizedArgument_doesNotDuplicateArgument() {
+    public void testGetCapabilities_withStartMaximizedArgument_doesNotDuplicateArgument() {
         // Arrange
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = false;
         config.maximize = true;
@@ -185,7 +204,7 @@ public class EdgeDriverFactoryTest {
         setEdgeConfig(chromium);
 
         // Act
-        EdgeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.getCapabilities();
 
         // Assert
         assertNotNull(options);
@@ -197,15 +216,15 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testBuildOptions_withWindowSize_addsWindowSizeArgument() {
+    public void testGetCapabilities_withWindowSize_addsWindowSizeArgument() {
         // Arrange
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.headless = false;
         config.windowSize = Optional.of(new Dimension(800, 600));
         setWebDriverConfig(factory, config);
 
         // Act
-        EdgeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.getCapabilities();
 
         // Assert
         assertNotNull(options);
@@ -216,9 +235,9 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testBuildOptions_withHeadlessArgument_doesNotDuplicateHeadlessOption() {
+    public void testGetCapabilities_withHeadlessArgument_doesNotDuplicateHeadlessOption() {
         // Arrange
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
         chromium.executable = Optional.empty();
@@ -227,7 +246,7 @@ public class EdgeDriverFactoryTest {
         setEdgeConfig(chromium);
 
         // Act
-        EdgeOptions options = factory.buildOptions();
+        EdgeOptions options = factory.getCapabilities();
 
         // Assert
         assertNotNull(options);
@@ -246,19 +265,19 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testBuildOptions_withZeroHeightWindowSize_throwsIllegalArgumentException() {
+    public void testGetCapabilities_withZeroHeightWindowSize_throwsIllegalArgumentException() {
         // Arrange
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.windowSize = Optional.of(new Dimension(800, 0));
         setWebDriverConfig(factory, config);
         // Act
-        factory.buildOptions();
+        factory.getCapabilities();
     }
 
-    private static WebDriverConfig createConfig() {
-        WebDriverConfig config = new WebDriverConfig();
+    private static DriverConfig createConfig() {
+        DriverConfig config = new DriverConfig();
 
-        config.type = WebDriverType.EDGE;
+        config.type = DriverType.EDGE;
         config.spi = Optional.empty();
 
         config.headless = false;

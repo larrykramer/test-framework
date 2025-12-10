@@ -24,7 +24,6 @@ package net.larrykramer.test.service;
 
 import java.net.*;
 import java.util.*;
-import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,10 +33,10 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import net.larrykramer.test.cdi.ScenarioScoped;
+import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.GridConfig;
-import net.larrykramer.test.config.WebDriverConfig;
-import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.webdriver.WebDriverFactory;
+import net.larrykramer.test.config.DriverConfig;
+import net.larrykramer.test.webdriver.DriverFactory;
 import net.larrykramer.test.webdriver.WebDriverReference;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.*;
@@ -50,65 +49,61 @@ import static org.openqa.selenium.remote.CapabilityType.PLATFORM_NAME;
 
 /**
  * Provides centralized creation and lifecycle management of Selenium
- * {@link WebDriver} instances for the test suite.
+ * {@code WebDriver} instances for the test suite.
  * <p>
- * {@code WebDriverService} is an
- * {@link ApplicationScoped @ApplicationScoped} CDI bean that ties together the
- * resolved {@link WebDriverConfig configuration} and all discovered
- * {@link WebDriverFactory} implementations. At startup, it classifies every
- * factory by {@link WebDriverType}, allowing the framework to efficiently
- * resolve the correct factory when a WebDriver is requested.
+ * {@code WebDriverService} is an {@code @ApplicationScoped} CDI bean that ties
+ * together the resolved {@linkplain DriverConfig configuration} and all
+ * discovered {@code DriverFactory} implementations.
  * <p>
- * The service exposes a {@link Produces @Produces}
- * {@link ScenarioScoped @ScenarioScoped} method that creates and configures a
- * {@link WebDriver} for the current scenario. It supports both local execution
- * and remote execution on a Selenium Grid by instantiating a
- * {@link RemoteWebDriver} with the capabilities derived from the configuration.
+ * The service exposes a {@code @Produces} {@code @ScenarioScoped} method that
+ * creates and configures a {@code WebDriver} for the current scenario. It
+ * supports both local execution and remote execution on a Selenium Grid by
+ * instantiating a {@code RemoteWebDriver} with the capabilities derived from
+ * the configuration.
  * <p>
  * Complementing the producer, the
  * {@linkplain #disposeWebDriver(WebDriverReference) disposer} method ensures
- * WebDriver sessions are terminated and resources are released, while
+ * {@code WebDriver} sessions are terminated and resources are released, while
  * gracefully handling any driver-specific shutdown errors.
  */
 @ApplicationScoped
 public class WebDriverService {
     private static final Logger LOGGER = Logger.getLogger(WebDriverService.class.getName());
 
-    private final WebDriverConfig webDriverConfig;
+    private final DriverConfig driverConfig;
     private final GridConfig gridConfig;
 
-    private final Map<WebDriverType, Map<String, WebDriverFactory<?>>> factories;
+    private final Map<DriverType, Map<String, DriverFactory<?>>> factories;
 
     /**
-     * Constructs the service and indexes available {@link WebDriverFactory}
-     * instances by {@link WebDriverType}.
+     * Constructs the service and indexes available {@code DriverFactory}
+     * instances by {@code DriverType}.
      * <p>
      * For non-SPI driver types, the inner map contains a single factory keyed
      * by the canonical driver name returned by
-     * {@link WebDriverType#getCanonicalName()}. If multiple factories are
+     * {@link DriverType#getCanonicalName()}. If multiple factories are
      * discovered for the same non-SPI type, the previously registered factory
      * is replaced and a warning is logged.
      * <p>
-     * For {@link WebDriverType#SPI}, multiple factories may coexist and are
-     * keyed by their fully qualified class name. The SPI map is intentionally
-     * left mutable to avoid repeated defensive copying when many SPI factories
-     * are present; the outer map is made unmodifiable.
+     * For {@link DriverType#SPI}, multiple factories may coexist and are keyed
+     * by their fully qualified class name. The SPI map is intentionally left
+     * mutable to avoid repeated defensive copying when many SPI factories are
+     * present; the outer map is made unmodifiable.
      *
-     * @param webDriverConfig the resolved, type-safe WebDriver configuration
-     * @param gridConfig      the resolved, type-safe grid configuration
-     * @param factories       all discovered {@link WebDriverFactory}
-     *                        implementations
+     * @param driverConfig the resolved, type-safe WebDriver configuration
+     * @param gridConfig   the resolved, type-safe grid configuration
+     * @param factories    all discovered {@code DriverFactory} implementations
      */
     @Inject
-    public WebDriverService(@ConfigProperties WebDriverConfig webDriverConfig,
-            @ConfigProperties GridConfig gridConfig, Instance<WebDriverFactory<?>> factories) {
-        this.webDriverConfig = webDriverConfig;
+    public WebDriverService(@ConfigProperties DriverConfig driverConfig,
+            @ConfigProperties GridConfig gridConfig, Instance<DriverFactory<?>> factories) {
+        this.driverConfig = driverConfig;
         this.gridConfig = gridConfig;
 
-        Map<WebDriverType, Map<String, WebDriverFactory<?>>> m = new EnumMap<>(WebDriverType.class);
+        Map<DriverType, Map<String, DriverFactory<?>>> m = new EnumMap<>(DriverType.class);
         for (var factory : factories) {
-            WebDriverType type = factory.getType();
-            if (type != WebDriverType.SPI) {
+            DriverType type = factory.getDriverType();
+            if (type != DriverType.SPI) {
                 if (m.containsKey(type)) {
                     Object[] params = { m.get(type).values().iterator().next(), type };
                     LOGGER.log(Level.WARNING, "Replacing factory {0} associated with {1}", params);
@@ -127,74 +122,75 @@ public class WebDriverService {
     }
 
     /**
-     * Produces a scenario-scoped {@link WebDriverReference} that encapsulates a
-     * {@link WebDriver} created according to {@link WebDriverConfig} and the
+     * Produces a scenario-scoped {@code WebDriverReference} that encapsulates
+     * a {@code WebDriver} created according to {@code DriverConfig} and the
      * available factories.
      * <p>
      * Resolution rules:
      * <ul>
-     * <li>Non-SPI: the factory is selected by {@link WebDriverType}.
-     * <li>SPI: the configuration must specify {@code webdriver.spi} with the
+     * <li>Non-SPI: the factory is selected by {@code DriverType}.
+     * <li>SPI: the configuration must specify {@code driver.spi} with the
      *   fully qualified factory class name; that specific SPI factory is
      *   used.
      * </ul>
      *
      * If {@link GridConfig#uri} is present, a remote session is created with a
-     * {@link RemoteWebDriver} and the configured capabilities; otherwise a
-     * local WebDriver is created via the resolved {@link WebDriverFactory}.
-     * After creation, the selected {@link WebDriverFactory} is given an
-     * opportunity to perform driver-specific configuration via
-     * {@link WebDriverFactory#configureWebDriver(WebDriver)}. If configuration
-     * or logging fails, this method attempts to quit the driver before
-     * rethrowing the original error.
+     * {@code RemoteWebDriver} and the configured capabilities; otherwise a
+     * local WebDriver is created via the resolved {@code DriverFactory}. After
+     * creation, the selected {@code DriverFactory} is given an opportunity to
+     * perform driver-specific configuration via
+     * {@link DriverFactory#configure(WebDriver)}. If configuration or logging
+     * fails, this method attempts to quit the driver before rethrowing the
+     * original error.
      *
      * @return a reference to an initialized WebDriver bound to the current
      *         scenario scope
-     * @throws IllegalArgumentException if the configured WebDriver type is
+     * @throws IllegalArgumentException if the configured driver type is
      *                                  unsupported, no matching SPI factory is
      *                                  found, the SPI class name is missing
-     *                                  when {@code webdriver.type=spi}, or the
+     *                                  when {@code driver.type=spi}, or the
      *                                  Grid URL is invalid
      * @throws IllegalStateException    if the selected factory cannot create a
-     *                                  WebDriver locally or indicates that Grid
-     *                                  execution is not supported for the
-     *                                  chosen WebDriver type
+     *                                  WebDriver locally or indicates that
+     *                                  Grid execution is not supported for the
+     *                                  chosen driver type
+     * @see #disposeWebDriver(WebDriverReference)
      */
     @Produces
     @ScenarioScoped
     public WebDriverReference createWebDriver() {
-        WebDriverFactory<?> factory = getWebDriverFactory();
+        DriverFactory<?> factory = findDriverFactory();
         if (factory == null) {
             String msg;
-            if (webDriverConfig.type == WebDriverType.SPI && webDriverConfig.spi.isPresent()) {
-                msg = "No SPI factory found for " + webDriverConfig.spi.get();
+            if (driverConfig.type == DriverType.SPI && driverConfig.spi.isPresent()) {
+                msg = "No SPI factory found for " + driverConfig.spi.get();
             } else {
-                msg = "Unsupported WebDriver " + webDriverConfig.type;
+                msg = "Unsupported driver " + driverConfig.type;
             }
             throw new IllegalArgumentException(msg);
         }
-        LOGGER.log(Level.FINER, "Using WebDriver factory {0}", factory.getClass().getName());
+        LOGGER.log(Level.FINER, "Using driver factory {0}", factory.getClass().getName());
 
         // Create a remote WebDriver when grid settings are present, otherwise fall back to the
         // local factory, and fail if the WebDriver cannot be constructed.
         WebDriver driver;
         if (gridConfig.uri.isPresent()) {
-            MutableCapabilities options = factory.getOptions();
+            MutableCapabilities options = factory.getCapabilities();
             if (options == null) {
-                String msg = "Grid execution not supported for WebDriver " + webDriverConfig.type;
+                String msg = "Grid execution not supported for driver " + driverConfig.type;
                 throw new IllegalStateException(msg);
             }
             driver = createRemoteWebDriver(options);
         } else {
-            driver = factory.createWebDriver();
+            driver = factory.create();
         }
         if (driver == null) {
             String name = factory.getClass().getName();
-            throw new IllegalStateException("Unable to create WebDriver using factory " + name);
+            throw new IllegalStateException("Unable to create driver using factory " + name);
         }
 
         try {
-            factory.configureWebDriver(driver);
+            factory.configure(driver);
             LOGGER.log(Level.CONFIG, "Created WebDriver {0}", identityToString(driver));
             return new WebDriverReference(driver);
         } catch (Throwable t) {
@@ -212,10 +208,12 @@ public class WebDriverService {
      * invoking {@link WebDriver#quit()}.
      * <p>
      * This method is idempotent and safe to call with {@code null} or with a
-     * {@link WebDriverReference} that was never initialized. Any exceptions
+     * {@code WebDriverReference} that was never initialized. Any exceptions
      * thrown by the underlying WebDriver during quit are caught and logged.
      *
-     * @param driverRef the WebDriver reference to dispose; may be {@code null}
+     * @param driverRef the {@code WebDriverReference} holding the WebDriver to
+     *                  dispose; may be {@code null}
+     * @see #createWebDriver()
      */
     public void disposeWebDriver(@Disposes WebDriverReference driverRef) {
         if (driverRef == null) {
@@ -253,10 +251,10 @@ public class WebDriverService {
 
     /*
      * Creates a RemoteWebDriver that connects to the configured Selenium Grid.
-     * The supplied options (capabilities) are defensively copied before augmented
-     * with Grid-specific capabilities.
+     * The supplied capabilities are defensively copied before augmented with
+     * Grid-specific capabilities.
      */
-    private WebDriver createRemoteWebDriver(MutableCapabilities options) {
+    private WebDriver createRemoteWebDriver(MutableCapabilities capabilities) {
         assert gridConfig.uri.isPresent() : "Trusted caller missed precondition";
         URL gridURL;
         try {
@@ -269,36 +267,36 @@ public class WebDriverService {
                                 + "endpoint.",
                         sanitizeURI(gridConfig.uri.get()));
             }
-        } catch (MalformedURLException | NoSuchElementException e) {
+        } catch (MalformedURLException e) {
             String msg = "Invalid Selenium Grid URL '"
                     + (gridConfig.uri.isPresent() ? sanitizeURI(gridConfig.uri.get()) : "")
                     + "'";
             throw new IllegalArgumentException(msg, e);
         }
 
-        // Create a defensive copy of the factory options to ensure isolation.
+        // Create a defensive copy of the capabilities options to ensure isolation.
         // We are about to mutate these capabilities by merging Grid-specific configuration
         // (browser name, version, platform, etc.). Copying ensures that the original options
         // instance provided by the factory remains unmodified, preventing side effects if
         // the factory returns a shared or cached instance.
-        MutableCapabilities capabilities = new MutableCapabilities(options);
+        MutableCapabilities remoteCaps = new MutableCapabilities(capabilities);
 
-        if (webDriverConfig.type != WebDriverType.SPI) {
+        if (driverConfig.type != DriverType.SPI) {
             // Only fall back to the canonical name when the copied factory options didn't already
             // provide one.
-            if (capabilities.getCapability(BROWSER_NAME) == null) {
-                capabilities.setCapability(BROWSER_NAME, webDriverConfig.type.getCanonicalName());
+            if (remoteCaps.getCapability(BROWSER_NAME) == null) {
+                remoteCaps.setCapability(BROWSER_NAME, driverConfig.type.getCanonicalName());
             }
-        } else if (capabilities.getCapability(BROWSER_NAME) == null) {
+        } else if (remoteCaps.getCapability(BROWSER_NAME) == null) {
             LOGGER.log(Level.WARNING, "Missing capability {0} from SPI Grid session", BROWSER_NAME);
         }
 
-        gridConfig.browserVersion.ifPresent(v -> capabilities.setCapability(BROWSER_VERSION, v));
+        gridConfig.browserVersion.ifPresent(v -> remoteCaps.setCapability(BROWSER_VERSION, v));
 
         gridConfig.platform.ifPresent(v -> {
             try {
                 Platform p = Platform.fromString(v);
-                capabilities.setCapability(PLATFORM_NAME, p);
+                remoteCaps.setCapability(PLATFORM_NAME, p);
             } catch (WebDriverException e) {
                 LOGGER.log(Level.WARNING, "Unable to set platform name to {0}", v);
                 LOGGER.throwing(WebDriverService.class.getName(), "createRemoteWebDriver", e);
@@ -306,40 +304,38 @@ public class WebDriverService {
         });
 
         gridConfig.applicationName.ifPresent(v -> {
-            capabilities.setCapability("applicationName", v);
-            capabilities.setCapability("se:applicationName", v);
+            remoteCaps.setCapability("applicationName", v);
+            remoteCaps.setCapability("se:applicationName", v);
         });
 
-        gridConfig.capabilities.forEach(capabilities::setCapability);
+        gridConfig.capabilities.forEach(remoteCaps::setCapability);
 
-        return new RemoteWebDriver(gridURL, capabilities);
+        return new RemoteWebDriver(gridURL, remoteCaps);
     }
 
     /*
-     * Resolve the WebDriver factory based on the configuration properties.
+     * Find the driver factory based on the configuration properties.
      * See the constructor for map construction.
      */
-    private WebDriverFactory<?> getWebDriverFactory() {
-        var factoryMap = factories.get(webDriverConfig.type);
-        if (factoryMap == null) {
-            return null; // unknown driver type
+    private DriverFactory<?> findDriverFactory() {
+        String factoryName;
+        if (driverConfig.type == DriverType.SPI) {
+            // For SPI factories, they are keyed by their class name (see constructor). The
+            // configuration must specify which SPI implementation to use via the 'driver.spi'
+            // property. It specifies the fully qualified class name of the SPI factory. Without
+            // it, we can't resolve the correct SPI factory.
+            factoryName = driverConfig.spi.map(String::trim).orElse(null);
+            if (factoryName == null || factoryName.isEmpty()) {
+                throw new IllegalArgumentException("driver.spi must be set when driver.type=SPI");
+            }
+        } else {
+            // For non-SPI factories, each inner factory map contains a single driver factory. That
+            // inner map is keyed by the DriverType canonical name.
+            factoryName = driverConfig.type.getCanonicalName();
         }
 
-        if (webDriverConfig.type != WebDriverType.SPI) {
-            // For non-SPI WebDriver factory, each inner factory map contains a single WebDriver
-            // factory. That inner map is keyed by the canonical WebDriver type name.
-            return factoryMap.get(webDriverConfig.type.getCanonicalName());
-        }
-
-        // For SPI WebDriver factories, they are keyed by their class name (see constructor). The
-        // configuration must specify which SPI implementation to use via the 'webdriver.spi'
-        // property. It specifies the fully qualified class name of the SPI WebDriver factory.
-        // Without it, we can't resolve the correct SPI WebDriver factory.
-        if (webDriverConfig.spi.isEmpty()) {
-            throw new IllegalArgumentException("webdriver.spi must be set when webdriver.type=SPI");
-        }
-
-        return factoryMap.get(webDriverConfig.spi.get());
+        var factoryMap = factories.get(driverConfig.type);
+        return (factoryMap == null) ? null : factoryMap.get(factoryName);
     }
 
     private static String sanitizeURI(URI uri) {

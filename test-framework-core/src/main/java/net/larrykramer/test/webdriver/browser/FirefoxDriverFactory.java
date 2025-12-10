@@ -26,10 +26,10 @@ import java.math.BigDecimal;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.FirefoxConfig;
-import net.larrykramer.test.config.WebDriverConfig;
-import net.larrykramer.test.config.WebDriverType;
-import net.larrykramer.test.webdriver.WebDriverFactory;
+import net.larrykramer.test.config.DriverConfig;
+import net.larrykramer.test.webdriver.DriverFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
@@ -37,10 +37,10 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 
 /**
- * Factory that constructs Mozilla Firefox {@link WebDriver} instances.
+ * Factory that constructs Firefox {@code WebDriver} instances.
  */
 @ApplicationScoped
-public final class FirefoxDriverFactory extends WebDriverFactory<FirefoxOptions> {
+public final class FirefoxDriverFactory extends DriverFactory<FirefoxOptions> {
     @Inject
     @ConfigProperties
     private FirefoxConfig firefoxConfig;
@@ -49,37 +49,37 @@ public final class FirefoxDriverFactory extends WebDriverFactory<FirefoxOptions>
      * {@inheritDoc}
      */
     @Override
-    public WebDriverType getType() {
-        return WebDriverType.FIREFOX;
+    public DriverType getDriverType() {
+        return DriverType.FIREFOX;
     }
 
     /**
-     * Produces a Firefox {@link WebDriver} using the capabilities derived from
-     * {@link #getOptions()}.
+     * Produces a Firefox {@code WebDriver} using the capabilities derived from
+     * {@link #getCapabilities()}.
      *
-     * @return a Firefox WebDriver instance
+     * @return a new Firefox {@code WebDriver} instance
      */
     @Override
-    public WebDriver createWebDriver() {
-        return new FirefoxDriver(getOptions());
+    public WebDriver create() {
+        return new FirefoxDriver(getCapabilities());
     }
 
     /**
-     * Applies Firefox-specific post-construction configuration to the supplied
-     * WebDriver.
+     * Applies Firefox-specific post-construction configuration to the given
+     * {@code WebDriver}.
      * <p>
      * In addition to the common configuration from the base implementation,
      * this method deletes all cookies and applies window sizing/maximize based
-     * on {@link WebDriverConfig}. Failures in window operations are treated as
-     * fatal; any {@link WebDriverException} raised by window resizing or
+     * on {@code DriverConfig}. Failures in window operations are treated as
+     * fatal; any {@code WebDriverException} raised by window resizing or
      * maximization is allowed to propagate to signal a misconfigured
      * environment.
      *
-     * @param driver the Firefox WebDriver instance to configure
+     * @param driver the Firefox {@code WebDriver} instance to configure
      */
     @Override
-    public void configureWebDriver(WebDriver driver) {
-        super.configureWebDriver(driver); // apply common config
+    public void configure(WebDriver driver) {
+        super.configure(driver); // apply common config
 
         WebDriver.Options options = driver.manage();
         deleteAllCookies(options);
@@ -91,13 +91,13 @@ public final class FirefoxDriverFactory extends WebDriverFactory<FirefoxOptions>
     }
 
     /**
-     * Creates the Firefox-specific options from the global and Mozilla Firefox
+     * Returns the Firefox-specific capabilities from the global and Firefox
      * configuration settings.
      *
-     * @return the Firefox-specific options
+     * @return the Firefox-specific capabilities
      */
     @Override
-    protected FirefoxOptions buildOptions() {
+    public FirefoxOptions getCapabilities() {
         FirefoxOptions options = new FirefoxOptions();
 
         firefoxConfig.executable.ifPresent(options::setBinary);
@@ -110,6 +110,7 @@ public final class FirefoxDriverFactory extends WebDriverFactory<FirefoxOptions>
             options.addArguments("-headless");
         }
 
+        applyCommonCapabilities(options);
         return options;
     }
 

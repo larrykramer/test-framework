@@ -37,33 +37,34 @@ import org.openqa.selenium.Dimension;
  * headless mode properties, window dimensions, timeouts, and proxy
  * configuration.
  * <p>
- * All properties within this class are prefixed with {@code webdriver}.
+ * All properties within this class are prefixed with {@code driver}.
  */
-@ConfigProperties(prefix = "webdriver")
+@ConfigProperties(prefix = "driver")
 @Dependent
-public class WebDriverConfig {
+public class DriverConfig {
     /**
      * Specifies the target driver for test execution.
      * <p>
-     * This property maps to {@code webdriver.type}.
+     * This property maps to {@code driver.type}.
      */
-    public WebDriverType type;
+    public DriverType type;
 
     /**
-     * Defines the fully qualified class name of a custom WebDriver
-     * implementation. This allows for the integration of a driver not natively
-     * supported, via the Service Provider Interface (SPI).
+     * Defines the fully qualified class name of a custom driver implementation.
+     * This allows for the integration of a driver not natively supported, via
+     * the Service Provider Interface (SPI).
      * <p>
-     * This property maps to {@code webdriver.spi}.
+     * This property maps to {@code driver.spi}.
      */
     public Optional<String> spi;
 
     /**
      * Determines whether the WebDriver should operate in headless mode. When
      * {@code true}, the graphical user interface will not be rendered.
+     * <p>
      * Defaults to {@code false}.
      * <p>
-     * This property maps to {@code webdriver.headless}.
+     * This property maps to {@code driver.headless}.
      */
     @ConfigProperty(defaultValue = "false")
     public boolean headless;
@@ -71,9 +72,10 @@ public class WebDriverConfig {
     /**
      * Specifies whether the window should be maximized upon startup. This
      * behavior is contingent on the WebDriver and driver's capabilities.
+     * <p>
      * Defaults to {@code false}.
      * <p>
-     * This property maps to {@code webdriver.maximize}.
+     * This property maps to {@code driver.maximize}.
      */
     @ConfigProperty(defaultValue = "false")
     public boolean maximize;
@@ -82,7 +84,7 @@ public class WebDriverConfig {
      * Defines a specific dimension (width and height) for the window. This
      * setting overrides the {@link #maximize} property if both are specified.
      * <p>
-     * This property maps to {@code webdriver.window-size}.
+     * This property maps to {@code driver.window-size}.
      */
     public Optional<Dimension> windowSize;
 
@@ -95,9 +97,10 @@ public class WebDriverConfig {
      * avoid unpredictable test execution delays. A value of zero (the default)
      * disables the implicit wait entirely. For example, a value of {@code 5000}
      * sets a 5-second timeout.
+     * <p>
      * Defaults to {@code 0}.
      * <p>
-     * This property maps to {@code webdriver.implicit-timeout}
+     * This property maps to {@code driver.implicit-timeout}
      */
     @ConfigProperty(defaultValue = "0")
     public long implicitTimeout;
@@ -106,9 +109,10 @@ public class WebDriverConfig {
      * Controls whether the WebDriver session will accept expired or invalid TLS
      * certificates. Setting this to {@code true} may be necessary for test
      * environments with self-signed certificates.
+     * <p>
      * Defaults to {@code false}.
      * <p>
-     * This property maps to {@code webdriver.allow-insecure-certs}.
+     * This property maps to {@code driver.allow-insecure-certs}.
      */
     @ConfigProperty(defaultValue = "false")
     public boolean allowInsecureCerts;
@@ -117,21 +121,21 @@ public class WebDriverConfig {
      * The URI of the proxy server to be used for all WebDriver-initiated
      * network requests.
      * <p>
-     * This property maps to {@code webdriver.proxy-address}.
+     * This property maps to {@code driver.proxy-address}.
      */
     public Optional<URI> proxyAddress;
 
     /**
      * The username for authenticating with a SOCKS proxy server, if required.
      * <p>
-     * This property maps to {@code webdriver.proxy-user}.
+     * This property maps to {@code driver.proxy-user}.
      */
     public Optional<String> proxyUser;
 
     /**
      * The password for authenticating with a SOCKS proxy server, if required.
      * <p>
-     * This property maps to {@code webdriver.proxy-password}.
+     * This property maps to {@code driver.proxy-password}.
      */
     public Optional<String> proxyPassword;
 
@@ -143,11 +147,11 @@ public class WebDriverConfig {
      * The value is passed through directly to the proxy configuration, enabling
      * support for wildcards.
      * <p>
-     * This property maps to {@code webdriver.non-proxy-hosts}.
+     * This property maps to {@code driver.non-proxy-hosts}.
      * <p>
      * <strong>Example usage:</strong>
      * <pre>{@code
-     * webdriver.non-proxy-hosts=*.example.com|localhost|10.0.0.1
+     * driver.non-proxy-hosts=*.example.com|localhost|10.0.0.1
      * }</pre>
      */
     public Optional<String> nonProxyHosts;
