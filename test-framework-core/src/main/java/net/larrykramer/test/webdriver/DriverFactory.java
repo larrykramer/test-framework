@@ -107,8 +107,8 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
     /**
      * Applies post-construction configuration to the given {@code WebDriver}.
      * <p>
-     * The default implementation sets the implicit wait timeout based on the
-     * configured {@code DriverConfig#implicitTimeout} value. Negative
+     * The default implementation sets the
+     * {@linkplain DriverConfig#implicitTimeout implicit wait timeout}. Negative
      * timeout values are ignored and no implicit wait is applied.
      * <p>
      * This method is invoked by
@@ -149,10 +149,11 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
      * Returns the driver-specific capabilities.
      * <p>
      * The default implementation returns {@code null}, indicating that
-     * capabilities construction is not handled. Factories registered for
-     * non-SPI {@code DriverType}s are expected to override this method.
-     * Factories registered for SPI {@code DriverType}s may override this
-     * method when they need to create driver-specific capabilities.
+     * {@code MutableCapabilities} construction is not handled. Factories
+     * registered for non-SPI {@code DriverType}s are expected to override
+     * this method. Factories registered for SPI {@code DriverType}s may
+     * override this method when they need to create driver-specific
+     * capabilities.
      *
      * @return the driver-specific capabilities, or {@code null}
      */

@@ -30,9 +30,9 @@ public enum DriverType {
     CHROME("chrome"),
     /** Represents the Microsoft Edge WebDriver. */
     EDGE("MicrosoftEdge"),
-    /** Represents the Apple Safari WebDriver. */
+    /** Represents the Safari WebDriver. */
     SAFARI("safari"),
-    /** Represents the Mozilla Firefox WebDriver. */
+    /** Represents the Firefox WebDriver. */
     FIREFOX("firefox"),
     /**
      * Represents a custom driver implementation provided via the Service
