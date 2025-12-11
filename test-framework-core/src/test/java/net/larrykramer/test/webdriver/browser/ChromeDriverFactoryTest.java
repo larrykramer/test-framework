@@ -105,29 +105,14 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_whenCalled_appliesCommonCapabilities() {
-        // Arrange
-        DriverConfig config = createConfig();
-        config.allowInsecureCerts = true;
-        config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
-        setWebDriverConfig(factory, config);
-
-        // Act
-        ChromeOptions result = factory.getCapabilities();
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(Boolean.TRUE, result.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
-        assertNotNull(result.getCapability(CapabilityType.PROXY));
-    }
-
-    @Test
-    public void testGetCapabilities_withChromeAndGlobalOptions_appliesExpectedChromeOptions() {
+    public void testGetCapabilities_givenChromeAndGlobalConfig_appliesExpectedCapabilities() {
         // Arrange
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
         config.maximize = true;
+        config.allowInsecureCerts = true;
+        config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
         chromium.executable = Optional.of("/custom/chrome");
         chromium.arguments = List.of("--foo", "--bar");
         setWebDriverConfig(factory, config);
@@ -138,6 +123,9 @@ public class ChromeDriverFactoryTest {
 
         // Assert
         assertNotNull(options);
+
+        assertEquals(Boolean.TRUE, options.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
+        assertNotNull(options.getCapability(CapabilityType.PROXY));
 
         assertEquals("/custom/chrome", extractChromeOptions(options).get("binary"));
 

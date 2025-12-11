@@ -103,29 +103,14 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_whenCalled_appliesCommonCapabilities() {
-        // Arrange
-        DriverConfig config = createConfig();
-        config.allowInsecureCerts = true;
-        config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
-        setWebDriverConfig(factory, config);
-
-        // Act
-        EdgeOptions result = factory.getCapabilities();
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(Boolean.TRUE, result.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
-        assertNotNull(result.getCapability(CapabilityType.PROXY));
-    }
-
-    @Test
-    public void testGetCapabilities_withEdgeAndGlobalOptions_appliesExpectedEdgeOptions() {
+    public void testGetCapabilities_givenEdgeAndGlobalConfig_appliesExpectedCapabilities() {
         // Arrange
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
         config.maximize = false;
+        config.allowInsecureCerts = true;
+        config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
         chromium.executable = Optional.of("/custom/edge");
         chromium.arguments = List.of("--foo", "--bar");
         setWebDriverConfig(factory, config);
@@ -136,6 +121,9 @@ public class EdgeDriverFactoryTest {
 
         // Assert
         assertNotNull(options);
+
+        assertEquals(Boolean.TRUE, options.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
+        assertNotNull(options.getCapability(CapabilityType.PROXY));
 
         assertEquals("/custom/edge", extractEdgeOptions(options).get("binary"));
 
