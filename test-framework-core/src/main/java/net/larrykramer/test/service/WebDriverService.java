@@ -90,7 +90,7 @@ public class WebDriverService {
      * mutable to avoid repeated defensive copying when many SPI factories are
      * present; the outer map is made unmodifiable.
      *
-     * @param driverConfig the resolved, type-safe WebDriver configuration
+     * @param driverConfig the resolved, type-safe driver configuration
      * @param gridConfig   the resolved, type-safe grid configuration
      * @param factories    all discovered {@code DriverFactory} implementations
      */
