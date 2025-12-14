@@ -61,6 +61,12 @@ import static org.openqa.selenium.remote.CapabilityType.PROXY;
  * factories may optionally override {@link #getCapabilities()} when the SPI
  * factory needs to create a {@code MutableCapabilities} object before
  * delegating to an external provider.
+ * <p>
+ * Subclasses must invoke {@link #applyCommonCapabilities(MutableCapabilities)}
+ * within their {@link #getCapabilities()} implementation if they wish to
+ * support global proxy or SSL configuration. Alternatively, subclasses may
+ * invoke {@link #addProxy(MutableCapabilities)} directly if only global proxy
+ * configuration is desired.
  *
  * <h3>SPI factory configuration</h3>
  * When an SPI factory is used, the framework selects a specific
