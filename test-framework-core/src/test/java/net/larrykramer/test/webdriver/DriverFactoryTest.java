@@ -410,6 +410,32 @@ public class DriverFactoryTest {
     }
 
     @Test
+    public void testApplyCommonCapabilities_givenExistingCapabilities_overwritesValues() {
+        // Arrange
+        MutableCapabilities capabilities = new MutableCapabilities();
+        Proxy proxy = new Proxy();
+        proxy.setHttpProxy("old.proxy.example:1111");
+        capabilities.setCapability(PROXY, proxy);
+        capabilities.setCapability(ACCEPT_INSECURE_CERTS, true);
+
+        DriverConfig config = createConfig();
+        config.allowInsecureCerts = false;
+        config.proxyAddress = Optional.of(URI.create("http://new.proxy.example:8080"));
+
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
+
+        // Act
+        MutableCapabilities result = factory.getCapabilities();
+
+        // Assert
+        assertEquals(Boolean.FALSE, result.getCapability(ACCEPT_INSECURE_CERTS));
+
+        Proxy resultProxy = (Proxy) result.getCapability(PROXY);
+        assertNotNull(resultProxy);
+        assertEquals("new.proxy.example:8080", resultProxy.getHttpProxy());
+    }
+
+    @Test
     public void testDeleteAllCookies_whenSuccessful_invokesOptionsDeleteAllCookies() {
         // Arrange
         SPIDriverFactory factory = new SPIDriverFactory(null, createConfig(), null);
