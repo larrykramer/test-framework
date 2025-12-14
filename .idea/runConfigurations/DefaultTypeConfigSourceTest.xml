@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="DefaultDriverConfigSourceTest" type="JUnit" factoryName="JUnit" folderName="Configuration">
+  <configuration default="false" name="DefaultTypeConfigSourceTest" type="JUnit" factoryName="JUnit" folderName="Configuration">
     <module name="test-framework-core" />
     <option name="PACKAGE_NAME" value="net.larrykramer.test.config" />
     <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.config.DefaultTypeConfigSourceTest" />
