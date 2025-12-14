@@ -40,8 +40,8 @@ import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.CapabilityType;
 
-import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setInjectedConfigField;
-import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setWebDriverConfig;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setConfigField;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setDriverConfig;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -52,7 +52,7 @@ public class FirefoxDriverFactoryTest {
     public void setUp() {
         factory = new FirefoxDriverFactory();
 
-        setWebDriverConfig(factory, createConfig());
+        setDriverConfig(factory, createConfig());
 
         FirefoxConfig firefox = new FirefoxConfig();
         firefox.userPrefs = Map.of();
@@ -97,7 +97,7 @@ public class FirefoxDriverFactoryTest {
         config.headless = false;
         config.maximize = true;
         config.windowSize = Optional.of(new Dimension(1280, 720));
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -123,7 +123,7 @@ public class FirefoxDriverFactoryTest {
         DriverConfig config = createConfig();
         config.maximize = false;
         config.windowSize = Optional.empty();
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -148,7 +148,7 @@ public class FirefoxDriverFactoryTest {
         config.headless = false;
         config.maximize = true;
         config.windowSize = Optional.empty();
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -173,7 +173,7 @@ public class FirefoxDriverFactoryTest {
         config.headless = true;
         config.maximize = true;
         config.windowSize = Optional.empty();
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -197,7 +197,7 @@ public class FirefoxDriverFactoryTest {
 
         DriverConfig config = createConfig();
         config.maximize = true;
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act & Assert
         // Exception is propagated.
@@ -210,7 +210,7 @@ public class FirefoxDriverFactoryTest {
         DriverConfig config = createConfig();
         config.allowInsecureCerts = true;
         config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         FirefoxOptions result = factory.getCapabilities();
@@ -226,7 +226,7 @@ public class FirefoxDriverFactoryTest {
         // Arrange
         DriverConfig config = createConfig();
         config.headless = true;
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         FirefoxOptions options = factory.getCapabilities();
@@ -336,7 +336,7 @@ public class FirefoxDriverFactoryTest {
     }
 
     private void setFirefoxConfig(FirefoxConfig config) {
-        setInjectedConfigField(factory, "firefoxConfig", config);
+        setConfigField(factory, "firefoxConfig", config);
     }
 
     @SuppressWarnings("unchecked")

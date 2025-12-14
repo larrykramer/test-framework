@@ -41,7 +41,7 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.safari.SafariDriver;
 import org.openqa.selenium.safari.SafariOptions;
 
-import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setWebDriverConfig;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setDriverConfig;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -51,7 +51,7 @@ public class SafariDriverFactoryTest {
     @Before
     public void setUp() {
         factory = new SafariDriverFactory();
-        setWebDriverConfig(factory, createConfig());
+        setDriverConfig(factory, createConfig());
     }
 
     @Test
@@ -109,7 +109,7 @@ public class SafariDriverFactoryTest {
         DriverConfig config = createConfig();
         config.implicitTimeout = 350L;
         config.windowSize = Optional.of(new Dimension(1440, 900));
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -136,7 +136,7 @@ public class SafariDriverFactoryTest {
         config.implicitTimeout = 125L;
         config.windowSize = Optional.empty();
         config.maximize = true;
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -179,7 +179,7 @@ public class SafariDriverFactoryTest {
 
         DriverConfig config = createConfig();
         config.maximize = true;
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -208,7 +208,7 @@ public class SafariDriverFactoryTest {
 
             DriverConfig config = createConfig();
             config.headless = true;
-            setWebDriverConfig(factory, config);
+            setDriverConfig(factory, config);
 
             // Act
             SafariOptions result = factory.getCapabilities();
@@ -237,7 +237,7 @@ public class SafariDriverFactoryTest {
             DriverConfig config = createConfig();
             config.allowInsecureCerts = true;
             config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
-            setWebDriverConfig(factory, config);
+            setDriverConfig(factory, config);
 
             // Act
             SafariOptions result = factory.getCapabilities();

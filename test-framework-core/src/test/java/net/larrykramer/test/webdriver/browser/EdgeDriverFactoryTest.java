@@ -39,8 +39,8 @@ import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.remote.CapabilityType;
 
-import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setInjectedConfigField;
-import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setWebDriverConfig;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setConfigField;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setDriverConfig;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -51,7 +51,7 @@ public class EdgeDriverFactoryTest {
     public void setUp() {
         factory = new EdgeDriverFactory();
 
-        setWebDriverConfig(factory, createConfig());
+        setDriverConfig(factory, createConfig());
 
         ChromiumConfig chromium = new ChromiumConfig();
         chromium.executable = Optional.empty();
@@ -91,7 +91,7 @@ public class EdgeDriverFactoryTest {
 
         DriverConfig config = createConfig();
         config.implicitTimeout = 400L;
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -113,7 +113,7 @@ public class EdgeDriverFactoryTest {
         config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
         chromium.executable = Optional.of("/custom/edge");
         chromium.arguments = List.of("--foo", "--bar");
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setEdgeConfig(chromium);
 
         // Act
@@ -144,7 +144,7 @@ public class EdgeDriverFactoryTest {
         config.windowSize = Optional.of(new Dimension(3840, 2160));
         chromium.executable = Optional.empty();
         chromium.arguments = List.of();
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setEdgeConfig(chromium);
 
         // Act
@@ -166,7 +166,7 @@ public class EdgeDriverFactoryTest {
         config.headless = false;
         config.maximize = true;
         config.windowSize = Optional.empty();
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         EdgeOptions options = factory.getCapabilities();
@@ -188,7 +188,7 @@ public class EdgeDriverFactoryTest {
         config.maximize = true;
         chromium.executable = Optional.empty();
         chromium.arguments = List.of("--start-maximized", "--foo");
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setEdgeConfig(chromium);
 
         // Act
@@ -209,7 +209,7 @@ public class EdgeDriverFactoryTest {
         DriverConfig config = createConfig();
         config.headless = false;
         config.windowSize = Optional.of(new Dimension(800, 600));
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         EdgeOptions options = factory.getCapabilities();
@@ -230,7 +230,7 @@ public class EdgeDriverFactoryTest {
         config.headless = true;
         chromium.executable = Optional.empty();
         chromium.arguments = List.of("--headless=new", "--foo");
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setEdgeConfig(chromium);
 
         // Act
@@ -257,7 +257,7 @@ public class EdgeDriverFactoryTest {
         // Arrange
         DriverConfig config = createConfig();
         config.windowSize = Optional.of(new Dimension(800, 0));
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         // Act
         factory.getCapabilities();
     }
@@ -286,7 +286,7 @@ public class EdgeDriverFactoryTest {
     }
 
     private void setEdgeConfig(ChromiumConfig config) {
-        setInjectedConfigField(factory, "edgeConfig", config);
+        setConfigField(factory, "edgeConfig", config);
     }
 
     @SuppressWarnings("unchecked")

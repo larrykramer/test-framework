@@ -39,8 +39,8 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.CapabilityType;
 
-import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setInjectedConfigField;
-import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setWebDriverConfig;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setConfigField;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setDriverConfig;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.never;
@@ -53,7 +53,7 @@ public class ChromeDriverFactoryTest {
     public void setUp() {
         factory = new ChromeDriverFactory();
 
-        setWebDriverConfig(factory, createConfig());
+        setDriverConfig(factory, createConfig());
 
         ChromiumConfig config = new ChromiumConfig();
         config.executable = Optional.empty();
@@ -93,7 +93,7 @@ public class ChromeDriverFactoryTest {
 
         DriverConfig config = createConfig();
         config.implicitTimeout = 400L;
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         factory.configure(mockDriver);
@@ -115,7 +115,7 @@ public class ChromeDriverFactoryTest {
         config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
         chromium.executable = Optional.of("/custom/chrome");
         chromium.arguments = List.of("--foo", "--bar");
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
         // Act
@@ -146,7 +146,7 @@ public class ChromeDriverFactoryTest {
         config.windowSize = Optional.of(new Dimension(1600, 900));
         chromium.executable = Optional.empty();
         chromium.arguments = List.of();
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
         // Act
@@ -168,7 +168,7 @@ public class ChromeDriverFactoryTest {
         config.headless = false;
         config.maximize = true;
         config.windowSize = Optional.empty();
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         ChromeOptions options = factory.getCapabilities();
@@ -190,7 +190,7 @@ public class ChromeDriverFactoryTest {
         config.maximize = true;
         chromium.executable = Optional.empty();
         chromium.arguments = List.of("--start-maximized", "--foo");
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
         // Act
@@ -211,7 +211,7 @@ public class ChromeDriverFactoryTest {
         DriverConfig config = createConfig();
         config.headless = false;
         config.windowSize = Optional.of(new Dimension(1024, 768));
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
         ChromeOptions options = factory.getCapabilities();
@@ -230,7 +230,7 @@ public class ChromeDriverFactoryTest {
         config.headless = true;
         chromium.executable = Optional.empty();
         chromium.arguments = List.of("--headless", "--foo");
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
         // Act
@@ -261,7 +261,7 @@ public class ChromeDriverFactoryTest {
         config.windowSize = Optional.of(new Dimension(3840, 2160));
         chromium.executable = Optional.empty();
         chromium.arguments = List.of("--window-size=800,600", "--foo");
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
         // Act
@@ -281,7 +281,7 @@ public class ChromeDriverFactoryTest {
         // Arrange
         DriverConfig config = createConfig();
         config.windowSize = Optional.of(new Dimension(-800, -600));
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, () -> factory.getCapabilities());
@@ -312,7 +312,7 @@ public class ChromeDriverFactoryTest {
     }
 
     private void setChromeConfig(ChromiumConfig config) {
-        setInjectedConfigField(factory, "chromeConfig", config);
+        setConfigField(factory, "chromeConfig", config);
     }
 
     @SuppressWarnings("unchecked")

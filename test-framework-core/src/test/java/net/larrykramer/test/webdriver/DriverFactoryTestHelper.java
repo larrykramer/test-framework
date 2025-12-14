@@ -55,7 +55,7 @@ public final class DriverFactoryTestHelper {
      * @param config  the configuration instance to inject; may be {@code null}
      *                if tests expect that state
      */
-    public static void setWebDriverConfig(DriverFactory<?> factory, DriverConfig config) {
+    public static void setDriverConfig(DriverFactory<?> factory, DriverConfig config) {
         factory.config = config;
     }
 
@@ -74,7 +74,7 @@ public final class DriverFactoryTestHelper {
      * @throws RuntimeException         if the field cannot be set due to access
      *                                  restrictions or type mismatches
      */
-    public static void setInjectedConfigField(Object target, String name, Object config) {
+    public static void setConfigField(Object target, String name, Object config) {
         Class<?> clazz = target.getClass();
         try {
             Field field = clazz.getDeclaredField(name);
