@@ -43,8 +43,6 @@ import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setConfigFi
 import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setDriverConfig;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 public class ChromeDriverFactoryTest {
     private ChromeDriverFactory factory;
