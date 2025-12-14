@@ -31,9 +31,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.openqa.selenium.Dimension;
 
 /**
- * Central configuration class for WebDriver settings.
+ * Central configuration class for driver settings.
  * <p>
- * This class aggregates general WebDriver properties such as the driver type,
+ * This class aggregates general driver properties such as the driver type,
  * headless mode properties, window dimensions, timeouts, and proxy
  * configuration.
  * <p>
