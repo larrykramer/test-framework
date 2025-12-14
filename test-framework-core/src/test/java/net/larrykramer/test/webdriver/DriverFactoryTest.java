@@ -54,19 +54,19 @@ public class DriverFactoryTest {
     @Test
     public void testCreate_withConfig_invokesSubclassAndReturnsWebDriver() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         WebDriver mockDriver = mock(WebDriver.class);
         DriverConfig config = createConfig();
         config.allowInsecureCerts = true;
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, mockDriver);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, mockDriver);
 
         // Act
         WebDriver result = factory.create();
 
         // Assert
         assertSame(mockDriver, result);
-        assertSame(options, factory.lastCapabilities);
+        assertSame(capabilities, factory.lastCapabilities);
         assertSame(config, factory.config);
         assertEquals(Boolean.TRUE, factory.lastCapabilities.getCapability(ACCEPT_INSECURE_CERTS));
         assertNull(factory.lastCapabilities.getCapability(PROXY));
@@ -161,17 +161,17 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenAllowInsecureCertsIsFalse_setsCapabilityToFalse() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.allowInsecureCerts = false;
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
 
         // Assert
-        assertSame(options, result);
+        assertSame(capabilities, result);
         assertEquals(Boolean.FALSE, result.getCapability(ACCEPT_INSECURE_CERTS));
         assertNull(result.getCapability(PROXY));
     }
@@ -179,11 +179,11 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenHttpProxyWithoutPort_setsHttpProxyOnly() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("http://proxy.example.com"));
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -200,11 +200,11 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenHttpProxyWithPort_setsHttpProxyWithPort() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("//proxy.example.com:8181"));
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -219,11 +219,11 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenIPv6HttpProxy_setsHttpProxyWithBrackets() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("http://[fe80::1]:8080"));
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -239,11 +239,11 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenHttpsProxy_setsHttpAndSslProxy() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://secure.example:8443"));
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -258,11 +258,11 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenSocksProxy_setsVersion5AndProxy() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://socks.example:1080"));
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -279,11 +279,11 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenSocks5Proxy_setsVersion5AndProxy() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("SOCKS5://socks.example:1080"));
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -300,11 +300,11 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenSocks4Proxy_setsVersion4() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks4://legacy.example:9050"));
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -319,13 +319,13 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenSocksProxyWithCredentials_setsAuthentication() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://auth.example:1080"));
         config.proxyUser = Optional.of(" user ");
         config.proxyPassword = Optional.of(" pass ");
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -340,13 +340,13 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenSocksProxyWithMissingPassword_skipsAuthentication() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://auth.example:1080"));
         config.proxyUser = Optional.of(" user ");
         config.proxyPassword = Optional.of("");
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -361,12 +361,12 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenEmptyNonProxyHosts_doesNotSetNoProxy() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://proxy.example.com:8443"));
         config.nonProxyHosts = Optional.of("");
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -380,12 +380,12 @@ public class DriverFactoryTest {
     @Test
     public void testGetCapabilities_givenNonProxyHosts_trimsAndSetsNoProxy() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://proxy.example.com:8443"));
         config.nonProxyHosts = Optional.of(" |example.com|| internal.local | ");
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         MutableCapabilities result = factory.getCapabilities();
@@ -399,11 +399,11 @@ public class DriverFactoryTest {
     @Test(expected = IllegalArgumentException.class)
     public void testGetCapabilities_givenUnsupportedProxyScheme_throwsIllegalArgumentException() {
         // Arrange
-        MutableCapabilities options = new MutableCapabilities();
+        MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("ftp://invalid.example:21"));
 
-        SPIDriverFactory factory = new SPIDriverFactory(options, config, null);
+        SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
         // Act
         factory.getCapabilities();

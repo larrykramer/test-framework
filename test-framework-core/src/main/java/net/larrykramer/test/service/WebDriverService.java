@@ -175,12 +175,12 @@ public class WebDriverService {
         // local factory, and fail if the WebDriver cannot be constructed.
         WebDriver driver;
         if (gridConfig.uri.isPresent()) {
-            MutableCapabilities options = factory.getCapabilities();
-            if (options == null) {
+            MutableCapabilities capabilities = factory.getCapabilities();
+            if (capabilities == null) {
                 String msg = "Grid execution not supported for driver " + driverConfig.type;
                 throw new IllegalStateException(msg);
             }
-            driver = createRemoteWebDriver(options);
+            driver = createRemoteWebDriver(capabilities);
         } else {
             driver = factory.create();
         }
