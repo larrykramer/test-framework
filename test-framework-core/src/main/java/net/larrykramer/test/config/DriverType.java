@@ -35,10 +35,8 @@ public enum DriverType {
     /** Represents the Firefox WebDriver. */
     FIREFOX("firefox"),
     /**
-     * Represents a custom driver implementation provided via the Service
-     * Provider Interface (SPI). When this type is selected, a fully qualified
-     * class name for the driver implementation must be provided elsewhere in
-     * the configuration.
+     * Represents a custom driver factory implementation that creates Selenium
+     * {@code WebDriver} instances.
      */
     SPI(null),
     ;

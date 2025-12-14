@@ -54,13 +54,25 @@ import static org.openqa.selenium.remote.CapabilityType.PROXY;
  *   implicit wait timeouts
  * </ul>
  *
+ * <h3>Implementation requirements</h3>
  * All concrete subclasses of this factory must be CDI-managed beans annotated
  * with {@code @ApplicationScoped}. Implementations are required to override
  * {@link #create()} and construct the appropriate {@code WebDriver}. SPI
- * {@code DriverType} factories may optionally override
- * {@link #getCapabilities()} when the SPI needs to create a
- * {@code MutableCapabilities} object before delegating to an external
- * provider.
+ * factories may optionally override {@link #getCapabilities()} when the SPI
+ * factory needs to create a {@code MutableCapabilities} object before
+ * delegating to an external provider.
+ *
+ * <h3>SPI factory configuration</h3>
+ * When an SPI factory is used, the framework selects a specific
+ * {@code DriverFactory} implementation using the {@code driver.spi}
+ * configuration property (the fully qualified class name of the factory
+ * implementation).
+ * <p>
+ * SPI factories can define their own configuration namespaces using
+ * {@code @ConfigProperties}. A recommended convention is to place
+ * SPI factory-specific settings under {@code driver.spi.<id>.*} (for example,
+ * {@code driver.spi.appium.*}) to keep custom settings grouped and distinct
+ * from built-in driver configuration keys.
  *
  * @param <T> the concrete {@code MutableCapabilities} subtype used by the
  *            {@code WebDriver}

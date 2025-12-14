@@ -50,11 +50,13 @@ public class DriverConfig {
     public DriverType type;
 
     /**
-     * Defines the fully qualified class name of a custom driver implementation.
-     * This allows for the integration of a driver not natively supported, via
-     * the Service Provider Interface (SPI).
+     * Defines the fully qualified class name of a custom driver factory
+     * implementation that creates Selenium {@code WebDriver} instances. This
+     * allows for the integration of a driver type not natively supported.
      * <p>
      * This property maps to {@code driver.spi}.
+     *
+     * @see net.larrykramer.test.webdriver.DriverFactory DriverFactory
      */
     public Optional<String> spi;
 
