@@ -147,7 +147,7 @@ public class DriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_whenBuildOptionsReturnsNull_returnsNull() {
+    public void testGetCapabilities_givenNullCapabilities_returnsNull() {
         // Arrange
         DriverConfig config = createConfig();
         SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
