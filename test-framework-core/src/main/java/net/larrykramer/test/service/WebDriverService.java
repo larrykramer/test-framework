@@ -148,7 +148,7 @@ public class WebDriverService {
      * @throws IllegalArgumentException if the configured driver type is
      *                                  unsupported, no matching SPI factory is
      *                                  found, the SPI class name is missing
-     *                                  when {@code driver.type=spi}, or the
+     *                                  when {@code driver.type=SPI}, or the
      *                                  Grid URL is invalid
      * @throws IllegalStateException    if the selected factory cannot create a
      *                                  WebDriver locally or indicates that

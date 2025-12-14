@@ -183,9 +183,11 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
      * Applies common capabilities to the given capabilities object.
      *
      * @param capabilities the capabilities object to augment
-     * @implNote This method sets {@code ACCEPT_INSECURE_CERTS} and
-     *           {@code PROXY} based on the global configuration, overwriting
-     *           existing values for those keys if present.
+     * @implNote This method sets {@code ACCEPT_INSECURE_CERTS} and applies
+     *           proxy configuration (when configured) based on the global
+     *           configuration. Existing values for those keys may be
+     *           overwritten.
+     * @see #addProxy(MutableCapabilities)
      */
     protected void applyCommonCapabilities(MutableCapabilities capabilities) {
         capabilities.setCapability(ACCEPT_INSECURE_CERTS, config.allowInsecureCerts);
@@ -225,8 +227,8 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
      *                     settings; must not be {@code null}
      * @throws IllegalArgumentException if the configured proxy scheme is not
      *                                  supported
-     * @implNote Any existing {@code PROXY} capability on the capabilities
-     *           object will be replaced.
+     * @implNote When a proxy address is configured, any existing {@code PROXY}
+     *           capability on the capabilities object is replaced.
      */
     protected void addProxy(MutableCapabilities capabilities) {
         if (config.proxyAddress.isEmpty()) {
