@@ -145,11 +145,12 @@ public class WebDriverService {
      *
      * @return a reference to an initialized WebDriver bound to the current
      *         scenario scope
-     * @throws IllegalArgumentException if the configured driver type is
-     *                                  unsupported, no matching SPI factory is
-     *                                  found, the SPI class name is missing
-     *                                  when {@code driver.type=SPI}, or the
-     *                                  Grid URL is invalid
+     * @throws IllegalArgumentException if {@code driver.type} is not set, the
+     *                                  configured driver type is unsupported,
+     *                                  no matching SPI factory is found, the
+     *                                  SPI class name is missing when
+     *                                  {@code driver.type=SPI}, or the Grid URL
+     *                                  is invalid
      * @throws IllegalStateException    if the selected factory cannot create a
      *                                  WebDriver locally or indicates that
      *                                  Grid execution is not supported for the
@@ -159,6 +160,11 @@ public class WebDriverService {
     @Produces
     @ScenarioScoped
     public WebDriverReference createWebDriver() {
+        if (driverConfig.type == null) {
+            throw new IllegalArgumentException(
+                    "Missing required configuration property: driver.type");
+        }
+
         DriverFactory<?> factory = findDriverFactory();
         if (factory == null) {
             String msg;

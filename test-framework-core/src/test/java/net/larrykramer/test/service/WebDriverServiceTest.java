@@ -75,6 +75,15 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    public void testCreateWebDriver_givenNullDriverType_throwsIllegalArgumentException() {
+        // Arrange
+        WebDriverService service = createService(createConfig(null), null);
+        // Act & Assert
+        var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
+        assertEquals("Missing required configuration property: driver.type", e.getMessage());
+    }
+
+    @Test
     public void testCreateWebDriver_givenFactoryReturnsNull_throwsIllegalStateException() {
         // Arrange
         DriverConfig config = createConfig(DriverType.CHROME);
