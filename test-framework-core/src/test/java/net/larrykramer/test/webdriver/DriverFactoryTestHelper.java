@@ -25,27 +25,27 @@ package net.larrykramer.test.webdriver;
 import java.lang.reflect.Field;
 
 import jakarta.inject.Inject;
-import net.larrykramer.test.config.WebDriverConfig;
+import net.larrykramer.test.config.DriverConfig;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 
 /**
  * Utility helpers for test suites that need to override factory configuration.
  * <p>
- * Provides convenient methods to replace the {@link WebDriverConfig} used by a
- * {@link WebDriverFactory} and to inject configuration objects into fields
- * annotated with {@link Inject} and {@link ConfigProperties}. Reflection is
+ * Provides convenient methods to replace the {@code DriverConfig} used by a
+ * {@code DriverFactory} and to inject configuration objects into fields
+ * annotated with {@code Inject} and {@code ConfigProperties}. Reflection is
  * used for the field injection helper, so misuse can lead to
- * {@link IllegalArgumentException}, {@link IllegalStateException}, or
- * {@link RuntimeException} if the target state is invalid.
+ * {@code IllegalArgumentException}, {@code IllegalStateException}, or
+ * {@code RuntimeException} if the target state is invalid.
  */
-public final class FactoryTestHelper {
-    private FactoryTestHelper() {
+public final class DriverFactoryTestHelper {
+    private DriverFactoryTestHelper() {
         // Ensure there is only one instance of this utility class.
     }
 
     /**
-     * Overrides the {@link WebDriverConfig} instance held by the supplied
-     * {@link WebDriverFactory}.
+     * Overrides the {@code DriverConfig} instance held by the supplied
+     * {@code DriverFactory}.
      * <p>
      * This helper is intended for use in tests where direct control over the
      * factory's configuration is required.
@@ -55,14 +55,13 @@ public final class FactoryTestHelper {
      * @param config  the configuration instance to inject; may be {@code null}
      *                if tests expect that state
      */
-    public static void setWebDriverConfig(WebDriverFactory<?> factory, WebDriverConfig config) {
+    public static void setDriverConfig(DriverFactory<?> factory, DriverConfig config) {
         factory.config = config;
     }
 
     /**
      * Reflectively assigns a configuration object to a field that is expected
-     * to be annotated with both {@link Inject @Inject} and
-     * {@link ConfigProperties @ConfigProperties}.
+     * to be annotated with both {@code @Inject} and {@code @ConfigProperties}.
      *
      * @param target the object containing the field to update; must not be
      *               {@code null}
@@ -75,7 +74,7 @@ public final class FactoryTestHelper {
      * @throws RuntimeException         if the field cannot be set due to access
      *                                  restrictions or type mismatches
      */
-    public static void setInjectedConfigField(Object target, String name, Object config) {
+    public static void setConfigField(Object target, String name, Object config) {
         Class<?> clazz = target.getClass();
         try {
             Field field = clazz.getDeclaredField(name);

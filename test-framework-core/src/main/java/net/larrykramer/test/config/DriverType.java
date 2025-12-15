@@ -23,43 +23,41 @@
 package net.larrykramer.test.config;
 
 /**
- * Enumeration of supported WebDriver types.
+ * Enumeration of supported driver types.
  */
-public enum WebDriverType {
+public enum DriverType {
     /** Represents the Google Chrome WebDriver. */
     CHROME("chrome"),
     /** Represents the Microsoft Edge WebDriver. */
     EDGE("MicrosoftEdge"),
-    /** Represents the Apple Safari WebDriver. */
+    /** Represents the Safari WebDriver. */
     SAFARI("safari"),
-    /** Represents the Mozilla Firefox WebDriver. */
+    /** Represents the Firefox WebDriver. */
     FIREFOX("firefox"),
     /**
-     * Represents a custom WebDriver implementation provided via the Service
-     * Provider Interface (SPI). When this type is selected, a fully qualified
-     * class name for the WebDriver implementation must be provided elsewhere
-     * in the configuration.
+     * Represents a custom driver factory implementation that creates Selenium
+     * {@code WebDriver} instances.
      */
     SPI(null),
     ;
 
     private final String canonicalName;
 
-    WebDriverType(String canonicalName) {
+    DriverType(String canonicalName) {
         this.canonicalName = canonicalName;
     }
 
     /**
-     * Resolves the {@code WebDriverType} whose enum constant name matches the
+     * Resolves the {@code DriverType} whose enum constant name matches the
      * supplied name, ignoring character case.
      *
      * @param name the enum constant name to look up
-     * @return the matching {@code WebDriverType}
-     * @throws IllegalArgumentException if {@code} is {@code null} or blank, or
-     *                                  no enum constant matches the supplied
-     *                                  name
+     * @return the matching {@code DriverType}
+     * @throws IllegalArgumentException if {@code name} is {@code null} or
+     *                                  blank, or no enum constant matches the
+     *                                  supplied name
      */
-    public static WebDriverType of(String name) {
+    public static DriverType of(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Name must not be null or blank");
         }
@@ -70,16 +68,16 @@ public enum WebDriverType {
             }
         }
 
-        throw new IllegalArgumentException("Unknown WebDriverType: " + name);
+        throw new IllegalArgumentException("Unknown DriverType: " + name);
     }
 
     /**
-     * Returns the canonical name of this WebDriver type.
+     * Returns the canonical name of this driver type.
      *
      * @return the canonical driver name associated with this enum constant
-     * @throws UnsupportedOperationException if the WebDriver type is
-     *                                       {@link #SPI}, which does not have
-     *                                       a predefined name
+     * @throws UnsupportedOperationException if the driver type is {@link #SPI},
+     *                                       which does not have a predefined
+     *                                       name
      */
     public String getCanonicalName() {
         if (this == SPI) {

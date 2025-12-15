@@ -30,11 +30,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * Configuration properties specific to the Mozilla Firefox driver.
+ * Configuration properties specific to the Firefox driver.
  * <p>
- * All properties within this class are prefixed with {@code webdriver.firefox}.
+ * All properties within this class are prefixed with {@code driver.firefox}.
  */
-@ConfigProperties(prefix = "webdriver.firefox")
+@ConfigProperties(prefix = "driver.firefox")
 @Dependent
 public class FirefoxConfig {
     /**
@@ -42,7 +42,7 @@ public class FirefoxConfig {
      * equivalent to those configured via {@code about:config}.
      * <p>
      * This property is mapped from properties prefixed with
-     * {@code webdriver.firefox.user-preferences}.
+     * {@code driver.firefox.user-preferences}.
      */
     @ConfigProperty(name = "user-preferences")
     public Map<String, Object> userPrefs = Map.of();
@@ -50,7 +50,7 @@ public class FirefoxConfig {
     /**
      * Specifies the absolute path to a custom Firefox executable.
      * <p>
-     * This property maps to {@code webdriver.firefox.executable}.
+     * This property maps to {@code driver.firefox.executable}.
      */
     public Optional<String> executable;
 }

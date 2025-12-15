@@ -22,14 +22,15 @@
 
 package net.larrykramer.test.webdriver.browser;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.logging.*;
 
-import net.larrykramer.test.config.WebDriverConfig;
-import net.larrykramer.test.config.WebDriverType;
+import net.larrykramer.test.config.DriverConfig;
+import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.util.OperatingSystem;
-import net.larrykramer.test.webdriver.WebDriverFactory;
+import net.larrykramer.test.webdriver.DriverFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,7 +41,7 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.safari.SafariDriver;
 import org.openqa.selenium.safari.SafariOptions;
 
-import static net.larrykramer.test.webdriver.FactoryTestHelper.setWebDriverConfig;
+import static net.larrykramer.test.webdriver.DriverFactoryTestHelper.setDriverConfig;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -50,27 +51,27 @@ public class SafariDriverFactoryTest {
     @Before
     public void setUp() {
         factory = new SafariDriverFactory();
-        setWebDriverConfig(factory, createConfig());
+        setDriverConfig(factory, createConfig());
     }
 
     @Test
-    public void testGetType_whenCalled_returnsSafariWebDriverType() {
+    public void testGetDriverType_whenCalled_returnsSafariDriverType() {
         // Act
-        WebDriverType result = factory.getType();
+        DriverType result = factory.getDriverType();
         // Assert
-        assertEquals(WebDriverType.SAFARI, result);
+        assertEquals(DriverType.SAFARI, result);
         assertEquals("safari", result.getCanonicalName());
     }
 
     @Test
-    public void testCreateWebDriver_whenCalled_returnsWebDriverInstance() {
+    public void testCreate_whenCalled_returnsWebDriverInstance() {
         // Arrange
         try (var mockSafariDriver = mockConstruction(SafariDriver.class);
              var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
             mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(true);
 
             // Act
-            WebDriver driver = factory.createWebDriver();
+            WebDriver driver = factory.create();
 
             // Assert
             assertEquals(1, mockSafariDriver.constructed().size());
@@ -79,7 +80,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenNonMacOS_throwsUnsupportedOperationException() {
+    public void testCreate_givenNonMacOS_throwsUnsupportedOperationException() {
         // Arrange
         try (var mockSafariDriver = mockConstruction(SafariDriver.class);
              var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
@@ -87,7 +88,7 @@ public class SafariDriverFactoryTest {
 
             // Act & Assert
             var expected  = UnsupportedOperationException.class;
-            var e = assertThrows(expected, () -> factory.createWebDriver());
+            var e = assertThrows(expected, () -> factory.create());
             assertEquals("Safari local execution not supported on this platform", e.getMessage());
 
             assertEquals(0, mockSafariDriver.constructed().size());
@@ -95,7 +96,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigureWebDriver_withWindowSize_setsImplicitWaitAndWindowSize() {
+    public void testConfigure_withWindowSize_setsImplicitWaitAndWindowSize() {
         // Arrange
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
@@ -105,13 +106,13 @@ public class SafariDriverFactoryTest {
         when(mockOptions.timeouts()).thenReturn(mockTimeouts);
         when(mockOptions.window()).thenReturn(mockWindow);
 
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.implicitTimeout = 350L;
         config.windowSize = Optional.of(new Dimension(1440, 900));
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
-        factory.configureWebDriver(mockDriver);
+        factory.configure(mockDriver);
 
         // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(350L));
@@ -121,7 +122,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigureWebDriver_withMaximize_setsImplicitWaitAndMaximize() {
+    public void testConfigure_withMaximize_setsImplicitWaitAndMaximize() {
         // Arrange
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
@@ -131,14 +132,14 @@ public class SafariDriverFactoryTest {
         when(mockOptions.timeouts()).thenReturn(mockTimeouts);
         when(mockOptions.window()).thenReturn(mockWindow);
 
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.implicitTimeout = 125L;
         config.windowSize = Optional.empty();
         config.maximize = true;
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
-        factory.configureWebDriver(mockDriver);
+        factory.configure(mockDriver);
 
         // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(125L));
@@ -148,7 +149,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigureWebDriver_withoutWindowConfiguration_setsImplicitWaitOnly() {
+    public void testConfigure_withoutWindowConfiguration_setsImplicitWaitOnly() {
         // Arrange
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
@@ -157,7 +158,7 @@ public class SafariDriverFactoryTest {
         when(mockOptions.timeouts()).thenReturn(mockTimeouts);
 
         // Act
-        factory.configureWebDriver(mockDriver);
+        factory.configure(mockDriver);
 
         // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ZERO);
@@ -165,7 +166,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigureWebDriver_whenMaximizeThrows_doesNotPropagateException() {
+    public void testConfigure_whenMaximizeThrows_doesNotPropagateException() {
         // Arrange
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
@@ -176,21 +177,21 @@ public class SafariDriverFactoryTest {
         when(mockOptions.window()).thenReturn(mockWindow);
         doThrow(new WebDriverException("maximize")).when(mockWindow).maximize();
 
-        WebDriverConfig config = createConfig();
+        DriverConfig config = createConfig();
         config.maximize = true;
-        setWebDriverConfig(factory, config);
+        setDriverConfig(factory, config);
 
         // Act
-        factory.configureWebDriver(mockDriver);
+        factory.configure(mockDriver);
 
         // Assert
         verify(mockWindow).maximize();
     }
 
     @Test
-    public void testBuildOptions_whenHeadlessRequested_logsMessageAndReturnsSafariOptions() {
+    public void testGetCapabilities_whenHeadlessRequested_logsMessageAndReturnsSafariOptions() {
         // Arrange
-        Logger logger = Logger.getLogger(WebDriverFactory.class.getName());
+        Logger logger = Logger.getLogger(DriverFactory.class.getName());
         Level originalLevel = logger.getLevel();
         boolean useParentHandlers = logger.getUseParentHandlers();
 
@@ -205,12 +206,12 @@ public class SafariDriverFactoryTest {
             mocked.when(OperatingSystem::isMacOS).thenReturn(true);
             when(mockLogHandler.isLoggable(any(LogRecord.class))).thenReturn(true);
 
-            WebDriverConfig config = createConfig();
+            DriverConfig config = createConfig();
             config.headless = true;
-            setWebDriverConfig(factory, config);
+            setDriverConfig(factory, config);
 
             // Act
-            SafariOptions result = factory.buildOptions();
+            SafariOptions result = factory.getCapabilities();
 
             // Assert
             assertNotNull(result);
@@ -228,28 +229,44 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testGetOptions_givenMacOSConfig_appliesCommonCapabilities() {
+    public void testGetCapabilities_givenMacOSConfig_appliesCommonCapabilities() {
         // Arrange
         try (var mocked = mockStatic(OperatingSystem.class)) {
             mocked.when(OperatingSystem::isMacOS).thenReturn(true);
 
-            WebDriverConfig config = createConfig();
+            DriverConfig config = createConfig();
             config.allowInsecureCerts = true;
-            setWebDriverConfig(factory, config);
+            config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
+            setDriverConfig(factory, config);
 
             // Act
-            SafariOptions result = factory.getOptions();
+            SafariOptions result = factory.getCapabilities();
 
             // Assert
             assertNotNull(result);
             assertEquals(Boolean.TRUE, result.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
+            assertNotNull(result.getCapability(CapabilityType.PROXY));
         }
     }
 
-    private static WebDriverConfig createConfig() {
-        WebDriverConfig config = new WebDriverConfig();
+    @Test
+    public void testGetCapabilities_givenNonMacOS_allowsGetCapabilitiesButCreateFails() {
+        // Arrange
+        try (var mocked = mockStatic(OperatingSystem.class)) {
+            mocked.when(OperatingSystem::isMacOS).thenReturn(false);
 
-        config.type = WebDriverType.SAFARI;
+            // Act & Assert
+            // We should be able to retrieve the Safari-specific capabilities on non-macOS, but
+            // local creation *must* not be allowed on non-macOS.
+            assertNotNull(factory.getCapabilities());
+            assertThrows(UnsupportedOperationException.class, () -> factory.create());
+        }
+    }
+
+    private static DriverConfig createConfig() {
+        DriverConfig config = new DriverConfig();
+
+        config.type = DriverType.SAFARI;
         config.spi = Optional.empty();
 
         config.headless = false;

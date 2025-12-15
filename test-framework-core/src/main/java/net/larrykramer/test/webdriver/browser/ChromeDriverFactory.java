@@ -25,7 +25,7 @@ package net.larrykramer.test.webdriver.browser;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import net.larrykramer.test.config.ChromiumConfig;
-import net.larrykramer.test.config.WebDriverType;
+import net.larrykramer.test.config.DriverType;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -33,45 +33,46 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chromium.ChromiumOptions;
 
 /**
- * Factory that constructs Google Chrome {@link WebDriver} instances.
+ * Factory that constructs Google Chrome {@code WebDriver} instances.
  */
 @ApplicationScoped
 public final class ChromeDriverFactory extends ChromiumDriverFactory<ChromeOptions> {
     @Inject
-    @ConfigProperties(prefix = "webdriver.chrome")
+    @ConfigProperties(prefix = "driver.chrome")
     private ChromiumConfig chromeConfig;
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public WebDriverType getType() {
-        return WebDriverType.CHROME;
+    public DriverType getDriverType() {
+        return DriverType.CHROME;
     }
 
     /**
-     * Produces a Google Chrome {@link WebDriver} using the capabilities derived
-     * from {@link #getOptions()}.
+     * Produces a Google Chrome {@code WebDriver} using the capabilities
+     * derived from {@link #getCapabilities()}.
      *
-     * @return a Google Chrome WebDriver instance
+     * @return a new Google Chrome {@code WebDriver} instance
      */
     @Override
-    public WebDriver createWebDriver() {
-        return new ChromeDriver(getOptions());
+    public WebDriver create() {
+        return new ChromeDriver(getCapabilities());
     }
 
 
     /**
-     * Builds the Chrome-specific options from the shared Chromium and Google
-     * Chrome configuration settings.
+     * Returns the Google Chrome-specific capabilities from the shared Chromium
+     * and Google Chrome configuration settings.
      *
-     * @return the Chrome-specific options
+     * @return the Google Chrome-specific capabilities
      * @see ChromiumDriverFactory#buildChromiumOptions(ChromiumOptions, ChromiumConfig)
      */
     @Override
-    protected ChromeOptions buildOptions() {
+    public ChromeOptions getCapabilities() {
         final ChromeOptions options = new ChromeOptions();
         buildChromiumOptions(options, chromeConfig);
+        applyCommonCapabilities(options);
         return options;
     }
 }

@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="DefaultWebDriverConfigSourceTest" type="JUnit" factoryName="JUnit" folderName="Configuration">
+  <configuration default="false" name="DefaultTypeConfigSourceTest" type="JUnit" factoryName="JUnit" folderName="Configuration">
     <module name="test-framework-core" />
     <option name="PACKAGE_NAME" value="net.larrykramer.test.config" />
-    <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.config.DefaultWebDriverConfigSourceTest" />
+    <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.config.DefaultTypeConfigSourceTest" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
     <method v="2">

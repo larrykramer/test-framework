@@ -29,22 +29,24 @@ import net.larrykramer.test.util.OperatingSystem;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 /**
- * {@link ConfigSource} that supplies a single, operating-system-aware default for the
- * {@code webdriver.type} configuration property.
+ * A {@code ConfigSource} that supplies a single, operating-system-aware
+ * default for the {@code driver.type} configuration property.
  * <p>
- * The source inspects {@link OperatingSystem#current()} to determine a sensible driver type
- * selection for the runtime environment:
+ * The source inspects {@link OperatingSystem#current()} to determine a
+ * sensible driver type selection for the runtime environment:
  * <ul>
  * <li>{@code SAFARI} on macOS
  * <li>{@code EDGE} on Windows
  * <li>{@code FIREFOX} on every other supported operating system
  * </ul>
- * By registering with a relatively low ordinal (50), this implementation acts as a baseline value
- * that can be easily overridden by higher-priority MicroProfile Config sources, while still
- * providing a meaningful default when no other configuration is present.
+ *
+ * By registering with a relatively low ordinal (50), this implementation acts
+ * as a baseline value that can be easily overridden by higher-priority
+ * MicroProfile Config sources, while still providing a meaningful default when
+ * no other configuration is present.
  */
-public class DefaultWebDriverConfigSource implements ConfigSource {
-    private static final Map<String, String> PROPERTIES = Map.of("webdriver.type", defaultType());
+public class DefaultTypeConfigSource implements ConfigSource {
+    private static final Map<String, String> PROPERTIES = Map.of("driver.type", defaultType());
 
     private static String defaultType() {
         return switch (OperatingSystem.current()) {

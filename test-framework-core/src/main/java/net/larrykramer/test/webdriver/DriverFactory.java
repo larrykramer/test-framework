@@ -30,8 +30,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import jakarta.inject.Inject;
-import net.larrykramer.test.config.WebDriverConfig;
-import net.larrykramer.test.config.WebDriverType;
+import net.larrykramer.test.config.DriverConfig;
+import net.larrykramer.test.config.DriverType;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.*;
 
@@ -39,80 +39,100 @@ import static org.openqa.selenium.remote.CapabilityType.ACCEPT_INSECURE_CERTS;
 import static org.openqa.selenium.remote.CapabilityType.PROXY;
 
 /**
- * Base abstraction for all Selenium WebDriver factories that are capable of
- * building a driver instance from a {@code WebDriverConfig}.
+ * Base abstraction for all driver factories that are capable of building a
+ * {@code WebDriver} instance from a {@code DriverConfig}.
  * <p>
  * The factory coordinates four key responsibilities:
  * <ul>
- * <li>Translating a {@link WebDriverConfig} into driver-specific
- *   {@link MutableCapabilities}
- * <li>Enforcing configuration that is common to every driver, e.g. insecure
+ * <li>Translating a {@code DriverConfig} into driver-specific
+ *   {@code MutableCapabilities}
+ * <li>Enforcing configuration that is common to every WebDriver, e.g. insecure
  *   certificate support and proxy handling
  * <li>Producing a fully constructed {@code WebDriver} instance for the
- *   requested {@code WebDriverType}
- * <li>Applying runtime configuration to the created driver, such as implicit
- *  wait timeouts
+ *   requested {@code DriverType}
+ * <li>Applying runtime configuration to the created {@code WebDriver}, such as
+ *   implicit wait timeouts
  * </ul>
  *
+ * <h3>Implementation requirements</h3>
  * All concrete subclasses of this factory must be CDI-managed beans annotated
  * with {@code @ApplicationScoped}. Implementations are required to override
- * {@link #createWebDriver()} and construct the appropriate WebDriver. SPI
- * {@link WebDriverType} factories may optionally override
- * {@link #buildOptions()} when the SPI needs to create a
- * {@link MutableCapabilities} instance before delegating to an external
- * provider.
+ * {@link #create()} and construct the appropriate {@code WebDriver}. SPI
+ * factories may optionally override {@link #getCapabilities()} when the SPI
+ * factory needs to create a {@code MutableCapabilities} object before
+ * delegating to an external provider.
+ * <p>
+ * Subclasses must invoke {@link #applyCommonCapabilities(MutableCapabilities)}
+ * within their {@link #getCapabilities()} implementation if they wish to
+ * support global proxy or SSL configuration. Alternatively, subclasses may
+ * invoke {@link #addProxy(MutableCapabilities)} directly if only global proxy
+ * configuration is desired.
  *
- * @param <T> the concrete {@link MutableCapabilities} subtype used by the
- *           WebDriver
+ * <h3>SPI factory configuration</h3>
+ * When an SPI factory is used, the framework selects a specific
+ * {@code DriverFactory} implementation using the {@code driver.spi}
+ * configuration property (the fully qualified class name of the factory
+ * implementation).
+ * <p>
+ * SPI factories can define their own configuration namespaces using
+ * {@code @ConfigProperties}. A recommended convention is to place
+ * SPI factory-specific settings under {@code driver.spi.<id>.*} (for example,
+ * {@code driver.spi.appium.*}) to keep custom settings grouped and distinct
+ * from built-in driver configuration keys.
  *
- * @see WebDriverConfig
- * @see WebDriverType
+ * @param <T> the concrete {@code MutableCapabilities} subtype used by the
+ *            {@code WebDriver}
+ *
+ * @see DriverConfig
+ * @see DriverType
  */
-public abstract class WebDriverFactory<T extends MutableCapabilities> {
-    protected static final Logger LOGGER = Logger.getLogger(WebDriverFactory.class.getName());
+public abstract class DriverFactory<T extends MutableCapabilities> {
+    protected static final Logger LOGGER = Logger.getLogger(DriverFactory.class.getName());
 
     @Inject
     @ConfigProperties
-    protected WebDriverConfig config;
+    protected DriverConfig config;
 
     /**
      * Returns the driver type associated with the factory.
      *
-     * @return the {@link WebDriverType} that this factory supports
+     * @return the {@code DriverType} that this factory supports
      */
-    public abstract WebDriverType getType();
+    public abstract DriverType getDriverType();
 
     /**
-     * Produces a driver-specific {@link WebDriver} using the capabilities
-     * derived from {@link #getOptions()}.
+     * Produces a driver-specific {@code WebDriver} using the capabilities
+     * derived from {@link #getCapabilities()}.
      *
      * @implSpec
      * Implementations must always create and return a <em>new</em>, unmanaged
-     * {@link WebDriver} instance on each invocation. The returned driver must
-     * not be cached, pooled, or shared between calls, and its lifecycle must
-     * not be managed by the factory (for example, implementations must not call
-     * {@link WebDriver#quit()} on the returned instance).
+     * {@code WebDriver} instance on each invocation. The returned
+     * {@code WebDriver} must not be cached, pooled, or shared between calls,
+     * and its lifecycle must not be managed by the factory (for example,
+     * implementations must not call {@link WebDriver#quit()} on the returned
+     * instance).
      * <p>
-     * Ownership of the returned driver, including responsibility for eventually
-     * invoking {@link WebDriver#quit()}, is transferred to
+     * Ownership of the returned {@code WebDriver}, including responsibility
+     * for eventually invoking {@link WebDriver#quit()}, is transferred to
      * {@link net.larrykramer.test.service.WebDriverService WebDriverService},
-     * which assumes full control of the driver's lifecycle.
+     * which assumes full control of the {@code WebDriver}'s lifecycle.
      *
-     * @return a new WebDriver instance; never a reused or shared instance
+     * @return a new {@code WebDriver} instance; never a reused or shared
+     *         instance
      */
-    public abstract WebDriver createWebDriver();
+    public abstract WebDriver create();
 
     /**
-     * Applies post-construction configuration to the supplied WebDriver.
+     * Applies post-construction configuration to the given {@code WebDriver}.
      * <p>
-     * The default implementation sets the implicit wait timeout based on the
-     * configured {@link WebDriverConfig#implicitTimeout} value. Negative
+     * The default implementation sets the
+     * {@linkplain DriverConfig#implicitTimeout implicit wait timeout}. Negative
      * timeout values are ignored and no implicit wait is applied.
      * <p>
      * This method is invoked by
      * {@link net.larrykramer.test.service.WebDriverService WebDriverService}
-     * immediately after a WebDriver has been created (either locally or
-     * remotely). Subclasses are expected to override this method to apply
+     * immediately after a {@code WebDriver} has been created (either locally
+     * or remotely). Subclasses are expected to override this method to apply
      * additional WebDriver-specific configuration, for example:
      * <ul>
      * <li>Deleting cookies
@@ -125,16 +145,16 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
      * WebDriver:
      * <ul>
      * <li>For WebDrivers where configuration operations are known to be
-     *    unreliable or unsupported, it may be preferable to catch
-     *   {@link WebDriverException}, log the failure, and continue.
+     *   unreliable or unsupported, it may be preferable to catch
+     *   {@code WebDriverException}, log the failure, and continue.
      * <li>For WebDrivers where such configuration operations are considered
      *   essential to test correctness, implementations may allow exceptions to
      *   propagate in order to fail fast when the environment is misconfigured.
      * </ul>
      *
-     * @param driver the WebDriver instance to configure
+     * @param driver the {@code WebDriver} instance to configure
      */
-    public void configureWebDriver(WebDriver driver) {
+    public void configure(WebDriver driver) {
         Duration timeout = Duration.ofMillis(config.implicitTimeout);
         if (timeout.isNegative()) {
             LOGGER.log(Level.WARNING, "Ignoring negative implicit timeout {0}", timeout);
@@ -144,45 +164,40 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
     }
 
     /**
-     * Returns the WebDriver options (capabilities) after augmenting them with
-     * common options.
-     *
-     * @return the WebDriver options, or {@code null} if the WebDriver
-     *         implementation does not require options
-     */
-    public T getOptions() {
-        T options = buildOptions();
-        if (options == null) {
-            return null;
-        }
-
-        // Apply common options.
-        options.setCapability(ACCEPT_INSECURE_CERTS, config.allowInsecureCerts);
-        addProxy(options);
-
-        return options;
-    }
-
-    /**
-     * Builds the initial WebDriver options (capabilities).
+     * Returns the driver-specific capabilities.
      * <p>
-     * The default implementation returns {@code null}, indicating that option
-     * construction is not handled. Factories registered for non-SPI
-     * {@code WebDriverType}s are expected to override this method. Factories
-     * registered for SPI {@code WebDriverType}s may override this method when
-     * they need to create WebDriver-specific options.
+     * The default implementation returns {@code null}, indicating that
+     * {@code MutableCapabilities} construction is not handled. Factories
+     * registered for non-SPI {@code DriverType}s are expected to override
+     * this method. Factories registered for SPI {@code DriverType}s may
+     * override this method when they need to create driver-specific
+     * capabilities.
      *
-     * @return the WebDriver-specific options, or {@code null} if the factory
-     *         does not create options
+     * @return the driver-specific capabilities, or {@code null}
      */
-    protected T buildOptions() {
+    public T getCapabilities() {
         return null;
     }
 
     /**
-     * Deletes all cookies for the given WebDriver in a lenient manner.
+     * Applies common capabilities to the given capabilities object.
+     *
+     * @param capabilities the capabilities object to augment
+     * @implNote This method sets {@code ACCEPT_INSECURE_CERTS} and applies
+     *           proxy configuration (when configured) based on the global
+     *           configuration. Existing values for those keys may be
+     *           overwritten.
+     * @see #addProxy(MutableCapabilities)
+     */
+    protected void applyCommonCapabilities(MutableCapabilities capabilities) {
+        capabilities.setCapability(ACCEPT_INSECURE_CERTS, config.allowInsecureCerts);
+        addProxy(capabilities);
+    }
+
+    /**
+     * Deletes all cookies for the given {@code WebDriver} in a lenient manner.
      * <p>
-     * By default, this method logs and ignores {@link WebDriverException} to
+     * By default, this method logs and ignores {@code WebDriverException} to
      * avoid failing WebDriver creation when a particular implementation does
      * not support cookie deletion reliably (e.g. some remote or vendor-specific
      * WebDrivers).
@@ -199,7 +214,23 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
         }
     }
 
-    private void addProxy(T options) {
+    /**
+     * Configures proxy settings on the given capabilities object using the
+     * global {@code DriverConfig}.
+     * <p>
+     * If the proxy address is undefined in the configuration, the given
+     * capabilities object remains unchanged. Otherwise, it sets the
+     * {@code PROXY} capability according to the configured proxy address and
+     * any optional exclusions or authentication details.
+     *
+     * @param capabilities the capabilities object to update with proxy
+     *                     settings; must not be {@code null}
+     * @throws IllegalArgumentException if the configured proxy scheme is not
+     *                                  supported
+     * @implNote When a proxy address is configured, any existing {@code PROXY}
+     *           capability on the capabilities object is replaced.
+     */
+    protected void addProxy(MutableCapabilities capabilities) {
         if (config.proxyAddress.isEmpty()) {
             return;
         }
@@ -249,6 +280,6 @@ public abstract class WebDriverFactory<T extends MutableCapabilities> {
             throw new IllegalArgumentException("Unsupported proxy scheme: " + scheme);
         }
 
-        options.setCapability(PROXY, proxy);
+        capabilities.setCapability(PROXY, proxy);
     }
 }

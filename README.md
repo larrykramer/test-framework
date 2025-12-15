@@ -77,21 +77,21 @@ Example `application.properties`:
 
 ```properties
 # -----------------------------------------------------------------------------
-# WebDriver Configuration
+# Driver Configuration
 # -----------------------------------------------------------------------------
 # The WebDriver to use for testing.
-# Supported values: CHROME, EDGE, SAFARI (macOS-only), FIREFOX, SPI
-webdriver.type=CHROME
+# Supported values: CHROME, EDGE, SAFARI (macOS-only), FIREFOX, SPI (custom factory)
+driver.type=CHROME
 
 # Run the browser in headless mode.
 # Headless mode is recommended for CI environments.
 # Set to false to watch the tests execute in a visible browser window.
 # Note: Safari does not support headless mode, so this property is ignored.
-webdriver.headless=true
+driver.headless=true
 
 # Base implicit wait timeout in milliseconds.
 # The driver will wait this long for elements to appear.
-webdriver.implicit-timeout=0
+driver.implicit-timeout=0
 ```
 
 #### 3. Run Tests
@@ -140,21 +140,21 @@ mvn -pl test-suite -am verify -DforkCount=1
 ## Configuration
 
 The framework is configured via `test-suite/src/test/resources/application.properties` using SmallRye Config.
-You can override properties with system properties (e.g., `-Dwebdriver.type=CHROME`) or environment variables (e.g., `WEBDRIVER_TYPE=CHROME`).
+You can override properties with system properties (e.g., `-Ddriver.type=CHROME`) or environment variables (e.g., `DRIVER_TYPE=CHROME`).
 Environment variables use the property name in uppercase, with dots (`.`) and hyphens (`-`) replaced by underscores (`_`).
 
 Common configuration properties include:
 
-| Property                         | Description                                                                                                       | Default                                                                  |
-|----------------------------------|-------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| `webdriver.type`                 | Target WebDriver. Supported: `EDGE`, `SAFARI`, `FIREFOX`, `CHROME`, `SPI`.                                        | OS-dependent (`EDGE` on Windows, `SAFARI` on macOS, `FIREFOX` otherwise) |
-| `webdriver.spi`                  | Fully qualified class name of the WebDriver Service Provider Interface (SPI). Required when `webdriver.type=SPI`. | _(none)_                                                                 |
-| `webdriver.headless`             | Run the browser in headless mode.                                                                                 | `false`                                                                  |
-| `webdriver.maximize`             | Maximize the browser window on startup.                                                                           | `false`                                                                  |
-| `webdriver.window-size`          | Set a specific window size. Overrides `webdriver.maximize`. Format: `<width>x<height>` or `<width>,<height>`.     | _(none)_                                                                 |
-| `webdriver.allow-insecure-certs` | Accept invalid TLS certificates.                                                                                  | `false`                                                                  |
-| `webdriver.implicit-timeout`     | Implicit wait timeout in milliseconds. `0` disables it.                                                           | `0`                                                                      |
-| `grid.url`                       | URL of the remote Selenium Grid hub for distributed testing.                                                      | _(none)_                                                                 |
+| Property                      | Description                                                                                                                                        | Default                                                                  |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `driver.type`                 | Target driver. Supported: `EDGE`, `SAFARI`, `FIREFOX`, `CHROME`, `SPI`.                                                                            | OS-dependent (`EDGE` on Windows, `SAFARI` on macOS, `FIREFOX` otherwise) |
+| `driver.spi`                  | Fully qualified class name of a custom driver factory implementation that creates Selenium `WebDriver` instances. Required when `driver.type=SPI`. | _(none)_                                                                 |
+| `driver.headless`             | Run the browser in headless mode.                                                                                                                  | `false`                                                                  |
+| `driver.maximize`             | Maximize the browser window on startup.                                                                                                            | `false`                                                                  |
+| `driver.window-size`          | Set a specific window size. Overrides `driver.maximize`. Format: `<width>x<height>` or `<width>,<height>`.                                         | _(none)_                                                                 |
+| `driver.allow-insecure-certs` | Accept invalid TLS certificates.                                                                                                                   | `false`                                                                  |
+| `driver.implicit-timeout`     | Implicit wait timeout in milliseconds. `0` disables it.                                                                                            | `0`                                                                      |
+| `grid.url`                    | URL of the remote Selenium Grid hub for distributed testing.                                                                                       | _(none)_                                                                 |
 
 For the complete list of driver-specific, proxy, and advanced settings, see the configuration and driver classes under the
 [config](test-framework-core/src/main/java/net/larrykramer/test/config)
