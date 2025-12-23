@@ -23,12 +23,15 @@
 package net.larrykramer.test.service;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.*;
 import java.util.logging.*;
 
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.util.TypeLiteral;
 import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.GridConfig;
@@ -54,6 +57,184 @@ public class WebDriverServiceTest {
 
     @Mock
     private WebDriver mockDriver;
+
+    @Test
+    public void testConstructor_givenProducerBean_resolvesTypeFromBeanTypes() {
+        // Arrange
+        // Simulates a Producer Bean which produces an SPI factory.
+        // getBeanClass() return the Producer (FactoryProducer), NOT the factory.
+        //@formatter:off
+        abstract class IntermediateFactory extends DriverFactory<MutableCapabilities> {}
+        class SPIDriverFactory extends IntermediateFactory {
+            @Override public DriverType getDriverType() { return DriverType.SPI; }
+            @Override public WebDriver create() { return mockDriver; }
+            @Override public void configure(WebDriver driver) {}
+        }
+        class FactoryProducer {}
+        //@formatter:on
+
+        // We use a LinkedHashSet to enforce a specific iteration order.
+        // We place the "wrong" types first to ensure the loop logic correctly filters them out
+        // before finding the correct SPIDriverFactory.
+        LinkedHashSet<Type> types = new LinkedHashSet<>();
+        types.add(mock(ParameterizedType.class));
+        types.add(Object.class);
+        types.add(DriverFactory.class);
+        types.add(IntermediateFactory.class);
+        types.add(SPIDriverFactory.class);
+
+        @SuppressWarnings("unchecked")
+        Bean<DriverFactory<?>> mockBean = mock(Bean.class);
+        doReturn(FactoryProducer.class).when(mockBean).getBeanClass();
+        doReturn(types).when(mockBean).getTypes();
+
+        SPIDriverFactory factory = new SPIDriverFactory();
+
+        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, mockBean);
+        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
+
+        DriverConfig config = createConfig(DriverType.SPI);
+        config.spi = Optional.of(SPIDriverFactory.class.getName());
+
+        // Act
+        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
+
+        WebDriverReference driverRef = service.createWebDriver();
+
+        // Assert
+        assertNotNull(driverRef);
+        assertSame(mockDriver, driverRef.get());
+    }
+
+    @Test
+    public void testConstructor_givenGenericProducerBean_unwrapsProxyRuntimeClass() {
+        // Arrange
+        // Simulates a Producer Bean that only knows about the generic DriverFactory. This mimics
+        // a producer returning DriverFactory<?> where getType() is insufficient.
+        //@formatter:off
+        class SPIDriverFactory extends DriverFactory<MutableCapabilities> {
+            @Override public DriverType getDriverType() { return DriverType.SPI; }
+            @Override public WebDriver create() { return mockDriver; }
+            @Override public void configure(WebDriver driver) {}
+        }
+        class SPIDriverFactory_ClientProxy extends SPIDriverFactory {}
+        //@formatter:on
+
+        @SuppressWarnings("unchecked")
+        Bean<DriverFactory<?>> mockBean = mock(Bean.class);
+        doReturn(DriverFactory.class).when(mockBean).getBeanClass();
+        doReturn(Set.of(DriverFactory.class)).when(mockBean).getTypes();
+
+        var factory = new SPIDriverFactory_ClientProxy();
+
+        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, mockBean);
+        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
+
+        DriverConfig config = createConfig(DriverType.SPI);
+        config.spi = Optional.of(SPIDriverFactory.class.getName());
+
+        // Act
+        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
+
+        WebDriverReference driverRef = service.createWebDriver();
+
+        // Assert
+        assertNotNull(driverRef);
+        assertSame(mockDriver, driverRef.get());
+    }
+
+    @Test
+    public void testConstructor_givenNamedProducerBeans_resolvesFactoryByBeanNameAlias() {
+        // Arrange
+        // Simulate two producers that exposes only DriverFactory as bean type (no concrete type),
+        // but provides a CDI bean name.
+        final Set<Type> types = Set.of(Object.class, DriverFactory.class);
+
+        @SuppressWarnings("unchecked")
+        DriverFactory<MutableCapabilities> mockFirstFactory = mock(DriverFactory.class);
+        @SuppressWarnings("unchecked")
+        Bean<DriverFactory<?>> mockFirstBean = mock(Bean.class);
+        doReturn("  my-spi-factory  ").when(mockFirstBean).getName();
+        doReturn(DriverFactory.class).when(mockFirstBean).getBeanClass();
+        doReturn(types).when(mockFirstBean).getTypes();
+
+        @SuppressWarnings("unchecked")
+        DriverFactory<MutableCapabilities> mockSecondFactory = mock(DriverFactory.class);
+        @SuppressWarnings("unchecked")
+        Bean<DriverFactory<?>> mockSecondBean = mock(Bean.class);
+        doReturn("my-spi-factory").when(mockSecondBean).getName(); // duplicate bean name
+        doReturn(DriverFactory.class).when(mockSecondBean).getBeanClass();
+        doReturn(types).when(mockSecondBean).getTypes();
+
+        var mockFirstHandle = new MockInstance.MockHandle(mockFirstFactory, mockFirstBean);
+        var mockSecondHandle = new MockInstance.MockHandle(mockSecondFactory, mockSecondBean);
+        Instance<DriverFactory<?>> mockInstance
+                = new MockInstance(mockFirstHandle, mockSecondHandle);
+
+        DriverConfig config = createConfig(DriverType.SPI);
+        config.spi = Optional.of("  \u2003my-spi-factory  \u2029");
+        stubFactory(mockFirstFactory, config);
+        stubFactory(mockSecondFactory, config);
+
+        // Act
+        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
+
+        WebDriverReference driverRef = service.createWebDriver();
+
+        // Assert
+        assertNotNull(driverRef);
+        verify(mockFirstFactory, never()).create();
+        verify(mockSecondFactory).create();
+    }
+
+    @Test
+    public void testConstructor_givenProxyClassExtendsAbstractClass_fallsBackToRuntimeClassName() {
+        // Arrange
+        //@formatter:off
+        class SPIDriverFactory_$$_WeldClientProxy extends DriverFactory<MutableCapabilities> {
+            @Override public DriverType getDriverType() { return DriverType.SPI; }
+            @Override public WebDriver create() { return mockDriver; }
+            @Override public void configure(WebDriver driver) {}
+        }
+        //@formatter:on
+        var factory = new SPIDriverFactory_$$_WeldClientProxy();
+
+        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, null);
+        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
+
+        DriverConfig config = createConfig(DriverType.SPI);
+        config.spi = Optional.of(SPIDriverFactory_$$_WeldClientProxy.class.getName());
+
+        // Act
+        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
+
+        WebDriverReference driverRef = service.createWebDriver();
+
+        // Assert
+        assertNotNull(driverRef);
+        assertSame(mockDriver, driverRef.get());
+    }
+
+    @Test
+    public void testConstructor_givenBeanMetadataMissing_usesConcreteRuntimeClass() {
+        // Arrange
+        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(mockFactory, null);
+        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
+
+        DriverConfig config = createConfig(DriverType.SPI);
+        config.spi = Optional.of(mockFactory.getClass().getName());
+        stubFactory(mockFactory, config);
+
+        // Act
+        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
+
+        WebDriverReference driverRef = service.createWebDriver();
+
+        // Assert
+        assertNotNull(driverRef);
+        verify(mockFactory).create();
+        assertSame(mockDriver, driverRef.get());
+    }
 
     @Test
     public void testCreateWebDriver_withLocalConfig_returnsConfiguredWebDriver() {
@@ -139,7 +320,7 @@ public class WebDriverServiceTest {
     public void testCreateWebDriver_givenSPIFactoryClassNotFound_throwsIllegalArgumentException() {
         // Arrange
         DriverConfig config = createConfig(DriverType.SPI);
-        config.spi = Optional.of("MissingFactory");
+        config.spi = Optional.of("  MissingFactory  ");
 
         when(mockFactory.getDriverType()).thenReturn(config.type);
 
@@ -593,64 +774,148 @@ public class WebDriverServiceTest {
             grid = createGridConfig();
         }
 
-        // Do not mock jakarta.enterprise.inject.Instance with Mockito:
-        // When IntelliJ (or JaCoCo) runs the suite in coverage mode it instruments the Instance
-        // interface, adding synthetic methods; Mockito’s inline mock-maker then fails while trying
-        // to redefine that instrumented class. Using a stub implementation avoids that byte-code
-        // clash and keeps coverage runs green.
-        return new WebDriverService(config, grid, new Instance<>() {
-            @Override
-            public Iterator<DriverFactory<?>> iterator() {
-                return List.of(factories).iterator();
+        List<Instance.Handle<DriverFactory<?>>> handles = new ArrayList<>();
+        for (var factory : factories) {
+            // For each provided DriverFactory we create a mocked CDI Bean and (leniently) stub it
+            // to report the factory’s runtime class via getBeanClass() and the corresponding CDI
+            // bean types via getTypes() (the class plus its supertypes, interfaces, and Object),
+            // so the Instance handles look like real CDI beans while remaining tolerant of tests
+            // that don’t exercise every stub.
+            @SuppressWarnings("unchecked")
+            Bean<DriverFactory<?>> mockBean = mock(Bean.class);
+            lenient().doReturn(factory.getClass()).when(mockBean).getBeanClass();
+            lenient().doReturn(beanTypes(factory.getClass())).when(mockBean).getTypes();
+
+            handles.add(new MockInstance.MockHandle(factory, mockBean));
+        }
+
+        return new WebDriverService(config, grid, new MockInstance(handles));
+    }
+
+    private static Set<Type> beanTypes(Class<?> beanClass) {
+        Set<Type> types = new LinkedHashSet<>();
+        // CDI "bean types" include the bean class + its supertypes + Object
+        for (Class<?> c = beanClass; c != null; c = c.getSuperclass()) {
+            types.add(c);
+            types.addAll(Arrays.asList(c.getInterfaces()));
+        }
+        return types;
+    }
+
+    /*
+     * Why this mocked Instance exists:
+     *
+     * In normal runtime, WebDriverService gets its DriverFactory beans from CDI via an injected
+     * jakarta.enterprise.inject.Instance. In tests, we would typically just Mockito.mock Instance,
+     * but when IntelliJ (and/or JaCoCo) runs the suite in coverage mode it instruments the
+     * Instance interface (e.g., adding synthetic methods). Mockito’s inline mock-maker then
+     * attempts to redefine that already-instrumented type and can fail with a byte-code
+     * redefinition clash.
+     *
+     * MockInstance is a tiny hand-rolled stand-in that provides only the Instance behavior this
+     * test suite needs (handles()/iteration and unsatisfied/ambiguous semantics), avoiding
+     * mocking the instrumented CDI API type and keeping coverage runs stable/green.
+     */
+    private static class MockInstance implements Instance<DriverFactory<?>> {
+        private final List<Handle<DriverFactory<?>>> handles;
+
+        @SafeVarargs
+        MockInstance(Handle<DriverFactory<?>>... handles) {
+            this(Arrays.asList(handles));
+        }
+
+        MockInstance(List<Handle<DriverFactory<?>>> handles) {
+            this.handles = handles;
+        }
+
+        @Override
+        public Instance<DriverFactory<?>> select(Annotation... annotations) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <U extends DriverFactory<?>> Instance<U> select(Class<U> aClass,
+                Annotation... annotations) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <U extends DriverFactory<?>> Instance<U> select(TypeLiteral<U> typeLiteral,
+                Annotation... annotations) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isUnsatisfied() {
+            return handles.isEmpty();
+        }
+
+        @Override
+        public boolean isAmbiguous() {
+            return handles.size() > 1;
+        }
+
+        @Override
+        public void destroy(DriverFactory<?> factory) {
+        }
+
+        @Override
+        public Handle<DriverFactory<?>> getHandle() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterable<? extends Handle<DriverFactory<?>>> handles() {
+            return handles;
+        }
+
+        @Override
+        public DriverFactory<?> get() {
+            if (isUnsatisfied() || isAmbiguous()) {
+                throw new UnsupportedOperationException(
+                        "MockInstance get() called with unsatisfied or ambiguous state");
             }
+            return handles.getFirst().get();
+        }
 
-            @Override
-            public boolean isUnsatisfied() {
-                return factories.length == 0;
+        @Override
+        public Iterator<DriverFactory<?>> iterator() {
+            List<DriverFactory<?>> list = new ArrayList<>(handles.size());
+            for (var handle : handles) {
+                list.add(handle.get());
             }
+            return list.iterator();
+        }
 
-            @Override
-            public boolean isAmbiguous() {
-                return factories.length > 1;
-            }
+        private static class MockHandle implements Handle<DriverFactory<?>> {
+            private final DriverFactory<?> factory;
+            private final Bean<DriverFactory<?>> bean;
 
-            // -- Unused methods --
-
-            @Override
-            public Instance<DriverFactory<?>> select(Annotation... annotations) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public <U extends DriverFactory<?>> Instance<U> select(Class<U> aClass,
-                    Annotation... annotations) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public <U extends DriverFactory<?>> Instance<U> select(TypeLiteral<U> typeLiteral,
-                    Annotation... annotations) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void destroy(DriverFactory<?> factory) {
-            }
-
-            @Override
-            public Handle<DriverFactory<?>> getHandle() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public Iterable<? extends Handle<DriverFactory<?>>> handles() {
-                throw new UnsupportedOperationException();
+            MockHandle(DriverFactory<?> factory, Bean<?> bean) {
+                this.factory = factory;
+                // Safe cast for test purposes; allows passing null or generic mocks easily.
+                @SuppressWarnings("unchecked")
+                Bean<DriverFactory<?>> castBean = (Bean<DriverFactory<?>>) bean;
+                this.bean = castBean;
             }
 
             @Override
             public DriverFactory<?> get() {
-                throw new UnsupportedOperationException();
+                return factory;
             }
-        });
+
+            @Override
+            public Bean<DriverFactory<?>> getBean() {
+                return bean;
+            }
+
+            @Override
+            public void destroy() {
+            }
+
+            @Override
+            public void close() {
+            }
+        }
     }
 }

@@ -22,6 +22,7 @@
 
 package net.larrykramer.test.service;
 
+import java.lang.reflect.Modifier;
 import java.net.*;
 import java.util.*;
 import java.util.logging.Level;
@@ -31,17 +32,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Inject;
 import net.larrykramer.test.cdi.ScenarioScoped;
+import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.GridConfig;
-import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.webdriver.DriverFactory;
 import net.larrykramer.test.webdriver.WebDriverReference;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.*;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
+import static net.larrykramer.test.util.SharedUtils.getUnproxiedClass;
 import static net.larrykramer.test.util.SharedUtils.identityToString;
 import static org.openqa.selenium.remote.CapabilityType.BROWSER_NAME;
 import static org.openqa.selenium.remote.CapabilityType.BROWSER_VERSION;
@@ -85,10 +88,12 @@ public class WebDriverService {
      * discovered for the same non-SPI type, the previously registered factory
      * is replaced and a warning is logged.
      * <p>
-     * For {@link DriverType#SPI}, multiple factories may coexist and are keyed
-     * by their fully qualified class name. The SPI map is intentionally left
-     * mutable to avoid repeated defensive copying when many SPI factories are
-     * present; the outer map is made unmodifiable.
+     * For {@link DriverType#SPI}, multiple factories may coexist. SPI factories
+     * are resolved primarily by their fully qualified implementation class
+     * name (FQCN). If an SPI factory is a {@code @Named} CDI bean (including a
+     * producer annotated with {@code @Named}), the CDI bean name is also
+     * registered as an alias key, allowing {@code driver.spi} to match either
+     * the FQCN or the {@code @Named} value.
      *
      * @param driverConfig the resolved, type-safe driver configuration
      * @param gridConfig   the resolved, type-safe grid configuration
@@ -101,7 +106,8 @@ public class WebDriverService {
         this.gridConfig = gridConfig;
 
         Map<DriverType, Map<String, DriverFactory<?>>> m = new EnumMap<>(DriverType.class);
-        for (var factory : factories) {
+        for (var handle : factories.handles()) {
+            DriverFactory<?> factory = handle.get();
             DriverType type = factory.getDriverType();
             if (type != DriverType.SPI) {
                 if (m.containsKey(type)) {
@@ -110,15 +116,81 @@ public class WebDriverService {
                 }
                 m.put(type, Map.of(type.getCanonicalName(), factory));
             } else {
-                // NOTE: We don't use an unmodifiable map for the SPI case.
+                // Note: We don't use an unmodifiable map for the SPI case.
                 // Each new SPI factory would copy the existing immutable map to a mutable map, put
                 // itself into the mutable map and then create a new immutable copy. That process
                 // could be resource-intensive with many SPI factories.
-                String name = factory.getClass().getName();
-                m.computeIfAbsent(type, k -> new HashMap<>()).put(name, factory);
+                Bean<?> bean = handle.getBean();
+                registerSPIFactory(m.computeIfAbsent(type, k -> new HashMap<>()), bean, factory);
             }
         }
         this.factories = Collections.unmodifiableMap(m);
+    }
+
+    private void registerSPIFactory(Map<String, DriverFactory<?>> m,
+            Bean<?> bean,
+            DriverFactory<?> factory) {
+        String name;
+
+        if (bean != null) {
+            // Try to resolve the concrete factory class name from the CDI metadata.
+            // This works for managed beans and concrete producers.
+            name = resolveBeanClassName(bean);
+            if (name != null) {
+                m.put(name, factory);
+            }
+
+            // Alias the CDI bean name if present.
+            // This works for producers that return DriverFactory<?>.
+            name = normalizeKey(bean.getName());
+            if (name != null) {
+                DriverFactory<?> prev = m.put(name, factory);
+                if (prev != null && prev != factory) {
+                    LOGGER.log(Level.WARNING, "Replacing SPI factory {0} associated with {1}",
+                            new Object[] { prev, name });
+                }
+            }
+        }
+
+        // Always also register by (un)proxied class name if not already present.
+        // If unproxying yields a concrete DriverFactory implementation, prefer that name.
+        Class<?> unproxiedClass = getUnproxiedClass(factory.getClass());
+        if (isDriverFactoryClass(unproxiedClass)) {
+            name = unproxiedClass.getName();
+        } else {
+            // Last resort. Might be a proxy name, but avoids NPEs / empty keys.
+            name = factory.getClass().getName();
+            LOGGER.log(Level.FINER, "Unable to resolve DriverFactory type for {0} from bean "
+                            + "types - runtime class name {1} is used",
+                    new Object[] { (bean == null) ? "<unknown>" : bean, name });
+        }
+
+        m.putIfAbsent(name, factory);
+    }
+
+    private String resolveBeanClassName(Bean<?> bean) {
+        // Managed bean case: bean class is the implementation class.
+        Class<?> beanClass = bean.getBeanClass();
+        if (isDriverFactoryClass(beanClass)) {
+            return beanClass.getName();
+        }
+
+        // Producer case.
+        // beanClass is producer holder: scan types for a concrete factory class.
+        beanClass = null;
+        for (var t : bean.getTypes()) {
+            if (t instanceof Class<?> clazz
+                    && isDriverFactoryClass(clazz)
+                    && (beanClass == null || beanClass.isAssignableFrom(clazz))) {
+                beanClass = clazz;
+            }
+        }
+
+        return (beanClass != null) ? beanClass.getName() : null;
+    }
+
+    private static boolean isDriverFactoryClass(Class<?> c) {
+        return DriverFactory.class.isAssignableFrom(c) && !Modifier.isAbstract(c.getModifiers());
     }
 
     /**
@@ -169,7 +241,7 @@ public class WebDriverService {
         if (factory == null) {
             String msg;
             if (driverConfig.type == DriverType.SPI && driverConfig.spi.isPresent()) {
-                msg = "No SPI factory found for " + driverConfig.spi.get();
+                msg = "No SPI factory found for " + normalizeKey(driverConfig.spi.get());
             } else {
                 msg = "Unsupported driver " + driverConfig.type;
             }
@@ -326,12 +398,12 @@ public class WebDriverService {
     private DriverFactory<?> findDriverFactory() {
         String factoryName;
         if (driverConfig.type == DriverType.SPI) {
-            // For SPI factories, they are keyed by their class name (see constructor). The
-            // configuration must specify which SPI implementation to use via the 'driver.spi'
-            // property. It specifies the fully qualified class name of the SPI factory. Without
-            // it, we can't resolve the correct SPI factory.
-            factoryName = driverConfig.spi.map(String::trim).orElse(null);
-            if (factoryName == null || factoryName.isEmpty()) {
+            // For SPI factories, they are keyed by their class name or CDI bean name (see
+            // constructor). The configuration must specify which SPI implementation to use via the
+            // 'driver.spi' property. It specifies the fully qualified class name or CDI bean name
+            // of the SPI factory. Without it, we can't resolve the correct SPI factory.
+            factoryName = normalizeKey(driverConfig.spi.orElse(null));
+            if (factoryName == null) {
                 throw new IllegalArgumentException("driver.spi must be set when driver.type=SPI");
             }
         } else {
@@ -342,6 +414,14 @@ public class WebDriverService {
 
         var factoryMap = factories.get(driverConfig.type);
         return (factoryMap == null) ? null : factoryMap.get(factoryName);
+    }
+
+    private static String normalizeKey(String key) {
+        if (key == null) {
+            return null;
+        }
+        key = key.strip();
+        return key.isEmpty() ? null : key;
     }
 
     private static String sanitizeURI(URI uri) {
