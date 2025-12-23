@@ -22,6 +22,8 @@
 
 package net.larrykramer.test.util;
 
+import java.util.Objects;
+
 /**
  * Shared utility methods.
  */
@@ -61,5 +63,44 @@ public class SharedUtils {
         }
 
         return obj.getClass().getName() + '@' + Integer.toHexString(System.identityHashCode(obj));
+    }
+
+    /**
+     * Attempts to return the "real" (unproxied) class for the given class.
+     * <p>
+     * This method is intended for frameworks that create subclass-based proxies
+     * (e.g., CDI/Weld/Quarkus). It walks up the superclass hierarchy while the
+     * current class appears to be a proxy and returns the first superclass that
+     * no longer looks proxied.
+     * <p>
+     * Note: for JDK dynamic proxy classes, there is no meaningful "user class"
+     * in the superclass chain (dynamic proxies implement interfaces), so this
+     * method will typically return {@link java.lang.reflect.Proxy}.
+     *
+     * @param c the class to inspect; must not be {@code null}
+     * @return the unproxied/base class, or {@code c} if {@code c} is not
+     *         recognized as a proxy (or if unproxying cannot proceed beyond
+     *         {@link Object})
+     * @throws NullPointerException if {@code c} is {@code null}
+     */
+    public static Class<?> getUnproxiedClass(Class<?> c) {
+        Objects.requireNonNull(c);
+        Class<?> unproxiedClass = c;
+        while (isProxiedClass(unproxiedClass)) {
+            Class<?> clazz = unproxiedClass.getSuperclass();
+            if (clazz == null || clazz == Object.class) {
+                break;
+            }
+            unproxiedClass = clazz;
+        }
+        return unproxiedClass;
+    }
+
+    private static boolean isProxiedClass(Class<?> c) {
+        String name = c.getName();
+        return name.contains("$$") // CDI
+                || name.contains("_WeldClientProxy") // Weld
+                || name.contains("_ClientProxy") // Quarkus
+                || java.lang.reflect.Proxy.isProxyClass(c); // JDK
     }
 }
