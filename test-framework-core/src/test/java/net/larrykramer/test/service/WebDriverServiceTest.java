@@ -320,7 +320,7 @@ public class WebDriverServiceTest {
     public void testCreateWebDriver_givenSPIFactoryClassNotFound_throwsIllegalArgumentException() {
         // Arrange
         DriverConfig config = createConfig(DriverType.SPI);
-        config.spi = Optional.of("MissingFactory");
+        config.spi = Optional.of("  MissingFactory  ");
 
         when(mockFactory.getDriverType()).thenReturn(config.type);
 

@@ -241,7 +241,7 @@ public class WebDriverService {
         if (factory == null) {
             String msg;
             if (driverConfig.type == DriverType.SPI && driverConfig.spi.isPresent()) {
-                msg = "No SPI factory found for " + driverConfig.spi.get();
+                msg = "No SPI factory found for " + normalizeKey(driverConfig.spi.get());
             } else {
                 msg = "Unsupported driver " + driverConfig.type;
             }
