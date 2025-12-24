@@ -803,6 +803,75 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    public void testDisposeWebDriver_whenCalledTwice_quitsOnceAndClearsReference() {
+        /*
+         * AAA Exception: Interleaved assertions.
+         * To verify idempotency correctly without using clearInvocations, we
+         * verify intermediate state. We need to prove quit happens during the
+         * first call and the second call does not quit again. Batching the
+         * calls could hide regressions where the first call fails silently.
+         */
+        // Arrange
+        WebDriverService service = createService(createConfig(DriverType.CHROME), null);
+        WebDriverReference spiedDriverRef = spy(new WebDriverReference(mockDriver));
+
+        // First disposal.
+        // Act 1
+        service.disposeWebDriver(spiedDriverRef);
+        // Assert 1
+        // Verify the post-condition state and that quit is not invoked again.
+        // We verify clear() loosely (ignoring exact count) to avoid coupling to implementation
+        // details.
+        verify(mockDriver).quit();
+        verify(spiedDriverRef, atLeastOnce()).clear();
+        assertThrows(IllegalStateException.class, spiedDriverRef::get);
+
+        // Second disposal (idempotency check).
+        // Act 2
+        service.disposeWebDriver(spiedDriverRef);
+        // Assert 2
+        // See Assert 1 comments for the explanation of this verification strategy.
+        verify(mockDriver, times(1)).quit();
+        verify(spiedDriverRef, atLeastOnce()).clear();
+        assertThrows(IllegalStateException.class, spiedDriverRef::get);
+    }
+
+    @Test
+    public void testDisposeWebDriver_whenCalledTwiceAndQuitThrows_quitsOnceAndClearsReference() {
+        /*
+         * AAA Exception: Interleaved assertions.
+         * To verify idempotency correctly without using clearInvocations, we
+         * verify intermediate state. We need to prove quit happens during the
+         * first call and the second call does not quit again. Batching the
+         * calls could hide regressions where the first call fails silently.
+         */
+        // Arrange
+        WebDriverService service = createService(createConfig(DriverType.CHROME), null);
+        WebDriverReference spiedDriverRef = spy(new WebDriverReference(mockDriver));
+        doThrow(new RuntimeException("quit")).when(mockDriver).quit();
+
+        // First disposal.
+        // Act 1
+        service.disposeWebDriver(spiedDriverRef);
+        // Assert 1
+        // Verify the post-condition state and that quit is not invoked again.
+        // We verify clear() loosely (ignoring exact count) to avoid coupling to implementation
+        // details.
+        verify(mockDriver).quit();
+        verify(spiedDriverRef, atLeastOnce()).clear();
+        assertThrows(IllegalStateException.class, spiedDriverRef::get);
+
+        // Second disposal (idempotency check).
+        // Act 2
+        service.disposeWebDriver(spiedDriverRef);
+        // Assert 2
+        // See Assert 1 comments for the explanation of this verification strategy.
+        verify(mockDriver, times(1)).quit();
+        verify(spiedDriverRef, atLeastOnce()).clear();
+        assertThrows(IllegalStateException.class, spiedDriverRef::get);
+    }
+
+    @Test
     public void testDisposeWebDriver_whenDriverQuitThrows_doesNotPropagateException() {
         // Arrange
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
