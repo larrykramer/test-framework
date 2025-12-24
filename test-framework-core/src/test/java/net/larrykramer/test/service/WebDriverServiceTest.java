@@ -40,6 +40,7 @@ import net.larrykramer.test.webdriver.DriverFactory;
 import net.larrykramer.test.webdriver.WebDriverReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openqa.selenium.*;
@@ -234,6 +235,104 @@ public class WebDriverServiceTest {
         assertNotNull(driverRef);
         verify(mockFactory).create();
         assertSame(mockDriver, driverRef.get());
+    }
+
+    @Test
+    public void testConstructor_givenNamedBeanAndFactoryReturnsNullType_logsWarning() {
+        // Arrange
+        @SuppressWarnings("unchecked")
+        Bean<DriverFactory<?>> mockNamedBean = mock(Bean.class);
+        doReturn(" \u2003my-named-factory  ").when(mockNamedBean).getName();
+        when(mockFactory.getDriverType()).thenReturn(null);
+
+        // Act & Assert
+        // The log message parameter (factory name) should resolve to the bean name.
+        assertConstructorLogsNullDriverTypeWarning(mockFactory, mockNamedBean, "my-named-factory");
+    }
+
+    @Test
+    public void testConstructor_givenNamedManagedBeanAndFactoryReturnsNullType_logsWarning() {
+        // Arrange
+        @SuppressWarnings("unchecked")
+        Bean<DriverFactory<?>> mockNamedManagedBean = mock(Bean.class);
+        doReturn("  \u2005  ").when(mockNamedManagedBean).getName(); // force to bean class name
+        doReturn(mockFactory.getClass()).when(mockNamedManagedBean).getBeanClass();
+        when(mockFactory.getDriverType()).thenReturn(null);
+
+        // Act & Assert
+        // The log message parameter (factory name) should resolve to the bean class name.
+        // In this case, getBeanClass() returns the concrete factory which is also the
+        // implementation class.
+        assertConstructorLogsNullDriverTypeWarning(mockFactory,
+                mockNamedManagedBean,
+                mockFactory.getClass().getName());
+    }
+
+    @Test
+    public void testConstructor_givenProducerBeanAndFactoryReturnsNullType_logsWarning() {
+        // Arrange
+        //@formatter:off
+        class NullTypeFactory extends DriverFactory<MutableCapabilities> {
+            @Override public DriverType getDriverType() { return null; }
+            @Override public WebDriver create() { return null; }
+            @Override public void configure(WebDriver driver) {}
+        }
+        class FactoryProducer {}
+        //@formatter:on
+        final Set<Type> types = Set.of(Object.class, DriverFactory.class, NullTypeFactory.class);
+        @SuppressWarnings("unchecked")
+        Bean<DriverFactory<?>> mockBean = mock(Bean.class);
+        doReturn(null).when(mockBean).getName(); // force to bean class name
+        doReturn(FactoryProducer.class).when(mockBean).getBeanClass();
+        doReturn(types).when(mockBean).getTypes();
+
+        NullTypeFactory factory = new NullTypeFactory();
+
+        // Act & Assert
+        // The log message parameter (factory name) should resolve to the underlying factory class
+        // name.
+        assertConstructorLogsNullDriverTypeWarning(factory,
+                mockBean,
+                NullTypeFactory.class.getName());
+    }
+
+    @Test
+    public void testConstructor_givenFactoryReturnsNullType_logsWarning() {
+        // Arrange
+        //@formatter:off
+        class NullTypeFactory extends DriverFactory<MutableCapabilities> {
+            @Override public DriverType getDriverType() { return null; }
+            @Override public WebDriver create() { return null; }
+            @Override public void configure(WebDriver driver) {}
+        }
+        class NullTypeFactory$$Proxy extends NullTypeFactory {}
+        //@formatter:on
+
+        // Act & Assert
+        // The log message parameter (factory name) should resolve to the unproxied class name.
+        // The unproxied class name is NullTypeFactory.
+        assertConstructorLogsNullDriverTypeWarning(new NullTypeFactory$$Proxy(),
+                /*bean=*/null,
+                NullTypeFactory.class.getName());
+    }
+
+    @Test
+    public void testConstructor_givenProxyClassAndFactoryReturnsNullType_logsWarning() {
+        // Arrange
+        //@formatter:off
+        class NullTypeFactory$$Proxy extends DriverFactory<MutableCapabilities> {
+            @Override public DriverType getDriverType() { return null; }
+            @Override public WebDriver create() { return null; }
+            @Override public void configure(WebDriver driver) {}
+        }
+        //@formatter:on
+
+        // Act & Assert
+        // The log message parameter (factory name) should resolve to the runtime class name.
+        // In this case, the runtime class name is the proxied class name.
+        assertConstructorLogsNullDriverTypeWarning(new NullTypeFactory$$Proxy(),
+                /*bean=*/null,
+                NullTypeFactory$$Proxy.class.getName());
     }
 
     @Test
@@ -637,6 +736,16 @@ public class WebDriverServiceTest {
         assertSame(quitException, e.getSuppressed()[0]);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateWebDriver_givenFactoryReturnsNullType_throwsIllegalArgumentException() {
+        // Arrange
+        when(mockFactory.getDriverType()).thenReturn(null);
+        WebDriverService service = createService(createConfig(DriverType.EDGE), null, mockFactory);
+        // Act
+        // This should throw as the factory was never added to map of available factories.
+        service.createWebDriver();
+    }
+
     @Test
     public void testDisposeWebDriver_withDriverRef_callsQuit() {
         // Arrange
@@ -724,6 +833,47 @@ public class WebDriverServiceTest {
         verify(mockRef).get();
         verify(mockDriver, never()).quit();
         verify(mockRef).clear();
+    }
+
+    private void assertConstructorLogsNullDriverTypeWarning(DriverFactory<?> factory,
+            Bean<?> bean, String expectedName) {
+        // Arrange
+        Logger logger = Logger.getLogger(WebDriverService.class.getName());
+        Level originalLevel = logger.getLevel();
+        boolean useParentHandlers = logger.getUseParentHandlers();
+
+        ArgumentCaptor<LogRecord> logRecordCaptor = ArgumentCaptor.forClass(LogRecord.class);
+        Handler mockLogHandler = mock(Handler.class);
+
+        logger.addHandler(mockLogHandler);
+        logger.setLevel(Level.WARNING);
+        logger.setUseParentHandlers(false);
+
+        try {
+            MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, bean);
+            Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
+
+            // Act
+            new WebDriverService(createConfig(null), createGridConfig(), mockInstance);
+
+            // Assert
+            verify(mockLogHandler).publish(logRecordCaptor.capture());
+
+            final String expectedPrefix = "DriverFactory.getDriverType() returned null for";
+            LogRecord record = logRecordCaptor.getValue();
+
+            assertEquals(Level.WARNING, record.getLevel());
+            assertTrue(record.getMessage().startsWith(expectedPrefix));
+
+            Object[] params = record.getParameters();
+            assertNotNull(params);
+            assertEquals(1, params.length);
+            assertEquals(expectedName, params[0]);
+        } finally {
+            logger.removeHandler(mockLogHandler);
+            logger.setLevel(originalLevel);
+            logger.setUseParentHandlers(useParentHandlers);
+        }
     }
 
     private void stubFactory(DriverFactory<?> factory, DriverConfig config) {

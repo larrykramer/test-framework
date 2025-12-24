@@ -109,7 +109,10 @@ public class WebDriverService {
         for (var handle : factories.handles()) {
             DriverFactory<?> factory = handle.get();
             DriverType type = factory.getDriverType();
-            if (type != DriverType.SPI) {
+            if (type == null) {
+                LOGGER.log(Level.WARNING, "DriverFactory.getDriverType() returned null for {0}",
+                        getFactoryClassName(handle.getBean(), factory));
+            } else if (type != DriverType.SPI) {
                 if (m.containsKey(type)) {
                     Object[] params = { m.get(type).values().iterator().next(), type };
                     LOGGER.log(Level.WARNING, "Replacing factory {0} associated with {1}", params);
@@ -187,6 +190,32 @@ public class WebDriverService {
         }
 
         return (beanClass != null) ? beanClass.getName() : null;
+    }
+
+    private String getFactoryClassName(Bean<?> bean, DriverFactory<?> factory) {
+        String name = null;
+
+        if (bean != null) {
+            // Bean name (if present/non-blank) has priority over the bean class name, if both are
+            // defined.
+            name = bean.getName();
+            if (name != null && !name.isBlank()) {
+                name = name.strip();
+            } else {
+                name = resolveBeanClassName(bean); // maybe null
+            }
+        }
+
+        if (name == null) {
+            Class<?> clazz = getUnproxiedClass(factory.getClass());
+            if (!isDriverFactoryClass(clazz)) {
+                // Last resort. Might be a proxy name.
+                clazz = factory.getClass();
+            }
+            name = clazz.getName();
+        }
+
+        return name;
     }
 
     private static boolean isDriverFactoryClass(Class<?> c) {
