@@ -88,7 +88,8 @@ import org.junit.runners.model.Statement;
  * annotation is used, if it is not blank. Otherwise, the default logger name
  * provided to the {@code LogRule} constructor is used. A logger name must be
  * provided either by the rule constructor or by {@code @LogRule.UsesLogger} on
- * the test method.
+ * the test method. The Root Logger ({@code ""}) is not supported. Blank or
+ * empty strings are treated as "configuration not provided."
  * <p>
  * Similarly, if the {@code level} attribute from the test's
  * {@code @LogRule.UsesLogger} annotation is not blank, it is parsed by
@@ -154,6 +155,9 @@ public class LogRule implements TestRule {
          * <p>
          * If blank, the rule's default logger name is used. If both are
          * unspecified, the test is considered misconfigured.
+         * <p>
+         * <b>Note:</b> The Root Logger ({@code ""}) cannot be targeted by this
+         * rule.
          *
          * @return the logger name, or blank to use the rule's default
          */
@@ -172,48 +176,74 @@ public class LogRule implements TestRule {
     }
 
     /**
-     * Creates a rule with no default logger name and a default level of
+     * Creates a rule with no default target logger name and a default level of
      * {@code ALL}.
      * <p>
-     * When using this constructor, each annotated test method must provide a
-     * logger name via {@code @LogRule.UsesLogger(name = "...")}.
+     * With this constructor, every test method annotated with
+     * {@code @LogRule.UsesLogger} must supply a non-blank logger name via
+     * {@link UsesLogger#name()} (or the test will fail at runtime when the rule
+     * is applied).
+     *
+     * @see UsesLogger#name()
+     * @see Level#ALL
      */
     public LogRule() {
         this(null, Level.ALL);
     }
 
     /**
-     * Creates a rule with the given default logger name and a default level of
-     * {@code ALL}.
+     * Creates a rule with the given default target logger name and a default
+     * level of {@code ALL}.
      * <p>
-     * Annotated test methods may omit the {@code name} attribute from the
-     * {@code @LogRule.UsesLogger} annotation to use this default.
+     * For a test method annotated with {@code @LogRule.UsesLogger}, the logger
+     * name used for level changes and record capture is
+     * {@link UsesLogger#name()} if it is non-blank; otherwise this
+     * constructor's {@code loggerName} is used.
+     * <p>
+     * Blank strings are treated as "not provided" (equivalent to {@code null}).
+     * The Root Logger name ({@code ""}) is not supported; therefore it also
+     * cannot be targeted via this constructor.
      *
-     * @param loggerName the default logger name used by annotated tests when
-     *                   the {@code name} attribute from
-     *                   {@code @LogRule.UsesLogger} is blank
+     * @param loggerName the default logger name to use when
+     *                   {@link UsesLogger#name()} is blank; may be {@code null}
+     *                   or blank to require per-test configuration
+     * @see UsesLogger#name()
+     * @see Level#ALL
      */
     public LogRule(String loggerName) {
         this(loggerName, Level.ALL);
     }
 
     /**
-     * Creates a rule with the given default logger name and default level.
+     * Creates a rule with the given default target logger name and default
+     * level.
      * <p>
-     * Annotated test methods may omit the {@code name} and {@code level}
-     * attributes from the {@code @LogRule.UsesLogger} annotation to use this
-     * default.
+     * For a test method annotated with {@code @LogRule.UsesLogger}:
+     * <ul>
+     * <li>The target logger name is {@link UsesLogger#name()} if non-blank;
+     *   otherwise this constructor's {@code loggerName} is used.
+     * <li>The level applied for the duration of the test is
+     *   {@link Level#parse(String) Level.parse} of {@link UsesLogger#level()}
+     *    if non-blank; otherwise this constructor's {@code level} is used.
+     * </ul>
+     * <p>
+     * Blank {@code loggerName} is treated as "not provided" (equivalent to
+     * {@code null}). If neither a per-test name nor a default name is provided,
+     * annotated tests will fail at runtime when the rule is applied.
      *
-     * @param loggerName the default logger name used by annotated tests when
-     *                   the {@code name} attribute from
-     *                   {@code @LogRule.UsesLogger} is blank
-     * @param level      the default logger level used by annotated tests when
-     *                   the {@code level} attribute from
-     *                   {@code @LogRule.UsesLogger} is blank; must not be
+     * @param loggerName the default logger name to use when
+     *                   {@link UsesLogger#name()} is blank; may be {@code null}
+     *                   or blank to require per-test configuration
+     * @param level      the default level to apply when
+     *                   {@link UsesLogger#level()} is blank; must not be
      *                   {@code null}
+     * @throws NullPointerException if {@code level} is {@code null}
+     * @see UsesLogger#name()
+     * @see UsesLogger#level()
+     * @see Level#parse(String)
      */
     public LogRule(String loggerName, Level level) {
-        this.defaultLoggerName = loggerName;
+        this.defaultLoggerName = (loggerName != null && loggerName.isBlank()) ? null : loggerName;
         this.defaultLevel = Objects.requireNonNull(level);
     }
 
