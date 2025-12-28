@@ -28,7 +28,7 @@ import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.*;
-import java.util.logging.*;
+import java.util.logging.Level;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.Bean;
@@ -36,11 +36,12 @@ import jakarta.enterprise.util.TypeLiteral;
 import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.GridConfig;
 import net.larrykramer.test.config.DriverConfig;
+import net.larrykramer.test.rule.LogRule;
 import net.larrykramer.test.webdriver.DriverFactory;
 import net.larrykramer.test.webdriver.WebDriverReference;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.openqa.selenium.*;
@@ -53,6 +54,9 @@ import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class WebDriverServiceTest {
+    @Rule
+    public LogRule logRule = new LogRule(WebDriverService.class.getName(), Level.WARNING);
+
     @Mock
     private DriverFactory<MutableCapabilities> mockFactory;
 
@@ -238,6 +242,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    @LogRule.UsesLogger
     public void testConstructor_givenNamedBeanAndFactoryReturnsNullType_logsWarning() {
         // Arrange
         @SuppressWarnings("unchecked")
@@ -251,6 +256,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    @LogRule.UsesLogger
     public void testConstructor_givenNamedManagedBeanAndFactoryReturnsNullType_logsWarning() {
         // Arrange
         @SuppressWarnings("unchecked")
@@ -269,6 +275,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    @LogRule.UsesLogger
     public void testConstructor_givenProducerBeanAndFactoryReturnsNullType_logsWarning() {
         // Arrange
         //@formatter:off
@@ -297,6 +304,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    @LogRule.UsesLogger
     public void testConstructor_givenFactoryReturnsNullType_logsWarning() {
         // Arrange
         //@formatter:off
@@ -317,6 +325,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    @LogRule.UsesLogger
     public void testConstructor_givenProxyClassAndFactoryReturnsNullType_logsWarning() {
         // Arrange
         //@formatter:off
@@ -655,32 +664,18 @@ public class WebDriverServiceTest {
     }
 
     @Test
+    @LogRule.UsesLogger(level = "INFO")
     public void testCreateWebDriver_whenGridURLHasCustomPath_logsInfoMessage() {
         // Arrange
+        final String gridUri = "https://localhost:4444/custom/grid";
+
         DriverConfig config = createConfig(DriverType.CHROME);
         config.spi = Optional.of(mockFactory.getClass().getName());
         GridConfig grid = createGridConfig();
-        grid.uri = Optional.of(URI.create("https://localhost:4444/custom/grid"));
+        grid.uri = Optional.of(URI.create(gridUri));
 
         when(mockFactory.getDriverType()).thenReturn(config.type);
         when(mockFactory.getCapabilities()).thenReturn(new MutableCapabilities());
-
-        Logger logger = Logger.getLogger(WebDriverService.class.getName());
-        Level originalLevel = logger.getLevel();
-        boolean useParentHandlers = logger.getUseParentHandlers();
-
-        Handler mockLogHandler = mock(Handler.class);
-        List<LogRecord> capturedLogRecords = new ArrayList<>();
-        doAnswer(invocation -> {
-            LogRecord original = invocation.getArgument(0);
-            String message = new SimpleFormatter().formatMessage(original);
-            capturedLogRecords.add(new LogRecord(original.getLevel(), message));
-            return null;
-        }).when(mockLogHandler).publish(any(LogRecord.class));
-
-        logger.addHandler(mockLogHandler);
-        logger.setLevel(Level.INFO);
-        logger.setUseParentHandlers(false);
 
         try (var mocked = mockConstruction(RemoteWebDriver.class)) {
             WebDriverService service = createService(config, grid, mockFactory);
@@ -689,17 +684,23 @@ public class WebDriverServiceTest {
             service.createWebDriver();
 
             // Assert
-            assertEquals(1, capturedLogRecords.size());
-
-            LogRecord record = capturedLogRecords.getFirst();
-            assertEquals(Level.INFO, record.getLevel());
-            assertTrue(record.getMessage().startsWith("Configured Selenium URL is "
-                    + "'https://localhost:4444/custom/grid'.\nIf you encounter connection issues, "
-                    + "ensure https://localhost:4444/custom/grid"));
-        } finally {
-            logger.removeHandler(mockLogHandler);
-            logger.setLevel(originalLevel);
-            logger.setUseParentHandlers(useParentHandlers);
+            final String expectedPrefix = "Configured Selenium URL is ''{0}''";
+            assertTrue(logRule.getRecords().stream()
+                    .filter(r -> r.getLevel() == Level.INFO)
+                    .filter(r -> {
+                        // Match the template (not a formatted message)
+                        // It must start with the expected prefix and contain a second "{0}"
+                        // placeholder. Checks for the second occurrence beyond the prefix so we
+                        // don’t just match the "{0}" already in the prefix.
+                        final String msg = r.getMessage();
+                        return msg != null
+                                && msg.startsWith(expectedPrefix)
+                                && msg.indexOf("{0}", expectedPrefix.length()) > -1;
+                    })
+                    .anyMatch(r -> {
+                        final Object[] params = r.getParameters();
+                        return params != null && params.length == 1 && gridUri.equals(params[0]);
+                    }));
         }
     }
 
@@ -907,42 +908,21 @@ public class WebDriverServiceTest {
     private void assertConstructorLogsNullDriverTypeWarning(DriverFactory<?> factory,
             Bean<?> bean, String expectedName) {
         // Arrange
-        Logger logger = Logger.getLogger(WebDriverService.class.getName());
-        Level originalLevel = logger.getLevel();
-        boolean useParentHandlers = logger.getUseParentHandlers();
+        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, bean);
+        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
 
-        ArgumentCaptor<LogRecord> logRecordCaptor = ArgumentCaptor.forClass(LogRecord.class);
-        Handler mockLogHandler = mock(Handler.class);
+        // Act
+        new WebDriverService(createConfig(null), createGridConfig(), mockInstance);
 
-        logger.addHandler(mockLogHandler);
-        logger.setLevel(Level.WARNING);
-        logger.setUseParentHandlers(false);
-
-        try {
-            MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, bean);
-            Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
-
-            // Act
-            new WebDriverService(createConfig(null), createGridConfig(), mockInstance);
-
-            // Assert
-            verify(mockLogHandler).publish(logRecordCaptor.capture());
-
-            final String expectedPrefix = "DriverFactory.getDriverType() returned null for";
-            LogRecord record = logRecordCaptor.getValue();
-
-            assertEquals(Level.WARNING, record.getLevel());
-            assertTrue(record.getMessage().startsWith(expectedPrefix));
-
-            Object[] params = record.getParameters();
-            assertNotNull(params);
-            assertEquals(1, params.length);
-            assertEquals(expectedName, params[0]);
-        } finally {
-            logger.removeHandler(mockLogHandler);
-            logger.setLevel(originalLevel);
-            logger.setUseParentHandlers(useParentHandlers);
-        }
+        // Assert
+        final String expected = "DriverFactory.getDriverType() returned null for {0}";
+        assertTrue(logRule.getRecords().stream()
+                .filter(r -> r.getLevel() == Level.WARNING)
+                .filter(r -> expected.equals(r.getMessage()))
+                .anyMatch(r -> {
+                    final Object[] params = r.getParameters();
+                    return params != null && params.length == 1 && expectedName.equals(params[0]);
+                }));
     }
 
     private void stubFactory(DriverFactory<?> factory, DriverConfig config) {

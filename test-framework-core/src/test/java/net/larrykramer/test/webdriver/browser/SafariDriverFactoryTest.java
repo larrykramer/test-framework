@@ -25,15 +25,16 @@ package net.larrykramer.test.webdriver.browser;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.logging.*;
+import java.util.logging.Level;
 
 import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.config.DriverType;
+import net.larrykramer.test.rule.LogRule;
 import net.larrykramer.test.util.OperatingSystem;
 import net.larrykramer.test.webdriver.DriverFactory;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
@@ -46,6 +47,9 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class SafariDriverFactoryTest {
+    @Rule
+    public LogRule logRule = new LogRule(DriverFactory.class.getName());
+
     private SafariDriverFactory factory;
 
     @Before
@@ -189,22 +193,11 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
+    @LogRule.UsesLogger(level = "WARNING")
     public void testGetCapabilities_whenHeadlessRequested_logsMessageAndReturnsSafariOptions() {
         // Arrange
-        Logger logger = Logger.getLogger(DriverFactory.class.getName());
-        Level originalLevel = logger.getLevel();
-        boolean useParentHandlers = logger.getUseParentHandlers();
-
-        Handler mockLogHandler = mock(Handler.class);
-        ArgumentCaptor<LogRecord> logRecordCaptor = ArgumentCaptor.forClass(LogRecord.class);
-
-        logger.addHandler(mockLogHandler);
-        logger.setLevel(Level.WARNING);
-        logger.setUseParentHandlers(false);
-
         try (var mocked = mockStatic(OperatingSystem.class)) {
             mocked.when(OperatingSystem::isMacOS).thenReturn(true);
-            when(mockLogHandler.isLoggable(any(LogRecord.class))).thenReturn(true);
 
             DriverConfig config = createConfig();
             config.headless = true;
@@ -216,15 +209,13 @@ public class SafariDriverFactoryTest {
             // Assert
             assertNotNull(result);
 
-            verify(mockLogHandler).publish(logRecordCaptor.capture());
-
-            LogRecord record = logRecordCaptor.getValue();
-            assertEquals(Level.WARNING, record.getLevel());
-            assertTrue(record.getMessage().startsWith("Headless mode in Safari not supported"));
-        } finally {
-            logger.removeHandler(mockLogHandler);
-            logger.setLevel(originalLevel);
-            logger.setUseParentHandlers(useParentHandlers);
+            final String expectedPrefix = "Headless mode in Safari not supported";
+            assertTrue(logRule.getRecords().stream()
+                    .filter(r -> r.getLevel() == Level.WARNING)
+                    .anyMatch(r -> {
+                        final String msg = r.getMessage();
+                        return msg != null && msg.startsWith(expectedPrefix);
+                    }));
         }
     }
 

@@ -25,12 +25,13 @@ package net.larrykramer.test.webdriver;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.logging.*;
+import java.util.logging.Level;
 
 import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.config.DriverType;
+import net.larrykramer.test.rule.LogRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.openqa.selenium.*;
 
 import static org.junit.Assert.*;
@@ -39,6 +40,9 @@ import static org.openqa.selenium.remote.CapabilityType.ACCEPT_INSECURE_CERTS;
 import static org.openqa.selenium.remote.CapabilityType.PROXY;
 
 public class DriverFactoryTest {
+    @Rule
+    public LogRule logRule = new LogRule(DriverFactory.class.getName());
+
     @Test
     public void testGetDriverType_givenSPIFactory_returnsSPIDriverTypeAndRejectsCanonicalName() {
         // Arrange
@@ -447,41 +451,23 @@ public class DriverFactoryTest {
     }
 
     @Test
+    @LogRule.UsesLogger(level = "WARNING")
     public void testDeleteAllCookies_whenDeleteThrows_doesNotPropagateException() {
         // Arrange
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         doThrow(new WebDriverException("deleteAllCookies")).when(mockOptions).deleteAllCookies();
 
-        Logger logger = Logger.getLogger(DriverFactory.class.getName());
-        Level originalLevel = logger.getLevel();
-        boolean useParentHandlers = logger.getUseParentHandlers();
+        SPIDriverFactory factory = new SPIDriverFactory(null, createConfig(), null);
 
-        Handler mockLogHandler = mock(Handler.class);
-        ArgumentCaptor<LogRecord> logRecordCaptor = ArgumentCaptor.forClass(LogRecord.class);
+        // Act
+        factory.deleteAllCookies(mockOptions);
 
-        logger.addHandler(mockLogHandler);
-        logger.setLevel(Level.WARNING);
-        logger.setUseParentHandlers(false);
+        // Assert
+        verify(mockOptions).deleteAllCookies();
 
-        try {
-            SPIDriverFactory factory = new SPIDriverFactory(null, createConfig(), null);
-
-            // Act
-            factory.deleteAllCookies(mockOptions);
-
-            // Assert
-            verify(mockOptions).deleteAllCookies();
-
-            verify(mockLogHandler).publish(logRecordCaptor.capture());
-
-            LogRecord record = logRecordCaptor.getValue();
-            assertEquals(Level.WARNING, record.getLevel());
-            assertEquals("Unable to delete all cookies", record.getMessage());
-        } finally {
-            logger.removeHandler(mockLogHandler);
-            logger.setLevel(originalLevel);
-            logger.setUseParentHandlers(useParentHandlers);
-        }
+        assertTrue(logRule.getRecords().stream()
+                .filter(r -> r.getLevel() == Level.WARNING)
+                .anyMatch(r -> "Unable to delete all cookies".equals(r.getMessage())));
     }
 
     private static DriverConfig createConfig() {
