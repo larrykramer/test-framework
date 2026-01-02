@@ -44,7 +44,7 @@ public class ChromiumConfig {
      * <p>
      * This property maps to <code>&lt;prefix&gt;.executable</code>, where
      * <code>&lt;prefix&gt;</code> is the value provided by the
-     * {@link ConfigProperties @ConfigProperties} annotation.
+     * {@code @ConfigProperties} annotation.
      */
     public Optional<String> executable;
 
@@ -52,13 +52,12 @@ public class ChromiumConfig {
      * A list of command-line arguments to be passed to the Chromium executable
      * upon startup.
      * <p>
-     * <strong>Note:</strong> Custom arguments may interfere with WebDriver's
-     * standard operation and should be used with caution.
-     * <p>
      * This property is mapped from <code>&lt;prefix&gt;.arguments</code> as a
      * comma-separated list, where <code>&lt;prefix&gt;</code> is the value
-     * provided by the {@link ConfigProperties @ConfigProperties} annotation.
+     * provided by the {@code @ConfigProperties} annotation.
      *
+     * @apiNote Custom arguments may interfere with WebDriver's standard
+     *          operation and should be used with caution.
      * @see <a href="https://peter.sh/experiments/chromium-command-line-switches/">List of Chromium Command Line Switches</a>
      */
     public List<String> arguments = List.of();

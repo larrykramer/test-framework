@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,14 +48,15 @@ public enum DriverType {
     }
 
     /**
-     * Resolves the {@code DriverType} whose enum constant name matches the
-     * supplied name, ignoring character case.
+     * Returns the enum constant of this class with the specified name,
+     * ignoring character case. (Extraneous whitespace characters are not
+     * permitted.)
      *
-     * @param name the enum constant name to look up
-     * @return the matching {@code DriverType}
-     * @throws IllegalArgumentException if {@code name} is {@code null} or
-     *                                  blank, or no enum constant matches the
-     *                                  supplied name
+     * @param name the name of the enum constant to be returned.
+     * @return the enum constant with the specified name
+     * @throws IllegalArgumentException if {@code name} is null or blank, or
+     *                                  this enum class has no constant with the
+     *                                  specified name
      */
     public static DriverType of(String name) {
         if (name == null || name.isBlank()) {

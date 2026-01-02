@@ -50,8 +50,8 @@ public final class ChromeDriverFactory extends ChromiumDriverFactory<ChromeOptio
     }
 
     /**
-     * Produces a Google Chrome {@code WebDriver} using the capabilities
-     * derived from {@link #getCapabilities()}.
+     * Produces a Google Chrome {@code WebDriver} using the capabilities derived
+     * from {@link #getCapabilities()}.
      *
      * @return a new Google Chrome {@code WebDriver} instance
      */
@@ -62,8 +62,8 @@ public final class ChromeDriverFactory extends ChromiumDriverFactory<ChromeOptio
 
 
     /**
-     * Returns the Google Chrome-specific capabilities from the shared Chromium
-     * and Google Chrome configuration settings.
+     * Returns the Google Chrome-specific capabilities derived from the shared
+     * Chromium and Google Chrome configuration properties.
      *
      * @return the Google Chrome-specific capabilities
      * @see ChromiumDriverFactory#buildChromiumOptions(ChromiumOptions, ChromiumConfig)

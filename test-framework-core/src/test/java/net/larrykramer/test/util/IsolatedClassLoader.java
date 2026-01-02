@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,30 +32,34 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Test support class that plays a dual role: it is both a custom {@link ClassLoader} capable of
- * injecting test-controlled resources and a utility providing the static
- * {@link #doInvoke(Class, Map, ThrowingFunction)} helper for executing code under that loader.
+ * Test support class that plays a dual role: it is both a custom
+ * {@code ClassLoader} capable of injecting test-controlled resources and a
+ * utility providing the static helper for executing code under that loader.
  * <p>
  * Production code under test typically resolves configuration through
- * {@link Thread#getContextClassLoader()}. Creating temporary files or altering the global class
- * path would make tests brittle and difficult to run in parallel. This class removes that burden
- * by letting tests swap in an isolated loader instance that serves an in-memory resources while
- * still delegating bytecode lookup to the real parent.
+ * {@link Thread#getContextClassLoader()}. Creating temporary files or altering
+ * the global class path would make tests brittle and difficult to run in
+ * parallel. This class removes that burden by letting tests swap in an isolated
+ * loader instance that serves in-memory resources while still delegating
+ * bytecode lookup to the real parent.
  *
  * <h2>Usage overview</h2>
  * <ol>
  * <li>{@link #doInvoke(Class, Map, ThrowingFunction)} instantiates a fresh
- *   {@code IsolatedClassLoader}, installs it as the thread context loader, and reloads the
- *   requested class through it.</li>
- * <li>The provided {@link ThrowingFunction} performs whatever reflective work the test requires
- *   while the custom loader is active.</li>
- * <li>After the callback finishes (or throws), the original context loader is restored and any
- *   relevant exception causes are unwrapped to keep assertions readable.</li>
+ *   {@code IsolatedClassLoader}, installs it as the thread context loader, and
+ *   reloads the requested class through it.
+ * <li>The provided {@link ThrowingFunction} performs whatever reflective work
+ *   the test requires while the custom loader is active.
+ * <li>After the callback finishes (or throws), the original context loader is
+ *   restored and any relevant exception causes are unwrapped to keep assertions
+ *   readable.
  * </ol>
  *
- * The class loader instance returned by {@link #doInvoke(Class, Map, ThrowingFunction)} behaves in
- * a child-first manner only for the target class (and other allow-listed packages), ensuring that
- * production bytecode is reused while tests can precisely control resource loading.
+ * The class loader instance returned by
+ * {@link #doInvoke(Class, Map, ThrowingFunction)} behaves in a child-first
+ * manner only for the target class (and other allow-listed packages), ensuring
+ * that production bytecode is reused while tests can precisely control
+ * resource loading.
  *
  * @see Thread#getContextClassLoader()
  * @see ClassLoader#getResourceAsStream(String)
@@ -63,7 +67,7 @@ import java.util.Set;
 public final class IsolatedClassLoader extends ClassLoader {
     /*
      * Packages that may be resolved through this loader. Defining an explicit allow-list keeps the
-     * child-first behaviour limited to classes under test and avoids maintaining a brittle exclusion
+     * child-first behavior limited to classes under test and avoids maintaining a brittle exclusion
      * list.
      */
     private static final Set<String> ALLOWED_PACKAGES = Set.of(
@@ -117,14 +121,15 @@ public final class IsolatedClassLoader extends ClassLoader {
     }
 
     /**
-     * Executes the supplied {@link ThrowingFunction} while the specified class is reloaded through
-     * an {@code IsolatedClassLoader}, without supplying any resource overrides.
-     * <p>
-     * This is equivalent to calling {@link #doInvoke(Class, Map, ThrowingFunction)} with a
-     * {@code null} resources argument.
+     * Executes the supplied {@link ThrowingFunction} while the specified class
+     * is reloaded through an {@code IsolatedClassLoader}, without supplying any
+     * resource overrides.
+     *
+     * @implSpec This method is equivalent to {@code doInvoke(c, null, fn)}.
      *
      * @param <T> result type produced by the supplied function
-     * @param c   class that should be (re)loaded within an isolated class loader
+     * @param c   class that should be (re)loaded within an isolated class
+     *            loader
      * @param fn  operation to perform while the isolated loader is active
      * @return value returned by {@code fn}
      * @throws Throwable if class loading or the supplied function fails
@@ -135,26 +140,33 @@ public final class IsolatedClassLoader extends ClassLoader {
     }
 
     /**
-     * Core utility responsible for wiring the thread context {@link ClassLoader} and executing
-     * operations under that loader.
+     * Core utility responsible for wiring the thread context
+     * {@code ClassLoader} and executing operations under that loader.
      * <p>
      * A distinct loader instance is created per invocation so that:
      * <ul>
-     * <li>every test receives a clean-slate set of in-memory resource overrides;
+     * <li>every test receives a clean-slate set of in-memory resource
+     *   overrides;
      * <li>tests can run in parallel without sharing state;
-     * <li>the parent class path is still available for loading the actual class implementation
-     *   while we inject only the requested resource overrides.
+     * <li>the parent class path is still available for loading the actual
+     *   class implementation while we inject only the requested resource
+     *   overrides.
      * </ul>
      * <p>
-     * If the class's static initializer throws an {@link ExceptionInInitializerError}, the helper
-     * unwraps the original cause so callers can assert on the production exception.
+     * If the class's static initializer throws an
+     * {@link ExceptionInInitializerError}, the helper unwraps the original
+     * cause so callers can assert on the production exception.
+     * <p>
+     * The {@code resources} map values may be {@code String}, {@code byte[]},
+     * or {@code null} to simulate a missing resource.
      *
      * @param <T>        type of value returned by the function
-     * @param c          production class that should be (re)loaded with the isolated class loader
-     * @param resources  simulated resource overrides keyed by resource name, or {@code null} to
-     *                   disable overriding entirely; values may be {@link String}, {@code byte[]}
-     *                   or {@code null} (to emulate a missing resource)
-     * @param fn         operation to perform while the isolated loader is active
+     * @param c          production class that should be (re)loaded with the
+     *                   isolated class loader
+     * @param resources  simulated resource overrides keyed by resource name,
+     *                   or {@code null} to disable resource overriding
+     * @param fn         operation to perform while the isolated loader is
+     *                   active
      * @return result produced by the supplied function
      * @throws Throwable if class loading or the function execution fails
      */
@@ -189,12 +201,14 @@ public final class IsolatedClassLoader extends ClassLoader {
     }
 
     /**
-     * Intercepts requests for any resource whose content has been supplied in the override map and
-     * serves those bytes (or signals absence when the mapped value is {@code null}). All other
-     * resources fall through to the parent chain.
+     * Intercepts requests for any resource whose content has been supplied in
+     * the override map and serves those bytes (or signals absence when the
+     * mapped value is {@code null}). All other resources fall through to the
+     * parent chain.
      *
      * @param name the resource name
-     * @return an {@link InputStream} for the resource, or {@code null} if it does not exist
+     * @return an {@link InputStream} for the resource, or {@code null} if it
+     *         does not exist
      */
     @Override
     public InputStream getResourceAsStream(String name) {
@@ -210,9 +224,10 @@ public final class IsolatedClassLoader extends ClassLoader {
     }
 
     /**
-     * Ensures the target API classes themselves are loaded through this custom loader so that
-     * the lookup for the overridden resource sees the injected content. All other classes
-     * delegate to the parent to avoid duplicate definitions.
+     * Ensures the target API classes themselves are loaded through this custom
+     * loader so that the lookup for the overridden resource sees the injected
+     * content. All other classes delegate to the parent to avoid duplicate
+     * definitions.
      *
      * @param name    the binary name of the class to load
      * @param resolve if {@code true} then resolve the class
@@ -238,14 +253,15 @@ public final class IsolatedClassLoader extends ClassLoader {
     }
 
     /**
-     * Loads the actual class bytes for the target API classes by delegating to the parent
-     * loader's resources and then defining the class inside this loader's namespace. This is
-     * standard child-first loading boilerplate when you want resource injection while still
-     * trusting the parent for bytecode.
+     * Loads the actual class bytes for the target API classes by delegating to
+     * the parent loader's resources and then defining the class inside this
+     * loader's namespace. This is standard child-first loading boilerplate when
+     * you want resource injection while still trusting the parent for bytecode.
      *
      * @param name the binary name of the class to locate
      * @return the defined {@link Class} instance
-     * @throws ClassNotFoundException if the class bytecode cannot be found or read
+     * @throws ClassNotFoundException if the class bytecode cannot be found or
+     *                                read
      */
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {

@@ -31,12 +31,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperties;
 /**
  * Utility helpers for test suites that need to override factory configuration.
  * <p>
- * Provides convenient methods to replace the {@code DriverConfig} used by a
- * {@code DriverFactory} and to inject configuration objects into fields
- * annotated with {@code Inject} and {@code ConfigProperties}. Reflection is
- * used for the field injection helper, so misuse can lead to
- * {@code IllegalArgumentException}, {@code IllegalStateException}, or
- * {@code RuntimeException} if the target state is invalid.
+ * Provides convenient methods to replace the {@link DriverConfig} used by a
+ * {@link DriverFactory} and to inject configuration objects into fields
+ * annotated with {@code @Inject} and {@code @ConfigProperties}.
  */
 public final class DriverFactoryTestHelper {
     private DriverFactoryTestHelper() {
@@ -50,10 +47,10 @@ public final class DriverFactoryTestHelper {
      * This helper is intended for use in tests where direct control over the
      * factory's configuration is required.
      *
-     * @param factory the factory whose configuration should be replaced; must
-     *                not be {@code null}
-     * @param config  the configuration instance to inject; may be {@code null}
-     *                if tests expect that state
+     * @param factory the factory whose configuration should be replaced
+     * @param config  the configuration instance to inject
+     * @apiNote Tests may deliberately pass {@code null} to simulate
+     *          misconfiguration.
      */
     public static void setDriverConfig(DriverFactory<?> factory, DriverConfig config) {
         factory.config = config;
@@ -63,8 +60,7 @@ public final class DriverFactoryTestHelper {
      * Reflectively assigns a configuration object to a field that is expected
      * to be annotated with both {@code @Inject} and {@code @ConfigProperties}.
      *
-     * @param target the object containing the field to update; must not be
-     *               {@code null}
+     * @param target the object containing the field to update
      * @param name   the name of the field to set
      * @param config the configuration instance to assign to the field
      * @throws IllegalArgumentException if the field cannot be found

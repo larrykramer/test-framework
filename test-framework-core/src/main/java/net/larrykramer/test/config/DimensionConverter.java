@@ -26,22 +26,22 @@ import org.eclipse.microprofile.config.spi.Converter;
 import org.openqa.selenium.Dimension;
 
 /**
- * A {@link Converter} implementation that parses textual configuration values
- * into {@link Dimension} instances.
- * <p>
- * The converter accepts case-insensitive dimension strings in either
- * {@code "<width>x<height>"} or {@code "<width>,<height>"} form. Leading and
- * trailing whitespace around each component is ignored. An empty or blank value
- * is treated as unset and results in {@code null}.
+ * A {@code Converter} implementation that parses textual configuration values
+ * into {@code Dimension} instances.
  */
 public class DimensionConverter implements Converter<Dimension> {
     /**
-     * Converts the supplied string into a {@link Dimension}.
+     * Converts the supplied string into a {@code Dimension}.
+     * <p>
+     * The value is parsed as a case-insensitive dimension string in either
+     * {@code "<width>x<height>"} or {@code "<width>,<height>"} form. Leading
+     * and trailing whitespace around each component is ignored. An empty or
+     * blank value is treated as unset and results in {@code null}.
      *
-     * @param value the dimension string to convert (must not be {@code null})
-     * @return a {@link Dimension} parsed from the supplied value, or
+     * @param value the dimension string to convert
+     * @return a {@code Dimension} parsed from the supplied value, or
      *         {@code null} if the value is blank
-     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code value} is null
      * @throws IllegalArgumentException if the value does not match the expected
      *                                  formats or contains non-numeric
      *                                  width/height components

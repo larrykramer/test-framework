@@ -23,15 +23,16 @@
 package net.larrykramer.test.categories;
 
 /**
- * Marker interface used with JUnit 4's {@link org.junit.experimental.categories.Category Category}
- * annotation to identify fuzzing-based tests.
+ * Marker interface used with JUnit 4's {@code Category} annotation to identify
+ * fuzzing-based tests.
  * <p>
- * Apply this category to tests that rely on automated input generation (fuzzers) to stress the
- * system with varied or unexpected data. These tests complement conventional unit and integration
- * suites by helping uncover robustness issues such as crashes, unhandled exceptions, or security
+ * Apply this category to tests that rely on automated input generation
+ * (fuzzers) to stress the system with varied or unexpected data. These tests
+ * complement conventional unit and integration suites by helping uncover
+ * robustness issues such as crashes, unhandled exceptions, or security
  * vulnerabilities.
  * <p>
- * <strong>Example</strong>
+ * <b>Example</b>
  * <pre>{@code
  * import net.larrykramer.test.categories.FuzzerTest;
  * import org.junit.Test;
@@ -47,9 +48,9 @@ package net.larrykramer.test.categories;
  * }
  * }</pre>
  * <p>
- * The interface is intentionally empty; it serves solely as a semantic tag. You can include or
- * exclude fuzzing-oriented tests by configuring your build tool or IDE to filter on this category
- * when running the JUnit suite.
+ * The interface is intentionally empty; it serves solely as a semantic tag.
+ * You can include or exclude fuzzing-oriented tests by configuring your build
+ * tool or IDE to filter on this category when running the JUnit suite.
  */
 public interface FuzzerTest {
     /* category marker */

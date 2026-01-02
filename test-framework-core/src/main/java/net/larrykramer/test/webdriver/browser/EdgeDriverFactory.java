@@ -62,7 +62,7 @@ public final class EdgeDriverFactory extends ChromiumDriverFactory<EdgeOptions> 
 
 
     /**
-     * Returns the Microsoft Edge-specific capabilities from the shared
+     * Returns the Microsoft Edge-specific capabilities derived from the shared
      * Chromium and Microsoft Edge configuration settings.
      *
      * @return the Microsoft Edge-specific capabilities

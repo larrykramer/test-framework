@@ -25,9 +25,10 @@ package net.larrykramer.test.util;
 import java.util.Locale;
 
 /**
- * Enumeration of operating system types and testing for current OS. The enumeration can be used to
- * dispatch to OS specific code or values. Checking if a specific operating system is current uses
- * a simple static method for each operating system.
+ * Enumeration of operating system types and testing for current OS. The
+ * enumeration can be used to dispatch to OS specific code or values. Checking
+ * if a specific operating system is current uses a simple static method for
+ * each operating system.
  * <p>
  * For example,
  * <pre>{@code
@@ -38,7 +39,8 @@ import java.util.Locale;
  * }
  * }</pre>
  *
- * Alternatively, compare with the {@linkplain #current() current} operating system.
+ * Alternatively, compare with the {@linkplain #current() current} operating
+ * system.
  * For example,
  * <pre>{@code
  * if (OperatingSystem.current() == OperatingSystem.WINDOWS) {

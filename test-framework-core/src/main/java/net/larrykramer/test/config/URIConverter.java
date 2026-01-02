@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,23 +29,8 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.spi.Converter;
 
 /**
- * A {@link Converter} implementation that translates textual configuration
- * values into {@link URI} instances.
- * <p>
- * The converter trims incoming values and accepts any string understood by
- * {@link URI#URI(String)}. Blank values are considered unset and yield
- * {@code null}. When no scheme is present, inputs such as {@code "proxy:3128"}
- * are interpreted as host/port pairs and normalized into an {@code http}
- * {@link URI}, preserving the parsed host and port components.
- * <p>
- * <strong>IPv6 Address Note</strong><br>
- * IPv6 addresses containing a port <em>must</em> be wrapped in square brackets
- * as required by RFC 2732. Inputs such as {@code 2001:db8::1:8080} or
- * {@code 2001:db8::1:12345} will either be misinterpreted as part of the IPv6
- * address (if the port fits hex syntax), or {@link URI} parses these as a
- * registry-based authority, resulting in a {@code null} Host component. This
- * may (and correctly) cause downstream consumers to fail, effectively enforcing
- * standard bracket notation for port specification.
+ * A {@code Converter} implementation that parses textual configuration
+ * values into {@code URI} instances.
  */
 public class URIConverter implements Converter<URI> {
     /*
@@ -97,12 +82,27 @@ public class URIConverter implements Converter<URI> {
     private static final Pattern SCHEME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.-]*:.*");
 
     /**
-     * Converts the supplied string into a {@link URI}.
+     * Converts the supplied string into a {@code URI}.
+     * <p>
+     * The value is parsed as a URI string, with leading and trailing whitespace
+     * ignored. A blank value is treated as unset and results in {@code null}.
+     * To ensure proper parsing, schemeless inputs like {@code "proxy:3128"} are
+     * interpreted as a host/port authority and automatically prepended with the
+     * {@code http} scheme.
      *
-     * @param value the URI string to convert; must not be {@code null}
-     * @return a {@link URI} parsed from the supplied value, or {@code null} if
+     * @apiNote
+     * IPv6 addresses containing a port <i>must</i> be wrapped in square
+     * brackets as required by RFC 2732. Inputs such as {@code 2001:db8::1:8080}
+     * or {@code 2001:db8::1:12345} will either be misinterpreted as part of the
+     * IPv6 address (if the port fits hex syntax), or {@code URI} parses these
+     * as a registry-based authority, resulting in a null Host component. This
+     * may (and correctly) cause downstream consumers to fail, effectively
+     * enforcing standard bracket notation for port specification.
+     *
+     * @param value the URI string to convert
+     * @return a {@code URI} parsed from the supplied value, or {@code null} if
      *         the value is blank
-     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code value} is null
      * @throws IllegalArgumentException if the value cannot be parsed as a URI
      */
     @Override

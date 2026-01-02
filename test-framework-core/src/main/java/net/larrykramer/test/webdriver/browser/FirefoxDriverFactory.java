@@ -71,7 +71,7 @@ public final class FirefoxDriverFactory extends DriverFactory<FirefoxOptions> {
      * In addition to the common configuration from the base implementation,
      * this method deletes all cookies and applies window sizing/maximize based
      * on {@code DriverConfig}. Failures in window operations are treated as
-     * fatal; any {@code WebDriverException} raised by window resizing or
+     * fatal; any {@link WebDriverException} raised by window resizing or
      * maximization is allowed to propagate to signal a misconfigured
      * environment.
      *
@@ -91,8 +91,8 @@ public final class FirefoxDriverFactory extends DriverFactory<FirefoxOptions> {
     }
 
     /**
-     * Returns the Firefox-specific capabilities from the global and Firefox
-     * configuration settings.
+     * Returns the Firefox-specific capabilities derived from the global and
+     * Firefox configuration settings.
      *
      * @return the Firefox-specific capabilities
      */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -72,8 +72,8 @@ public class WebDriverReference {
     /**
      * Creates a new empty {@code WebDriverReference}.
      *
-     * @implNote A WebDriver must be provided later via {@link #set(WebDriver)}
-     *           before any retrieval method is called.
+     * @apiNote A WebDriver must be provided later via {@link #set(WebDriver)}
+     *          before any retrieval method is called.
      */
     public WebDriverReference() {
         this.driver = null;
@@ -84,8 +84,8 @@ public class WebDriverReference {
      * Creates a new {@code WebDriverReference} with the given
      * {@code WebDriver}.
      *
-     * @param driver the WebDriver to hold; must not be {@code null}
-     * @throws NullPointerException if {@code driver} is {@code null}
+     * @param driver the WebDriver to hold
+     * @throws NullPointerException if {@code driver} is null
      * @see #set(WebDriver)
      */
     public WebDriverReference(WebDriver driver) {
@@ -98,8 +98,8 @@ public class WebDriverReference {
      * This method unwraps the given {@code WebDriver} by following any chain
      * of {@code WrapsDriver} to the ultimate wrapped driver.
      *
-     * @param driver the WebDriver to hold; must not be {@code null}
-     * @throws NullPointerException if {@code driver} is {@code null}
+     * @param driver the WebDriver to hold
+     * @throws NullPointerException if {@code driver} is null
      * @apiNote This method assumes that the given driver is not a CDI proxy
      *          and relies on the contract of {@link DriverFactory#create()},
      *          which specifies that factories return a new, unmanaged
@@ -139,18 +139,18 @@ public class WebDriverReference {
      * and, if it does not implement the requested type, falls back to the
      * underlying unwrapped driver.
      * <p>
-     * This is the preferred way to obtain Selenium extension interfaces
-     * (for example {@code TakesScreenshot}, {@code JavascriptExecutor},
+     * This is the preferred way to obtain Selenium extension interfaces (for
+     * example {@code TakesScreenshot}, {@code JavascriptExecutor},
      * {@code HasDevTools}) while still respecting any registered wrappers.
      *
      * @param interfaceClass the interface or class that the driver is expected
-     *                       to implement; must not be {@code null}
+     *                       to implement
      * @return the current WebDriver that also implements {@code interfaceClass}
      * @throws ClassCastException    if the current driver does not implement
      *                               {@code interfaceClass} on either the
      *                               wrapped or underlying unwrapped driver
      * @throws IllegalStateException if no WebDriver has been set
-     * @throws NullPointerException  if {@code interfaceClass} is {@code null}
+     * @throws NullPointerException  if {@code interfaceClass} is null
      */
     public WebDriver get(Class<?> interfaceClass) {
         Objects.requireNonNull(interfaceClass, "interfaceClass");
@@ -181,14 +181,13 @@ public class WebDriverReference {
      *
      * @param <T>            the interface or class that the driver is expected
      *                       to implement
-     * @param interfaceClass the interface or class token; must not be
-     *                       {@code null}
+     * @param interfaceClass the interface or class token
      * @return the current WebDriver as {@code T}
      * @throws ClassCastException    if the current driver does not implement
      *                               {@code interfaceClass} on either the
      *                               wrapped or underlying unwrapped driver
      * @throws IllegalStateException if no WebDriver has been set
-     * @throws NullPointerException  if {@code interfaceClass} is {@code null}
+     * @throws NullPointerException  if {@code interfaceClass} is null
      * @see #get(Class)
      */
     public <T> T as(Class<T> interfaceClass) {
@@ -198,20 +197,19 @@ public class WebDriverReference {
     /**
      * Attempts to view the current WebDriver as the specified type.
      * <p>
-     * This is a non-throwing variant of {@link #as(Class)}: it tries to obtain
+     * This is a non-throwing variant of {@link #as(Class)}. It tries to obtain
      * the current driver as the requested interface (checking the wrapped
-     * driver first and then the underlying unwrapped driver), but returns
-     * {@link Optional#empty()} instead of throwing a {@code ClassCastException}
+     * driver first and then the underlying unwrapped driver), but returns an
+     * empty {@code Optional} instead of throwing a {@link ClassCastException}
      * when the driver does not implement the given type.
      *
      * @param <T>            the interface or class that the driver is expected
      *                       to implement
-     * @param interfaceClass the interface or class token; must not be
-     *                       {@code null}
-     * @return an {@code Optional} containing the current WebDriver as
-     *         {@code T} if supported; otherwise {@code Optional.empty()}
+     * @param interfaceClass the interface or class token
+     * @return an {@code Optional} containing the current WebDriver as {@code T}
+     *         if supported; otherwise an empty {@code Optional}
      * @throws IllegalStateException if no WebDriver has been set
-     * @throws NullPointerException  if {@code interfaceClass} is {@code null}
+     * @throws NullPointerException  if {@code interfaceClass} is null
      * @see #as(Class)
      */
     public <T> Optional<T> tryAs(Class<T> interfaceClass) {
@@ -225,13 +223,12 @@ public class WebDriverReference {
     /**
      * Returns the underlying unwrapped driver.
      * <p>
-     * <strong>Usage note:</strong><br>
-     * This method should only be used when you strictly need access to
-     * vendor-specific methods and explicitly want to bypass any registered
-     * {@code WrapsDriver}-based wrappers. For standard WebDriver interactions
-     * (including Selenium extension interfaces such as {@code TakesScreenshot},
-     * {@code JavascriptExecutor}, etc.), prefer {@link #get()} or
-     * {@link #get(Class)}.
+     * <b>Usage note:</b> This method should only be used when you strictly need
+     * access to vendor-specific methods and explicitly want to bypass any
+     * registered {@code WrapsDriver}-based wrappers. For standard WebDriver
+     * interactions (including Selenium extension interfaces such as
+     * {@code TakesScreenshot}, {@code JavascriptExecutor}, etc.), prefer
+     * {@link #get()} or {@link #get(Class)}.
      *
      * @return the underlying unwrapped driver of the current WebDriver
      * @throws IllegalStateException if no WebDriver has been set
@@ -247,11 +244,17 @@ public class WebDriverReference {
 
     /**
      * Clears this reference.
+     * <p>
+     * After calling this method, this {@code WebDriverReference} becomes
+     * uninitialized: all retrieval methods will throw
+     * {@link IllegalStateException} until a new {@code WebDriver} is provided
+     * via {@link #set(WebDriver)}.
+     * <p>
+     * The String representation returned by {@link #toString()} also reverts
+     * to the uninitialized form.
      *
-     * @implNote After calling this method, all retrieval methods will fail
-     *           until a new WebDriver is given via {@link #set(WebDriver)}. The
-     *           String representation returned by {@link #toString()} will also
-     *           revert to the uninitialized form.
+     * @apiNote This method does not call {@code WebDriver.quit()}; it only
+     *          clears the stored references.
      */
     public void clear() {
         this.driver = null;

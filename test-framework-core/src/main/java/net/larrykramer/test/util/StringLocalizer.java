@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,13 +28,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Provides locale-specific access to string resources backed by the {@code strings}
- * {@link ResourceBundle}.
+ * Provides locale-specific access to string resources backed by the
+ * {@code strings} resource bundle.
  * <p>
- * A {@code StringLocalizer} is bound to a single {@link Locale}. Upon construction the matching
- * resource bundle is loaded and cached for the lifetime of the instance, making the class
- * effectively immutable and thread-safe as long as the underlying {@link ResourceBundle} is also
- * thread-safe (which is the case for the standard JDK implementation).
+ * Each {@code StringLocalizer} instance is bound to a single locale. When the
+ * instance is created, the {@code strings} resource bundle is loaded and cached
+ * for the lifetime of the object.
+ * <p>
+ * Because the locale and resource bundle are fixed after construction, the
+ * class is effectively immutable. It is also thread-safe provided that the
+ * underlying {@link ResourceBundle} implementation is thread-safe (as it is in
+ * the standard JDK).
  */
 public class StringLocalizer {
     private static final Logger LOGGER = Logger.getLogger(StringLocalizer.class.getName());
@@ -43,11 +47,12 @@ public class StringLocalizer {
     private final ResourceBundle bundle;
 
     /**
-     * Creates a new localizer for the supplied {@link Locale}.
+     * Creates a new localizer for the supplied {@code Locale}.
      *
-     * @param locale the locale whose resources should be loaded; must not be {@code null}
-     * @throws NullPointerException     if {@code locale} is {@code null}
-     * @throws MissingResourceException if the {@code strings} bundle cannot be found
+     * @param locale the locale whose resources should be loaded
+     * @throws NullPointerException     if {@code locale} is null
+     * @throws MissingResourceException if the {@code strings} resource bundle
+     *                                  cannot be found
      */
     public StringLocalizer(Locale locale) {
         this.locale = Objects.requireNonNull(locale);
@@ -62,16 +67,15 @@ public class StringLocalizer {
     }
 
     /**
-     * Resolves the supplied key to its localized message and optionally formats it with the
-     * provided arguments.
-     * <p>
-     * If the key is {@code null} or cannot be found in the bundle, a placeholder in the form
-     * {@code "???key???"} is returned instead.
+     * Resolves the supplied key to its localized message and optionally formats
+     * it with the provided arguments.
      *
      * @param key  the resource bundle key to look up
-     * @param args optional arguments used to format the localized message via {@link MessageFormat}
-     * @return the localized (and optionally formatted) message, or a placeholder if the
-     *         {@code key} is missing
+     * @param args optional arguments used to format the localized message via
+     *             {@link MessageFormat}
+     * @return the localized (and optionally formatted) message, or a
+     *         placeholder if the {@code key} is null or cannot be found in the
+     *         {@code strings} resource bundle
      */
     public String localize(String key, Object... args) {
         if (key == null) {

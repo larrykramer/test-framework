@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,20 +34,20 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * A JUnit 4 {@code TestRule} for tests that interact with a
- * {@linkplain Logger}'s shared configuration.
+ * A JUnit 4 {@code TestRule} for tests that interact with a {@code Logger}'s
+ * shared configuration.
  * <p>
  * For test methods annotated with {@code @LogRule.UsesLogger}, this rule:
  * <ul>
  * <li><b>Globally serializes</b> execution of all {@code @LogRule.UsesLogger}
  *   tests, preventing concurrent {@code java.util.logging} configuration
- *   changes by other {@code @LogRule.UsesLogger} tests.
+ *   changes by other {@link UsesLogger @LogRule.UsesLogger} tests.
  * <li>Temporarily applies a logger level for the duration of the test.
  * <li>Captures log output emitted during the test for later inspection via
  *   {@link #getRecords()}.
  * </ul>
  * <p>
- * Test methods <em>not</em> annotated with {@code @LogRule.UsesLogger} are not
+ * Test methods <i>not</i> annotated with {@code @LogRule.UsesLogger} are not
  * serialized and do not capture logs via this rule. They may run concurrently
  * with each other (and potentially with one {@code @LogRule.UsesLogger} test).
  * However, if they use the same target logger while an annotated test is
@@ -58,27 +58,27 @@ import org.junit.runners.model.Statement;
  * {@code com.example.child}) that has its own explicit {@code Level}
  * configuration, that child will <b>not</b> be updated by this rule. You must
  * target the child logger directly in {@code @LogRule.UsesLogger} or ensure the
- * child is configured to inherit its level (i.e., its level is {@code null}).
+ * child is configured to inherit its level (i.e., its level is null).
  *
  * <h2>Concurrent Logging Interference</h2>
  * This rule captures only records whose {@link LogRecord#getLoggerName()}
  * exactly matches the configured target logger name. Records emitted by child
- * (descendant) loggers are ignored, even if they propagate to the target
- * logger via {@code java.util.logging}'s hierarchical handler model. This keeps
+ * (descendant) loggers are ignored, even if they propagate to the target logger
+ * via {@code java.util.logging}'s hierarchical handler model. This keeps
  * assertions focused on the component under test and avoids noise from
  * unrelated loggers in the same package hierarchy.
  * <p>
  * Even with exact-name filtering and global serialization of annotated tests,
  * unannotated tests may still run concurrently and may emit records to the
- * <em>same</em> target logger. Such records will be captured as well. For that
+ * <i>same</i> target logger. Such records will be captured as well. For that
  * reason:
  * <ul>
  * <li><b>Prefer</b> assertions that the expected message exists (e.g.,
  *   {@link java.util.stream.Stream#anyMatch Stream.anyMatch}) rather than
  *   asserting that no other messages exist.
  * <li>Asserting an <b>exact</b> count (e.g., {@code assertEquals(1, count)})
- *   is appropriate only when the code path is deterministic and the test
- *   suite does not concurrently emit the same message on the same logger.
+ *   is appropriate only when the code path is deterministic and the test suite
+ *   does not concurrently emit the same message on the same logger.
  * </ul>
  *
  * <h2>Configuring the target logger</h2>
@@ -141,8 +141,8 @@ public class LogRule implements TestRule {
     private final Queue<LogRecord> capturedLogs = new ConcurrentLinkedQueue<>();
 
     /**
-     * Marks a JUnit test method as interacting with (and potentially mutating) a
-     * shared {@link Logger Logger} configuration.
+     * Marks a JUnit test method as interacting with (and potentially mutating)
+     * a shared {@link Logger Logger} configuration.
      *
      * @see LogRule
      */
@@ -205,10 +205,10 @@ public class LogRule implements TestRule {
      * cannot be targeted via this constructor.
      *
      * @param loggerName the default logger name to use when
-     *                   {@link UsesLogger#name()} is blank; may be {@code null}
-     *                   or blank to require per-test configuration
+     *                   {@link UsesLogger#name()} is blank
      * @see UsesLogger#name()
      * @see Level#ALL
+     * @apiNote Blank names and {@code null} are treated as not provided.
      */
     public LogRule(String loggerName) {
         this(loggerName, Level.ALL);
@@ -224,7 +224,7 @@ public class LogRule implements TestRule {
      *   otherwise this constructor's {@code loggerName} is used.
      * <li>The level applied for the duration of the test is
      *   {@link Level#parse(String) Level.parse} of {@link UsesLogger#level()}
-     *    if non-blank; otherwise this constructor's {@code level} is used.
+     *   if non-blank; otherwise this constructor's {@code level} is used.
      * </ul>
      * <p>
      * Blank {@code loggerName} is treated as "not provided" (equivalent to
@@ -232,15 +232,14 @@ public class LogRule implements TestRule {
      * annotated tests will fail at runtime when the rule is applied.
      *
      * @param loggerName the default logger name to use when
-     *                   {@link UsesLogger#name()} is blank; may be {@code null}
-     *                   or blank to require per-test configuration
+     *                   {@link UsesLogger#name()} is blank
      * @param level      the default level to apply when
-     *                   {@link UsesLogger#level()} is blank; must not be
-     *                   {@code null}
-     * @throws NullPointerException if {@code level} is {@code null}
+     *                   {@link UsesLogger#level()} is blank
+     * @throws NullPointerException if {@code level} is null
      * @see UsesLogger#name()
      * @see UsesLogger#level()
      * @see Level#parse(String)
+     * @apiNote Blank names and {@code null} are treated as not provided.
      */
     public LogRule(String loggerName, Level level) {
         this.defaultLoggerName = (loggerName != null && loggerName.isBlank()) ? null : loggerName;
@@ -259,13 +258,14 @@ public class LogRule implements TestRule {
      * Returns a {@link Statement} that applies this rule to the supplied
      * {@code base} statement.
      * <p>
-     * If the described test method is annotated with {@link UsesLogger}, the
-     * returned statement coordinates execution with other
-     * {@code @LogRule.UsesLogger} tests, applies the target logger level for
-     * the duration of the test, and captures log output.
+     * If the described test method is annotated with
+     * {@code @LogRule.UsesLogger}, the returned statement coordinates execution
+     * with other {@link UsesLogger @LogRule.UsesLogger} tests, applies the
+     * target logger level for the duration of the test, and captures log
+     * output.
      * <p>
-     * If the test method is not annotated with {@link UsesLogger}, this method
-     * returns {@code base} unchanged.
+     * If the test method is not annotated with {@code @LogRule.UsesLogger},
+     * this method returns {@code base} unchanged.
      *
      * @param base        the original statement to evaluate
      * @param description the JUnit description of the test being run

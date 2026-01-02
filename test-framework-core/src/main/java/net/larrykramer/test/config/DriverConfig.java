@@ -31,7 +31,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.openqa.selenium.Dimension;
 
 /**
- * Central configuration class for driver settings.
+ * Central configuration class for driver configuration properties.
  * <p>
  * This class aggregates general driver properties such as the driver type,
  * headless mode properties, window dimensions, timeouts, and proxy
@@ -151,7 +151,7 @@ public class DriverConfig {
      * <p>
      * This property maps to {@code driver.non-proxy-hosts}.
      * <p>
-     * <strong>Example usage:</strong>
+     * <b>Example usage:</b>
      * <pre>{@code
      * driver.non-proxy-hosts=*.example.com|localhost|10.0.0.1
      * }</pre>

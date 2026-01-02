@@ -45,8 +45,8 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
         extends DriverFactory<T>
         permits ChromeDriverFactory, EdgeDriverFactory {
     /**
-     * Applies Chromium-specific post-construction configuration to the
-     * given {@code WebDriver}.
+     * Applies Chromium-specific post-construction configuration to the given
+     * {@code WebDriver}.
      *
      * @param driver the Chromium-based {@code WebDriver} instance to configure
      */
@@ -62,8 +62,8 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
      *
      * @param options        the Chromium options that should be configured
      * @param chromiumConfig the Chromium-specific configuration
-     * @throws IllegalArgumentException if the configured window width or
-     *                                  height is negative or 0
+     * @throws IllegalArgumentException if the configured window width or height
+     *                                  is negative or 0
      */
     protected void buildChromiumOptions(T options, ChromiumConfig chromiumConfig) {
         chromiumConfig.executable.ifPresent(options::setBinary);
