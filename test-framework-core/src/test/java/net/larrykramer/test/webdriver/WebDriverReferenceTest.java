@@ -141,8 +141,10 @@ public class WebDriverReferenceTest {
 
     @Test
     public void testGetClass_whenDriverImplementsInterface_returnsDriver() {
+        // Arrange
         WebDriver mockDriver = mockWebDriver(TakesScreenshot.class);
         driverRef.set(mockDriver);
+        // Act & Assert
         assertSame(mockDriver, driverRef.get(TakesScreenshot.class));
     }
 
@@ -202,8 +204,10 @@ public class WebDriverReferenceTest {
 
     @Test
     public void testAs_whenDriverImplementsInterface_returnsTypedDriver() {
+        // Arrange
         WebDriver mockDriver = mockWebDriver(TakesScreenshot.class);
         driverRef.set(mockDriver);
+        // Act & Assert
         assertSame(mockDriver, driverRef.as(TakesScreenshot.class));
     }
 
@@ -284,8 +288,10 @@ public class WebDriverReferenceTest {
 
     @Test
     public void testGetUnderlyingDriver_givenStateInitialized_returnsSameInstanceAsSupplied() {
+        // Arrange
         WebDriver mockDriver = mockWebDriver();
         driverRef.set(mockDriver);
+        // Act & Assert
         assertSame(mockDriver, driverRef.getUnderlyingDriver());
     }
 
