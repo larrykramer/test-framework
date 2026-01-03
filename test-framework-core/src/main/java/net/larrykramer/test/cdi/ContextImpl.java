@@ -103,6 +103,7 @@ class ContextImpl implements AlterableContext {
      *
      * @param contextual the contextual type
      * @throws ContextNotActiveException if the context is not active
+     * @throws IllegalArgumentException if {@code contextual} is null
      */
     @Override
     public void destroy(Contextual<?> contextual) {
