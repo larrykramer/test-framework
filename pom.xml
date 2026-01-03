@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (c) 2025 Larry Kramer
+  Copyright (c) 2025-2026 Larry Kramer
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -84,17 +84,70 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <java.version>21</java.version>
+    <maven.min.version>3.8.8</maven.min.version>
+    <!--
+      To build, this project requires a Java 21 or higher compiler, but with a
+      Java 21 source and binary level.
+      The project allows builds with a compiler version higher than 21 to
+      allow testing on later releases.
+    -->
+    <maven.compiler.release>21</maven.compiler.release>
+    <maven.compiler.target>${maven.compiler.release}</maven.compiler.target>
+    <maven.compiler.source>${maven.compiler.release}</maven.compiler.source>
+
+    <surefire.version>3.5.4</surefire.version>
 
     <!--
-      Keep the Selenium version up-to-date. The project relies on Selenium's DevTools features,
-      which require alignment with your installed Chrome or Edge version.
+      Workaround for Surefire late variable replacement
+      If 'surefire.system.args' is not present, Surefire will replace it
+      verbatim, which will crash the VM
     -->
-    <selenium.version>4.35.0</selenium.version>
+    <surefire.system.args/>
 
-    <!-- Workaround for Surefire late variable replacement -->
-    <!-- If 'argLine' is not present, Surefire will replace it verbatim, which will crash the VM -->
-    <argLine></argLine>
+    <!--
+      Dependency version properties begin here.
+
+      Properties are grouped by whether they solely relate to plugins, solely
+      relate to test code, or impact production code.
+
+      Each version property should be of the form "<groupId>.version".
+      For example, <org.seleniumhq.selenium.version>
+
+      In cases where multiple artifacts use the same groupId but have different
+      versions, add the artifactId or other qualifier to the property name.
+      For example, <io.cucumber.gherkin.version>
+
+      Version properties MUST be sorted alphabetically.
+    -->
+
+    <!--
+      Plugin dependency versions.
+
+      Named and ordered by their short name (antrun, clean, ...).
+
+      This is not limited to plugin versions. Other artifacts that those plugins
+      depend upon can go here if they are not otherwise used.
+    -->
+    <antrun.plugin.version>3.2.0</antrun.plugin.version>
+    <clean.plugin.version>3.5.0</clean.plugin.version>
+    <compiler.plugin.version>3.14.1</compiler.plugin.version>
+    <dependency.plugin.version>3.9.0</dependency.plugin.version>
+    <enforcer.plugin.version>3.6.2</enforcer.plugin.version>
+    <surefire.plugin.version>${surefire.version}</surefire.plugin.version>
+    <surefire-report.plugin.version>${surefire.version}</surefire-report.plugin.version>
+    <!--
+      TEST CODE dependency versions.
+    -->
+    <junit.version>4.13.2</junit.version>
+    <org.mockito.version>5.21.0</org.mockito.version>
+    <!--
+      PRODUCTION CODE dependency versions.
+    -->
+    <io.cucumber.version>7.20.1</io.cucumber.version>
+    <io.smallrye.smallrye-config.version>3.14.1</io.smallrye.smallrye-config.version>
+    <jakarta.enterprise.version>4.1.0</jakarta.enterprise.version>
+    <org.jboss.weld.se.version>6.0.3.Final</org.jboss.weld.se.version>
+    <org.seleniumhq.selenium.version>4.38.0</org.seleniumhq.selenium.version>
   </properties>
 
   <dependencyManagement>
@@ -102,13 +155,13 @@
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>4.13.2</version>
+        <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>5.18.0</version>
+        <version>${org.mockito.version}</version>
         <scope>test</scope>
       </dependency>
 
@@ -116,37 +169,43 @@
       <dependency>
         <groupId>jakarta.enterprise</groupId>
         <artifactId>jakarta.enterprise.cdi-api</artifactId>
-        <version>4.1.0</version>
+        <version>${jakarta.enterprise.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>org.jboss.weld.se</groupId>
         <artifactId>weld-se-core</artifactId>
-        <version>5.1.2.Final</version>
+        <version>${org.jboss.weld.se.version}</version>
       </dependency>
 
       <!-- SmallRye Config -->
       <dependency>
         <groupId>io.smallrye.config</groupId>
         <artifactId>smallrye-config</artifactId>
-        <version>3.12.4</version>
+        <version>${io.smallrye.smallrye-config.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <!-- Cucumber -->
       <dependency>
         <groupId>io.cucumber</groupId>
         <artifactId>cucumber-java</artifactId>
-        <version>7.20.1</version>
+        <version>${io.cucumber.version}</version>
       </dependency>
       <dependency>
         <groupId>io.cucumber</groupId>
         <artifactId>cucumber-core</artifactId>
-        <version>7.20.1</version>
+        <version>${io.cucumber.version}</version>
       </dependency>
       <dependency>
         <groupId>io.cucumber</groupId>
         <artifactId>cucumber-junit</artifactId>
-        <version>7.20.1</version>
+        <version>${io.cucumber.version}</version>
         <scope>test</scope>
       </dependency>
 
@@ -154,70 +213,100 @@
       <dependency>
         <groupId>org.seleniumhq.selenium</groupId>
         <artifactId>selenium-java</artifactId>
-        <version>${selenium.version}</version>
+        <version>${org.seleniumhq.selenium.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <build>
     <pluginManagement>
+      <!-- All plugins ordered by shortname (antrun, clean, ...) -->
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.6.1</version>
-          <executions>
-            <execution>
-              <id>enforce-versions</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <requireMavenVersion>
-                    <version>3.6.3</version>
-                    <message>
-                      Maven version 3.6.3 or higher is required.
-                      Please update your Maven installation.
-                    </message>
-                  </requireMavenVersion>
-                  <requireJavaVersion>
-                    <version>[${java.version},)</version>
-                    <message>
-                      Java Development Kit (JDK) ${java.version} or higher is required.
-                      Please set your JAVA_HOME and PATH accordingly.
-                    </message>
-                  </requireJavaVersion>
-                </rules>
-              </configuration>
-            </execution>
-          </executions>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>${antrun.plugin.version}</version>
         </plugin>
-
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>${clean.plugin.version}</version>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.14.0</version>
+          <version>${compiler.plugin.version}</version>
           <configuration>
-            <release>${java.version}</release>
+            <showDeprecation>true</showDeprecation>
+            <showWarnings>true</showWarnings>
+            <compilerArgs>
+              <arg>-Xlint:unchecked</arg>
+            </compilerArgs>
           </configuration>
         </plugin>
-
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${dependency.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${enforcer.plugin.version}</version>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.3</version>
+          <version>${surefire.plugin.version}</version>
           <configuration>
-            <argLine>@{argLine}</argLine>
+            <trimStackTrace>false</trimStackTrace>
+            <argLine>@{surefire.system.args}</argLine>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-report-plugin</artifactId>
+          <version>${surefire-report.plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
 
     <plugins>
+      <!-- Check for the minimum version of Java and Maven. -->
+      <!-- Runs during the validation phase. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java-version</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <message>To build this project JDK ${maven.compiler.release} (or greater) is required. Please install it.</message>
+                  <version>[${maven.compiler.release},)</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-maven-version</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <message>To build this project Maven ${maven.min.version} (or greater) is required. Please install it.</message>
+                  <version>[${maven.min.version},)</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

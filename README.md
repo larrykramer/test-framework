@@ -50,7 +50,7 @@ Follow these steps to set up and run tests.
 ### Prerequisites
 
 * Java Development Kit (JDK) 21 or higher
-* Apache Maven 3.6.3 or higher
+* Apache Maven 3.8.8 or higher
 * At least one supported browser installed (Chrome, Edge, Firefox, or Safari on macOS)
 
 ### How to Use
