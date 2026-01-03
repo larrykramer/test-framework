@@ -165,10 +165,10 @@ public class ScopedSystemProperties {
 
         private static void checkKey(String key) {
             if (key == null) {
-                throw new NullPointerException("key can't be null");
+                throw new NullPointerException("Key is null");
             }
             if (key.isEmpty()) {
-                throw new IllegalArgumentException("key can't be empty");
+                throw new IllegalArgumentException("Key is empty");
             }
         }
     }
@@ -188,7 +188,7 @@ public class ScopedSystemProperties {
 
         ManagedProperties(Properties root) {
             super();
-            this.root = Objects.requireNonNull(root);
+            this.root = Objects.requireNonNull(root, "Root is null");
             this.stack = new InheritableThreadLocal<>() {
                 @Override
                 protected ArrayDeque<Properties> initialValue() {

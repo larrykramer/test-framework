@@ -28,10 +28,8 @@ import java.util.Objects;
 /**
  * Shared utility methods.
  */
-public class SharedUtils {
-    private SharedUtils() {
-        // Ensure there is only one instance of this utility class.
-    }
+public final class SharedUtils {
+    private SharedUtils() {}
 
     /**
      * Returns an identity-style string for the given object, in a form similar
@@ -81,7 +79,7 @@ public class SharedUtils {
      * @throws NullPointerException if {@code c} is null
      */
     public static Class<?> getUnproxiedClass(Class<?> c) {
-        Objects.requireNonNull(c);
+        Objects.requireNonNull(c, "c is null");
         Class<?> unproxiedClass = c;
         while (isProxiedClass(unproxiedClass)) {
             Class<?> clazz = unproxiedClass.getSuperclass();

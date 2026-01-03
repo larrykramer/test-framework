@@ -243,7 +243,7 @@ public class LogRule implements TestRule {
      */
     public LogRule(String loggerName, Level level) {
         this.defaultLoggerName = (loggerName != null && loggerName.isBlank()) ? null : loggerName;
-        this.defaultLevel = Objects.requireNonNull(level);
+        this.defaultLevel = Objects.requireNonNull(level, "Level is null");
     }
 
     /**

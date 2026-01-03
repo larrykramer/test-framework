@@ -142,7 +142,7 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
         this.instances = new HashMap<>();
         this.glueClasses = new HashSet<>();
 
-        this.weldFactory = Objects.requireNonNull(weldFactory);
+        this.weldFactory = Objects.requireNonNull(weldFactory, "weldFactory is null");
 
         this.started = new AtomicBoolean(false); // Weld container not started
 
@@ -276,7 +276,7 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
     public void start() {
         if (started.compareAndSet(false, true)) {
             try {
-                Weld weld = Objects.requireNonNull(this.weldFactory.get());
+                Weld weld = Objects.requireNonNull(this.weldFactory.get(), "Weld is null");
                 weld.addExtension(this);
                 container = weld.initialize();
                 closed.set(false);

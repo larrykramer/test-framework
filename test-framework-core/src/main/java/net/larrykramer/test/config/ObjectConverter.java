@@ -59,7 +59,7 @@ public class ObjectConverter implements Converter<Object> {
     @Override
     public Object convert(String value) {
         if (value == null) {
-            throw new NullPointerException("value");
+            throw new NullPointerException("Value is null");
         }
 
         String s = value.strip();

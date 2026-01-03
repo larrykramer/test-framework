@@ -120,9 +120,7 @@ public final class Repository {
         return null;
     }
 
-    private Repository() {
-        // Ensure there is only one instance of this utility class.
-    }
+    private Repository() {}
 
     /**
      * Resolves the locator entry associated with the given key and substitutes
@@ -152,7 +150,9 @@ public final class Repository {
      *          Callers must supply arguments for locators that require them.
      */
     public static Locator get(String key, Object... args) {
-        if (!(repoMap.get(Objects.requireNonNull(key)) instanceof String value)) {
+        Objects.requireNonNull(key, "Key is null");
+
+        if (!(repoMap.get(key) instanceof String value)) {
             throw new MissingResourceException("Missing locator: " + key, REPOSITORY_FILE, key);
         }
 

@@ -108,7 +108,7 @@ public class WebDriverReference {
      *          returned by the factory into this method.
      */
     public void set(WebDriver driver) {
-        this.driver = Objects.requireNonNull(driver);
+        this.driver = Objects.requireNonNull(driver, "Driver is null");
         this.underlyingDriver = unwrap(this.driver);
     }
 
@@ -153,7 +153,7 @@ public class WebDriverReference {
      * @throws NullPointerException  if {@code interfaceClass} is null
      */
     public WebDriver get(Class<?> interfaceClass) {
-        Objects.requireNonNull(interfaceClass, "interfaceClass");
+        Objects.requireNonNull(interfaceClass, "interfaceClass is null");
         if (driver == null) {
             throw notInitialized();
         }

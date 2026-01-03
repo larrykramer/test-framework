@@ -214,7 +214,7 @@ class ContextImpl implements AlterableContext {
      * @see #deactivate()
      */
     public void associate(Scenario scenario) {
-        Objects.requireNonNull(scenario);
+        Objects.requireNonNull(scenario, "Scenario is null");
         if (!isActive()) {
             activate(scenario);
         } else {

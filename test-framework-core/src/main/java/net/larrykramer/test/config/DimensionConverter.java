@@ -49,7 +49,7 @@ public class DimensionConverter implements Converter<Dimension> {
     @Override
     public Dimension convert(String value) {
         if (value == null) {
-            throw new NullPointerException("value");
+            throw new NullPointerException("Value is null");
         }
         if (value.isBlank()) {
             return null;

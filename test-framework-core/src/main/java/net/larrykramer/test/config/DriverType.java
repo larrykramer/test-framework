@@ -54,13 +54,13 @@ public enum DriverType {
      *
      * @param name the name of the enum constant to be returned.
      * @return the enum constant with the specified name
-     * @throws IllegalArgumentException if {@code name} is null or blank, or
-     *                                  this enum class has no constant with the
-     *                                  specified name
+     * @throws IllegalArgumentException if this enum class has no constant with
+     *                                  the specified name
+     * @throws NullPointerException     if {@code name} is null
      */
     public static DriverType of(String name) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Name must not be null or blank");
+        if (name == null) {
+            throw new NullPointerException("Name is null");
         }
 
         for (var value : values()) {
@@ -69,7 +69,8 @@ public enum DriverType {
             }
         }
 
-        throw new IllegalArgumentException("Unknown DriverType: " + name);
+        throw new IllegalArgumentException(
+                "No enum constant " + DriverType.class.getCanonicalName() + "." + name);
     }
 
     /**

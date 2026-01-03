@@ -55,7 +55,7 @@ public class StringLocalizer {
      *                                  cannot be found
      */
     public StringLocalizer(Locale locale) {
-        this.locale = Objects.requireNonNull(locale);
+        this.locale = Objects.requireNonNull(locale, "Locale is null");
         this.bundle = ResourceBundle.getBundle("strings", locale);
     }
 
