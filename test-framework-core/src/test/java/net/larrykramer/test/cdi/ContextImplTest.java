@@ -370,7 +370,7 @@ public class ContextImplTest {
         context.deactivate();
         // Assert
         assertFalse(context.isActive());
-        verify(mockDestroyedEvent, never()).fire(any(ScenarioScoped.class));
+        verify(mockDestroyedEvent, never()).fire(any(Scenario.class));
     }
 
     @Test
