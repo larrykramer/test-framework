@@ -29,7 +29,7 @@ import java.util.logging.Level;
 
 import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.config.DriverType;
-import net.larrykramer.test.rule.LogRule;
+import net.larrykramer.test.junit.rule.LogRule;
 import net.larrykramer.test.util.OperatingSystem;
 import net.larrykramer.test.webdriver.DriverFactory;
 import org.junit.Before;

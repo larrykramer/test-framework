@@ -24,7 +24,7 @@ package net.larrykramer.test.webdriver;
 
 import java.util.Optional;
 
-import net.larrykramer.test.categories.SmokeTest;
+import net.larrykramer.test.junit.categories.SmokeTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

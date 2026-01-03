@@ -124,7 +124,7 @@
     <profile>
       <id>fuzzer-tests</id>
       <properties>
-        <groups>net.larrykramer.test.categories.FuzzerTest</groups>
+        <groups>net.larrykramer.test.junit.categories.FuzzerTest</groups>
         <excludedGroups/>
       </properties>
     </profile>

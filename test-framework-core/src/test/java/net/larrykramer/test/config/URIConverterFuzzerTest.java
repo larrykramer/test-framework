@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.regex.Pattern;
 
-import net.larrykramer.test.categories.FuzzerTest;
+import net.larrykramer.test.junit.categories.FuzzerTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;

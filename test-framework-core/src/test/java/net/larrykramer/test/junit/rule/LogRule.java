@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.rule;
+package net.larrykramer.test.junit.rule;
 
 import java.lang.annotation.*;
 import java.util.*;

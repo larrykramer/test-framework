@@ -36,7 +36,7 @@ import jakarta.enterprise.util.TypeLiteral;
 import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.GridConfig;
 import net.larrykramer.test.config.DriverConfig;
-import net.larrykramer.test.rule.LogRule;
+import net.larrykramer.test.junit.rule.LogRule;
 import net.larrykramer.test.webdriver.DriverFactory;
 import net.larrykramer.test.webdriver.WebDriverReference;
 import org.junit.Rule;
