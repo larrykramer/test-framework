@@ -50,7 +50,7 @@
       2. Passing user properties on the command line (e.g., `-Dgroups=...`).
     -->
     <groups/>
-    <excludedGroups>net.larrykramer.test.categories.FuzzerTest</excludedGroups>
+    <excludedGroups>net.larrykramer.test.junit.categories.FuzzerTest</excludedGroups>
   </properties>
 
   <dependencies>
