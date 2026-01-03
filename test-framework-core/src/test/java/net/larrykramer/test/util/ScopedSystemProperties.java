@@ -108,8 +108,10 @@ public class ScopedSystemProperties {
          * @param value the value of the system property
          * @return the previous string value of the system property, or
          *         {@code null} if there was no property with that key
-         * @throws IllegalStateException if the environment has already been
-         *                               closed
+         * @throws IllegalArgumentException if {@code key} is empty
+         * @throws IllegalStateException    if the environment has already been
+         *                                  closed
+         * @throws NullPointerException     if {@code key} is null
          */
         public String setProperty(String key, String value) {
             checkKey(key);
@@ -128,8 +130,10 @@ public class ScopedSystemProperties {
          * @param key   the name of the system property to be removed
          * @return the previous string value of the system property, or
          *         {@code null} if there was no property with that key
-         * @throws IllegalStateException if the environment has already been
-         *                               closed
+         * @throws IllegalArgumentException if {@code key} is empty
+         * @throws IllegalStateException    if the environment has already been
+         *                                  closed
+         * @throws NullPointerException     if {@code key} is null
          */
         public String clearProperty(String key) {
             checkKey(key);
