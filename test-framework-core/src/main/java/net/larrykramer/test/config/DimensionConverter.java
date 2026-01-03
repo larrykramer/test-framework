@@ -41,10 +41,10 @@ public class DimensionConverter implements Converter<Dimension> {
      * @param value the dimension string to convert
      * @return a {@code Dimension} parsed from the supplied value, or
      *         {@code null} if the value is blank
-     * @throws NullPointerException     if {@code value} is null
      * @throws IllegalArgumentException if the value does not match the expected
      *                                  formats or contains non-numeric
      *                                  width/height components
+     * @throws NullPointerException     if {@code value} is null
      */
     @Override
     public Dimension convert(String value) {

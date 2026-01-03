@@ -102,7 +102,8 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
      * settings) and to apply runtime WebDriver configuration (such as implicit
      * wait timeouts) after driver creation.
      *
-     * @implNote This field is populated by CDI using {@link ConfigProperties}.
+     * @implNote This field is populated by CDI using
+     *           {@link ConfigProperties @ConfigProperties}.
      */
     @Inject
     @ConfigProperties
@@ -198,12 +199,12 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
      * Applies common capabilities to the given capabilities object.
      *
      * @param capabilities the capabilities object to augment
+     * @see #addProxy(MutableCapabilities)
      * @implNote The base implementation currently sets
      *           {@code ACCEPT_INSECURE_CERTS} and applies proxy configuration
      *           (when configured) based on the global configuration. As an
      *           implementation detail, existing values for those keys may be
      *           overwritten.
-     * @see #addProxy(MutableCapabilities)
      */
     protected void applyCommonCapabilities(MutableCapabilities capabilities) {
         capabilities.setCapability(ACCEPT_INSECURE_CERTS, config.allowInsecureCerts);

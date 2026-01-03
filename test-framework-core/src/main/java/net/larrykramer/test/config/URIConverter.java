@@ -29,8 +29,8 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.spi.Converter;
 
 /**
- * A {@code Converter} implementation that parses textual configuration
- * values into {@code URI} instances.
+ * A {@code Converter} implementation that parses textual configuration values
+ * into {@code URI} instances.
  */
 public class URIConverter implements Converter<URI> {
     /*
@@ -102,8 +102,8 @@ public class URIConverter implements Converter<URI> {
      * @param value the URI string to convert
      * @return a {@code URI} parsed from the supplied value, or {@code null} if
      *         the value is blank
-     * @throws NullPointerException     if {@code value} is null
      * @throws IllegalArgumentException if the value cannot be parsed as a URI
+     * @throws NullPointerException     if {@code value} is null
      */
     @Override
     public URI convert(String value) {

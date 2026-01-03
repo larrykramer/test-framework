@@ -34,13 +34,8 @@ package net.larrykramer.test.junit.categories;
  * <p>
  * <b>Example</b>
  * <pre>{@code
- * import net.larrykramer.test.categories.FuzzerTest;
- * import org.junit.Test;
- * import org.junit.experimental.categories.Category;
- *
  * @Category(FuzzerTest.class)
  * public class ParserFuzzerTest {
- *
  *     @Test
  *     public void fuzzParserInputs() {
  *         // fuzzing logic

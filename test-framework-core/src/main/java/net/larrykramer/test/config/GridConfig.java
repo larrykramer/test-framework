@@ -31,7 +31,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * Configuration settings for executing tests on a remote Selenium Grid.
+ * Configuration properties for executing tests on a remote Selenium Grid.
  * <p>
  * Maps to properties prefixed with {@code grid}.
  */

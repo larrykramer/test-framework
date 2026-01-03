@@ -32,13 +32,8 @@ package net.larrykramer.test.junit.categories;
  * <p>
  * <b>Example:</b>
  * <pre>{@code
- * import net.larrykramer.test.categories.SmokeTest;
- * import org.junit.Test;
- * import org.junit.experimental.categories.Category;
- *
  * @Category(SmokeTest.class)
  * public class UserLoginSmokeTest {
- *
  *     @Test
  *     public void loginSucceedsWithValidCredentials() {
  *         // smoke test logic

@@ -50,9 +50,9 @@ public class StringLocalizer {
      * Creates a new localizer for the supplied {@code Locale}.
      *
      * @param locale the locale whose resources should be loaded
-     * @throws NullPointerException     if {@code locale} is null
      * @throws MissingResourceException if the {@code strings} resource bundle
      *                                  cannot be found
+     * @throws NullPointerException     if {@code locale} is null
      */
     public StringLocalizer(Locale locale) {
         this.locale = Objects.requireNonNull(locale, "Locale is null");
