@@ -108,7 +108,7 @@ class ContextImpl implements AlterableContext {
     @Override
     public void destroy(Contextual<?> contextual) {
         if (contextual == null) {
-            throw new IllegalArgumentException("No contextual specified to retrieve (null)");
+            throw contextualIsNull();
         }
 
         Map<Contextual<?>, ContextualInstance<?>> ctx = currentContext.get();
@@ -144,6 +144,7 @@ class ContextImpl implements AlterableContext {
      *                          created
      * @return the contextual instance
      * @throws ContextNotActiveException if the context is not active
+     * @throws IllegalArgumentException if {@code contextual} is null
      */
     @Override
     public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
@@ -153,7 +154,7 @@ class ContextImpl implements AlterableContext {
             throw new ContextNotActiveException();
         }
         if (contextual == null) {
-            throw new IllegalArgumentException("No contextual specified to retrieve (null)");
+            throw contextualIsNull();
         }
 
         @SuppressWarnings("unchecked")
@@ -318,6 +319,10 @@ class ContextImpl implements AlterableContext {
         if (scenario != null) {
             beanManager.getEvent().select(DESTROYED_LITERAL).fire(scenario);
         }
+    }
+
+    private static IllegalArgumentException contextualIsNull() {
+        return new IllegalArgumentException("No contextual specified to retrieve (null)");
     }
 
     private record ContextualInstance<T>(T value, CreationalContext<T> creationalContext,
