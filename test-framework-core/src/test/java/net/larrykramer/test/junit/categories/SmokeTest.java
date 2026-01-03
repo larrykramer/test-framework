@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,20 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.categories;
+package net.larrykramer.test.junit.categories;
 
 /**
- * Marker interface used with JUnit 4's {@link org.junit.experimental.categories.Category Category}
- * annotation to identify smoke tests.
+ * Marker interface used with JUnit 4's {@code Category} annotation to identify
+ * smoke tests.
  * <p>
- * Apply this category to tests that provide a quick, high-level verification of the application's
- * critical paths—typically a small subset of the overall test suite that can be executed
- * frequently to catch major regressions early.
+ * Apply this category to tests that provide a quick, high-level verification of
+ * the application's critical paths—typically a small subset of the overall test
+ * suite that can be executed frequently to catch major regressions early.
  * <p>
- * <strong>Example:</strong>
+ * <b>Example:</b>
  * <pre>{@code
- * import net.larrykramer.test.categories.SmokeTest;
- * import org.junit.Test;
- * import org.junit.experimental.categories.Category;
- *
  * @Category(SmokeTest.class)
  * public class UserLoginSmokeTest {
- *
  *     @Test
  *     public void loginSucceedsWithValidCredentials() {
  *         // smoke test logic
@@ -46,9 +41,9 @@ package net.larrykramer.test.categories;
  * }
  * }</pre>
  * <p>
- * The interface is intentionally empty; it serves only as a semantic tag. You can run smoke tests
- * exclusively—or exclude them—by configuring your build or IDE to include or omit this category
- * when executing the JUnit suite.
+ * The interface is intentionally empty; it serves only as a semantic tag. You
+ * can run smoke tests exclusively—or exclude them—by configuring your build or
+ * IDE to include or omit this category when executing the JUnit suite.
  */
 public interface SmokeTest {
     /* category marker */

@@ -25,41 +25,41 @@ package net.larrykramer.test.config;
 import org.eclipse.microprofile.config.spi.Converter;
 
 /**
- * A {@link Converter} implementation that maps textual configuration values to
+ * A {@code Converter} implementation that maps textual configuration values to
  * the most appropriate Java type.
  */
 public class ObjectConverter implements Converter<Object> {
     /**
-     * Converts the supplied configuration value to a strongly typed object. The
-     * method returns:
+     * Converts the supplied configuration value to a strongly typed object.
+     * <p>
+     * The method returns:
      * <ul>
      * <li>An empty string if the trimmed value is blank;
-     * <li>The unquoted string value if the trimmed input is enclosed in matching
-     *   single ({@code '}) or double ({@code "}) quotes. This serves as an
-     *   escape hatch to force a specific value to remain a {@link String}
+     * <li>The unquoted string value if the trimmed input is enclosed in
+     *   matching single ({@code '}) or double ({@code "}) quotes. This serves
+     *   as an escape hatch to force a specific value to remain a {@code String}
      *   (e.g., {@code "123"} becomes the string {@code 123});
-     * <li>{@link Boolean#TRUE} or {@link Boolean#FALSE} for recognized boolean
+     * <li>{@code Boolean.TRUE} or {@code Boolean.FALSE} for recognized boolean
      *   literals such as {@code "true"}, {@code "false"}, {@code "yes"},
      *   {@code "no"}, {@code "on"}, {@code "off"}, {@code "y"}, {@code "n"}
      *   (case-insensitive);
-     * <li>An {@link Integer} if the trimmed value represents a <em>valid</em>
+     * <li>An {@code Integer} if the trimmed value represents a <i>valid</i>
      *   integer. The literals {@code "0"} and {@code "1"} are treated as
      *   integers rather than a boolean;
-     * <li>A {@link Double} if the value represents a floating-point number or
+     * <li>A {@code Double} if the value represents a floating-point number or
      *   if it cannot be represented as a valid integer;
-     * <li>The <em>original</em> string if none of the above conversions
-     *   succeed.
+     * <li>The <i>original</i> string if none of the above conversions succeed.
      * </ul>
      *
-     * @param value the configuration value to convert; must not be {@code null}
+     * @param value the configuration value to convert
      * @return the converted object as described above
      * @throws IllegalArgumentException if {@code value} has mismatched quotes
-     * @throws NullPointerException     if {@code value} is {@code null}
+     * @throws NullPointerException     if {@code value} is null
      */
     @Override
     public Object convert(String value) {
         if (value == null) {
-            throw new NullPointerException("value");
+            throw new NullPointerException("Value is null");
         }
 
         String s = value.strip();

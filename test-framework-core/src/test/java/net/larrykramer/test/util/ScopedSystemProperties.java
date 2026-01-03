@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,19 +31,21 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Test utility for scoping changes made to {@link System#getProperties()} within a block of code.
+ * Test utility for scoping changes made to {@link System#getProperties()}
+ * within a block of code.
  * <p>
- * Many tests (and some production code) temporarily modify system properties and rely on a
- * predictable environment afterward. Repeatedly saving and restoring the global
- * {@link Properties} instance is error-prone—especially when tests run in parallel or spawn
- * child threads. {@code ScopedSystemProperties} exists to make those temporary overrides safe,
- * composable, and thread-aware by providing an isolated snapshot that is automatically
- * restored when the scope ends.
+ * Many tests (and some production code) temporarily modify system properties
+ * and rely on a predictable environment afterward. Repeatedly saving and
+ * restoring the global {@code Properties} instance is error-prone—especially
+ * when tests run in parallel or spawn child threads.
+ * {@code ScopedSystemProperties} exists to make those temporary overrides safe,
+ * composable, and thread-aware by providing an isolated snapshot that is
+ * automatically restored when the scope ends.
  * <p>
- * Callers obtain an {@link Environment} via {@link #open()}, make any temporary updates to
- * system properties, and rely on {@link Environment#close()} (typically by using a
- * try-with-resources statement) to restore the previous values. Nested scopes are supported
- * on a per-thread basis and are inherited by child threads.
+ * This utility supports nested scopes on a per-thread basis, which are also
+ * inherited by child threads. The recommended usage is within a
+ * try-with-resources statement to ensure that the environment is closed and
+ * previous property values are restored automatically.
  */
 public class ScopedSystemProperties {
     private static final ManagedProperties DELEGATE;
@@ -62,12 +64,14 @@ public class ScopedSystemProperties {
     /**
      * Opens a new scoped environment for system properties.
      * <p>
-     * The returned {@link Environment} maintains a snapshot of the properties visible at the
-     * time of invocation. All subsequent reads and writes to {@link System#getProperties()}
-     * made within the scope of this environment are isolated from outer scopes until
-     * {@link Environment#close()} is invoked.
+     * The returned {@linkplain Environment scoped environment} maintains a
+     * snapshot of the properties visible at the time of invocation. All
+     * subsequent reads and writes to {@link System#getProperties()} are
+     * confined to this new scope and will be discarded when the environment is
+     * closed.
      *
-     * @return a newly opened environment that should be closed to restore the previous state
+     * @return a newly opened environment that should be closed to restore the
+     *         previous state
      */
     public static Environment open() {
         return new Environment(DELEGATE);
@@ -76,9 +80,10 @@ public class ScopedSystemProperties {
     /**
      * Represents a scoped view of system properties.
      * <p>
-     * Instances are created via {@link ScopedSystemProperties#open()} and hold an isolated
-     * copy of the properties stack for the current thread. Closing the environment restores
-     * the prior state, ensuring temporary property overrides do not leak outside the scope.
+     * Instances are created via {@link ScopedSystemProperties#open()} and hold
+     * an isolated copy of the properties stack for the current thread. Closing
+     * the environment restores the prior state, ensuring temporary property
+     * overrides do not leak outside the scope.
      */
     public static final class Environment implements AutoCloseable {
         private final ManagedProperties properties;
@@ -94,15 +99,19 @@ public class ScopedSystemProperties {
         /**
          * Sets a system property within this scoped environment.
          * <p>
-         * The change affects only the current scope (and any nested scopes) and is discarded
-         * when the environment is closed. Attempting to modify the scope after it has been
-         * closed results in an {@link IllegalStateException}.
+         * The change affects only the current scope (and any nested scopes) and
+         * is discarded when the environment is closed. Attempting to modify the
+         * scope after it has been closed results in an
+         * {@link IllegalStateException}.
          *
          * @param key   the name of the system property
          * @param value the value of the system property
-         * @return the previous string value of the system property, or {@code null} if there was
-         *         no property with that key
-         * @throws IllegalStateException if the environment has already been closed
+         * @return the previous string value of the system property, or
+         *         {@code null} if there was no property with that key
+         * @throws IllegalArgumentException if {@code key} is empty
+         * @throws IllegalStateException    if the environment has already been
+         *                                  closed
+         * @throws NullPointerException     if {@code key} is null
          */
         public String setProperty(String key, String value) {
             checkKey(key);
@@ -113,14 +122,18 @@ public class ScopedSystemProperties {
         /**
          * Removes a system property within this scoped environment.
          * <p>
-         * The change affects only the current scope (and any nested scopes) and is discarded
-         * when the environment is closed. Attempting to modify the scope after it has been
-         * closed results in an {@link IllegalStateException}.
+         * The change affects only the current scope (and any nested scopes) and
+         * is discarded when the environment is closed. Attempting to modify the
+         * scope after it has been closed results in an
+         * {@link IllegalStateException}.
          *
          * @param key   the name of the system property to be removed
-         * @return the previous string value of the system property, or {@code null} if there was
-         *         no property with that key
-         * @throws IllegalStateException if the environment has already been closed
+         * @return the previous string value of the system property, or
+         *         {@code null} if there was no property with that key
+         * @throws IllegalArgumentException if {@code key} is empty
+         * @throws IllegalStateException    if the environment has already been
+         *                                  closed
+         * @throws NullPointerException     if {@code key} is null
          */
         public String clearProperty(String key) {
             checkKey(key);
@@ -129,13 +142,16 @@ public class ScopedSystemProperties {
         }
 
         /**
-         * Closes this environment and restores the system properties to their previous state.
+         * Closes this environment and restores the system properties to their
+         * previous state.
          * <p>
-         * The underlying snapshot captured in {@link ManagedProperties#enter()} is removed from
-         * the thread-local stack, ensuring that any temporary overrides applied within this scope
-         * are discarded. Closing more than once has no effect beyond the first invocation.
+         * The isolated property view associated with this environment is
+         * deactivated, ensuring that any temporary overrides applied within
+         * this scope are discarded. Closing more than once has no effect
+         * beyond the first invocation.
          *
-         * @throws IllegalStateException if the scope is closed out of LIFO order
+         * @throws IllegalStateException if the scope is closed out of LIFO
+         *                               order
          */
         @Override
         public void close() {
@@ -153,20 +169,22 @@ public class ScopedSystemProperties {
 
         private static void checkKey(String key) {
             if (key == null) {
-                throw new NullPointerException("key can't be null");
+                throw new NullPointerException("Key is null");
             }
             if (key.isEmpty()) {
-                throw new IllegalArgumentException("key can't be empty");
+                throw new IllegalArgumentException("Key is empty");
             }
         }
     }
 
-    /**
-     * {@link Properties} implementation that maintains a per-thread stack of property views.
-     * <p>
-     * The top of the stack represents the active view for the thread (and any child threads),
-     * enabling nested, scoped modifications. All {@link Properties} operations delegate to the
-     * currently active view, providing transparent isolation for clients.
+    /*
+     * A Properties implementation that maintains a per-thread stack of property
+     * views.
+     *
+     * The top of the stack represents the active view for the thread (and any child
+     * threads), enabling nested, scoped modifications. All Properties operations
+     * delegate to the currently active view, providing transparent isolation for
+     * clients.
      */
     private static final class ManagedProperties extends Properties {
         private final Properties root;
@@ -174,7 +192,7 @@ public class ScopedSystemProperties {
 
         ManagedProperties(Properties root) {
             super();
-            this.root = Objects.requireNonNull(root);
+            this.root = Objects.requireNonNull(root, "Root is null");
             this.stack = new InheritableThreadLocal<>() {
                 @Override
                 protected ArrayDeque<Properties> initialValue() {
@@ -197,10 +215,8 @@ public class ScopedSystemProperties {
         }
 
         /**
-         * Pushes a cloned copy of the current properties onto the stack for the active thread.
-         *
-         * @return the snapshot that was pushed; callers must later pass it to
-         *         {@link #exit(Properties)}
+         * Pushes a cloned copy of the current properties onto the stack for
+         * the active thread.
          */
         Properties enter() {
             Properties copy = copyOf(current());
@@ -211,13 +227,10 @@ public class ScopedSystemProperties {
         /**
          * Pops the most recently pushed properties snapshot from the stack.
          * <p>
-         * The supplied {@code expected} reference is compared against the snapshot at the top
-         * of the stack to enforce LIFO ordering. Attempting to exit the root scope or closing
-         * scopes out of order results in an {@link IllegalStateException}.
-         *
-         * @param expected the snapshot previously returned by {@link #enter()}
-         * @throws IllegalStateException if no scoped environment exists or scopes are exited out
-         *                               of order
+         * The supplied {@code expected} reference is compared against the
+         * snapshot at the top of the stack to enforce LIFO ordering. Attempting
+         * to exit the root scope or closing scopes out of order results in an
+         * {@link IllegalStateException}.
          */
         void exit(Properties expected) {
             ArrayDeque<Properties> deque = stack.get();

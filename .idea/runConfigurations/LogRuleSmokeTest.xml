@@ -1,14 +1,8 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="LogRuleSmokeTest" type="JUnit" factoryName="JUnit" folderName="Rule" nameIsGenerated="true">
     <module name="test-framework-core" />
-    <extension name="coverage">
-      <pattern>
-        <option name="PATTERN" value="net.larrykramer.test.rule.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-    </extension>
-    <option name="PACKAGE_NAME" value="net.larrykramer.test.rule" />
-    <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.rule.LogRuleSmokeTest" />
+    <option name="PACKAGE_NAME" value="net.larrykramer.test.junit.rule" />
+    <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.junit.rule.LogRuleSmokeTest" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
     <method v="2">

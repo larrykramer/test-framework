@@ -31,8 +31,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * Encapsulates configuration settings for executing tests on a remote Selenium
- * Grid.
+ * Configuration properties for executing tests on a remote Selenium Grid.
  * <p>
  * Maps to properties prefixed with {@code grid}.
  */
@@ -76,13 +75,12 @@ public class GridConfig {
      * settings (e.g., for cloud-based grid providers like BrowserStack or Sauce
      * Labs) that are not covered by the standard properties.
      * <p>
-     * <strong>Precedence Note:</strong><br>
-     * These capabilities are applied last. Therefore, any keys defined in this
-     * map will override standard configuration fields such as
-     * {@link #browserVersion}, {@link #platform}, and the standard browser
-     * name.
-     * <p>
      * Mapped from properties prefixed with {@code grid.capabilities}.
+     *
+     * @apiNote These capabilities are applied last. Therefore, any keys defined
+     *          in this map will override standard configuration fields such as
+     *          {@link #browserVersion}, {@link #platform}, and the standard
+     *          browser name.
      */
     public Map<String, Object> capabilities = Map.of();
 }

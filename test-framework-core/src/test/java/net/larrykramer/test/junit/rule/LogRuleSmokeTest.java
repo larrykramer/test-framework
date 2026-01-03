@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,12 +20,12 @@
  * SOFTWARE.
  */
 
-package net.larrykramer.test.rule;
+package net.larrykramer.test.junit.rule;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import net.larrykramer.test.categories.SmokeTest;
+import net.larrykramer.test.junit.categories.SmokeTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

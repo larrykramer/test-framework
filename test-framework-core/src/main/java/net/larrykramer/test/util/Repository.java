@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,20 +30,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Centralized repository for resolving UI element locators declared in a repository.
+ * Centralized repository for resolving UI element locators declared in a
+ * repository.
  * <p>
- * Locators are exposed through the {@link Locator Locator} record, which encapsulates the
- * normalized locator type and the fully formatted locator selector. Consumers typically call
- * {@link #get(String, Object...)} with the locator key and any optional format arguments to
- * obtain a ready-to-use locator.
+ * Locators are exposed through the {@link Locator Locator} record, which
+ * encapsulates the normalized locator type and the fully formatted locator
+ * selector. Consumers typically call {@link #get(String, Object...)} with the
+ * locator key and any optional format arguments to obtain a ready-to-use
+ * locator.
  * <p>
- * <strong>Example object repository entry:</strong>
+ * <b>Example object repository entry:</b>
  * <pre>{@code
  * login.button = css=.btn-primary
  * user.link = xpath=//a[text()="%s"]
  * }</pre>
  * <p>
- * <strong>Example usage:</strong>
+ * <b>Example usage:</b>
  * <pre>{@code
  * Locator loginButton = Repository.get("login.button");
  * Locator userLink = Repository.get("user.link", username);
@@ -118,35 +120,39 @@ public final class Repository {
         return null;
     }
 
-    private Repository() {
-        // Ensure there is only one instance of this utility class.
-    }
+    private Repository() {}
 
     /**
-     * Resolves the locator entry associated with the given key and substitutes any optional
-     * placeholder values.
+     * Resolves the locator entry associated with the given key and substitutes
+     * any optional placeholder values.
      * <p>
-     * The lookup expects the locator entry to adhere to the {@code type=selector} convention,
-     * where {@code type} designates the locator strategy (for example, {@code css}, {@code id}, or
-     * {@code xpath}) and {@code selector} is a pattern compatible with
-     * {@link String#format(String, Object...)}. The returned {@link Locator} contains the
-     * normalized locator type as well as the fully formatted locator string.
-     * <p>
-     * <strong>Important:</strong> If the selector contains format specifiers and no format
-     * arguments are provided, no formatting is applied and the selector will be returned
-     * unformatted in the {@link Locator}. This may lead to downstream errors when the locator is
-     * used. Callers must supply arguments for locators that require them.
+     * The lookup expects the locator entry to adhere to the
+     * {@code type=selector} convention, where {@code type} designates the
+     * locator strategy (for example, {@code css}, {@code id}, or {@code xpath})
+     * and {@code selector} is a pattern compatible with
+     * {@link String#format(String, Object...)}. The returned {@code Locator}
+     * contains the normalized locator type as well as the fully formatted
+     * locator string.
      *
-     * @param key  the locator key of the locator definition; must not be {@code null}
-     * @param args optional arguments applied to the locator pattern via
-     *             {@link String#format(String, Object...)}
-     * @return a {@link Locator} comprising the locator strategy and locator selector
-     * @throws MissingResourceException if no locator entry exists for the supplied key
+     * @param key  the locator key of the locator definition
+     * @param args optional arguments applied to the locator pattern
+     * @return a {@link Locator} comprising the locator strategy and locator
+     *         selector
      * @throws IllegalArgumentException if the stored locator does not match the
      *                                  {@code type=selector} convention
+     * @throws MissingResourceException if no locator entry exists for the
+     *                                  supplied key
+     * @throws NullPointerException     if {@code key} is null
+     * @apiNote If the selector contains format specifiers and no format
+     *          arguments are provided, no formatting is applied and the
+     *          selector will be returned unformatted in the {@code Locator}.
+     *          This may lead to downstream errors when the locator is used.
+     *          Callers must supply arguments for locators that require them.
      */
     public static Locator get(String key, Object... args) {
-        if (!(repoMap.get(Objects.requireNonNull(key)) instanceof String value)) {
+        Objects.requireNonNull(key, "Key is null");
+
+        if (!(repoMap.get(key) instanceof String value)) {
             throw new MissingResourceException("Missing locator: " + key, REPOSITORY_FILE, key);
         }
 

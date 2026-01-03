@@ -22,24 +22,22 @@
 
 package net.larrykramer.test.util;
 
+import java.lang.reflect.Proxy;
 import java.util.Objects;
 
 /**
  * Shared utility methods.
  */
-public class SharedUtils {
-    private SharedUtils() {
-        // Ensure there is only one instance of this utility class.
-    }
+public final class SharedUtils {
+    private SharedUtils() {}
 
     /**
      * Returns an identity-style string for the given object, in a form similar
      * to the default implementation of {@link Object#toString()}.
-     *
-     * @implSpec
-     * For a non-{@code null} object, this method returns a string consisting of
-     * the name of the class of which the object is an instance, the at-sign
-     * character `{@code @}', and the unsigned hexadecimal representation of the
+     * <p>
+     * For a non-null object, this method returns a string consisting of the
+     * name of the class of which the object is an instance, the at-sign
+     * character ({@code @}), and the unsigned hexadecimal representation of the
      * hash code of the object. In other words, this method returns a string
      * equal to the value of:
      * <blockquote>
@@ -49,13 +47,10 @@ public class SharedUtils {
      * </blockquote>
      * where {@code hashCode} is the hash code returned by
      * {@link System#identityHashCode(Object)} for the given object.
-     * <p>
-     * If {@code obj} is {@code null}, this method returns
-     * {@code "<uninitialized>"}.
      *
-     * @param obj the object to format; may be {@code null}
+     * @param obj the object to format
      * @return an identity-style string for {@code obj}, or
-     *         {@code "<uninitialized>"} if {@code obj} is {@code null}
+     *         {@code "<uninitialized>"} if {@code obj} is null
      */
     public static String identityToString(Object obj) {
         if (obj == null) {
@@ -75,16 +70,16 @@ public class SharedUtils {
      * <p>
      * Note: for JDK dynamic proxy classes, there is no meaningful "user class"
      * in the superclass chain (dynamic proxies implement interfaces), so this
-     * method will typically return {@link java.lang.reflect.Proxy}.
+     * method will typically return {@code Proxy}.
      *
-     * @param c the class to inspect; must not be {@code null}
+     * @param c the class to inspect
      * @return the unproxied/base class, or {@code c} if {@code c} is not
      *         recognized as a proxy (or if unproxying cannot proceed beyond
-     *         {@link Object})
-     * @throws NullPointerException if {@code c} is {@code null}
+     *         {@code Object})
+     * @throws NullPointerException if {@code c} is null
      */
     public static Class<?> getUnproxiedClass(Class<?> c) {
-        Objects.requireNonNull(c);
+        Objects.requireNonNull(c, "c is null");
         Class<?> unproxiedClass = c;
         while (isProxiedClass(unproxiedClass)) {
             Class<?> clazz = unproxiedClass.getSuperclass();
@@ -101,6 +96,6 @@ public class SharedUtils {
         return name.contains("$$") // CDI
                 || name.contains("_WeldClientProxy") // Weld
                 || name.contains("_ClientProxy") // Quarkus
-                || java.lang.reflect.Proxy.isProxyClass(c); // JDK
+                || Proxy.isProxyClass(c); // JDK
     }
 }

@@ -88,12 +88,12 @@ public class WebDriverService {
      * discovered for the same non-SPI type, the previously registered factory
      * is replaced and a warning is logged.
      * <p>
-     * For {@link DriverType#SPI}, multiple factories may coexist. SPI factories
-     * are resolved primarily by their fully qualified implementation class
-     * name (FQCN). If an SPI factory is a {@code @Named} CDI bean (including a
-     * producer annotated with {@code @Named}), the CDI bean name is also
-     * registered as an alias key, allowing {@code driver.spi} to match either
-     * the FQCN or the {@code @Named} value.
+     * For SPI types, multiple factories may coexist. SPI factories are resolved
+     * primarily by their fully qualified implementation class name (FQCN). If
+     * an SPI factory is a {@code @Named} CDI bean (including a producer
+     * annotated with {@code @Named}), the CDI bean name is also registered as
+     * an alias key, allowing {@code driver.spi} to match either the FQCN or the
+     * {@code @Named} value.
      *
      * @param driverConfig the resolved, type-safe driver configuration
      * @param gridConfig   the resolved, type-safe grid configuration
@@ -229,10 +229,12 @@ public class WebDriverService {
      * <p>
      * Resolution rules:
      * <ul>
-     * <li>Non-SPI: the factory is selected by {@code DriverType}.
-     * <li>SPI: the configuration must specify {@code driver.spi} with the
-     *   fully qualified factory class name; that specific SPI factory is
-     *   used.
+     * <li><b>Non-SPI:</b> the factory is selected by {@code DriverType}.
+     * <li><b>SPI:</b> the configuration must specify {@code driver.spi} with
+     *   the SPI factory identifier. This may be the factory implementation's
+     *   fully qualified class name (FQCN) or (if the factory is a
+     *   {@code @Named} CDI bean or produced by a {@code @Named} producer) the
+     *   CDI bean name.
      * </ul>
      *
      * If {@link GridConfig#uri} is present, a remote session is created with a
@@ -244,12 +246,12 @@ public class WebDriverService {
      * fails, this method attempts to quit the driver before rethrowing the
      * original error.
      *
-     * @return a reference to an initialized WebDriver bound to the current
-     *         scenario scope
+     * @return a scenario-scoped {@code WebDriverReference} encapsulating an
+     *         initialized {@code WebDriver} for the current scenario
      * @throws IllegalArgumentException if {@code driver.type} is not set, the
      *                                  configured driver type is unsupported,
      *                                  no matching SPI factory is found, the
-     *                                  SPI class name is missing when
+     *                                  SPI factory identifier is missing when
      *                                  {@code driver.type=SPI}, or the Grid URL
      *                                  is invalid
      * @throws IllegalStateException    if the selected factory cannot create a
@@ -312,14 +314,14 @@ public class WebDriverService {
 
     /**
      * Disposes the scenario-scoped WebDriver produced by this service by
-     * invoking {@link WebDriver#quit()}.
+     * invoking {@code WebDriver.quit()}.
      * <p>
      * This method is idempotent and safe to call with {@code null} or with a
-     * {@code WebDriverReference} that was never initialized. Any exceptions
+     * {@link WebDriverReference} that was never initialized. Any exceptions
      * thrown by the underlying WebDriver during quit are caught and logged.
      *
      * @param driverRef the {@code WebDriverReference} holding the WebDriver to
-     *                  dispose; may be {@code null}
+     *                  dispose
      * @see #createWebDriver()
      */
     public void disposeWebDriver(@Disposes WebDriverReference driverRef) {

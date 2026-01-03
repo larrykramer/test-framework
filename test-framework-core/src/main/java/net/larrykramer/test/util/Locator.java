@@ -27,20 +27,22 @@ import java.util.Locale;
 /**
  * Immutable value object that encapsulates a normalized locator definition.
  * <p>
- * A locator consists of a locator strategy {@code type} (for example {@code css}, {@code id}, or
- * {@code xpath}) and an associated {@code value} representing the selector to be executed with
- * that strategy. Instances of this record ensure that the locator type is stored in lower case
- * using {@link java.util.Locale#ROOT} and that neither component is {@code null} or blank.
+ * A locator consists of a locator strategy {@code type} (for example
+ * {@code css}, {@code id}, or {@code xpath}) and an associated {@code value}
+ * representing the selector to be executed with that strategy. Instances of
+ * this record ensure that the locator type is stored in lower case and that
+ * neither component is null or blank.
  * <p>
- * The selector is automatically stripped of leading and trailing whitespace. To preserve
- * significant whitespace, enclose the selector in single ({@code '}) or double ({@code "}) quotes.
- * The quotes themselves will be trimmed, but the content within them will be preserved as-is.
+ * The selector is automatically stripped of leading and trailing whitespace. To
+ * preserve significant whitespace, enclose the selector in single ({@code '})
+ * or double ({@code "}) quotes. The quotes themselves will be trimmed, but the
+ * content within them will be preserved as-is.
  * <p>
- * Instances are typically produced by {@link Repository#get(String, Object...)} after expanding
- * any format placeholders in the repository entry.
+ * Instances are typically produced by {@link Repository#get(String, Object...)}
+ * after expanding any format placeholders in the repository entry.
  * <p>
- * <strong>Note:</strong> Only basic normalization is performed. No validation is done to ensure
- * that the type or value corresponds to a particular locator strategy.
+ * <b>Note:</b> Only basic normalization is performed. No validation is done to
+ * ensure that the type or value corresponds to a particular locator strategy.
  *
  * @param type     the locator strategy name
  * @param selector the locator selector
@@ -50,8 +52,9 @@ public record Locator(String type, String selector) {
     /**
      * Validates and normalizes the supplied locator components.
      *
-     * @throws IllegalArgumentException if {@code type} or {@code selector} is {@code null} or
-     *                                  blank, or if {@code selector} has mismatched quotes
+     * @throws IllegalArgumentException if {@code type} or {@code selector} is
+     *                                  null or blank, or if {@code selector}
+     *                                  has mismatched quotes
      */
     public Locator {
         if (type == null || type.isBlank()) {

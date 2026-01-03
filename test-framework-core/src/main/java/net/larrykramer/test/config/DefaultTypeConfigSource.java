@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,21 +29,16 @@ import net.larrykramer.test.util.OperatingSystem;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 /**
- * A {@code ConfigSource} that supplies a single, operating-system-aware
- * default for the {@code driver.type} configuration property.
+ * A {@code ConfigSource} that supplies a single, operating-system-aware default
+ * for the {@code driver.type} configuration property.
  * <p>
- * The source inspects {@link OperatingSystem#current()} to determine a
- * sensible driver type selection for the runtime environment:
+ * The source inspects {@link OperatingSystem#current()} to determine a sensible
+ * driver type selection for the runtime environment:
  * <ul>
- * <li>{@code SAFARI} on macOS
- * <li>{@code EDGE} on Windows
- * <li>{@code FIREFOX} on every other supported operating system
+ * <li>{@code SAFARI} on macOS.
+ * <li>{@code EDGE} on Windows.
+ * <li>{@code FIREFOX} on every other supported operating system.
  * </ul>
- *
- * By registering with a relatively low ordinal (50), this implementation acts
- * as a baseline value that can be easily overridden by higher-priority
- * MicroProfile Config sources, while still providing a meaningful default when
- * no other configuration is present.
  */
 public class DefaultTypeConfigSource implements ConfigSource {
     private static final Map<String, String> PROPERTIES = Map.of("driver.type", defaultType());
@@ -58,16 +53,33 @@ public class DefaultTypeConfigSource implements ConfigSource {
         };
     }
 
+    /**
+     * {@return the properties in this config source}
+     */
     @Override
     public Map<String, String> getProperties() {
         return PROPERTIES;
     }
 
+    /**
+     * {@return the set of property names provided by this config source}
+     */
     @Override
     public Set<String> getPropertyNames() {
         return PROPERTIES.keySet();
     }
 
+    /**
+     * Returns this source's ordinal, which determines its priority relative to
+     * other configuration sources.
+     * <p>
+     * Lower values indicate lower priority. This config source uses a low
+     * ordinal ({@code 50}) so it acts as a baseline default that can be
+     * overridden by higher-priority configuration sources (e.g. system
+     * properties, environment variables, or application config files).
+     *
+     * @return this config source ordinal
+     */
     @Override
     public int getOrdinal() {
         // The low ordinal provides a base default that can easily be overridden by standard
@@ -75,11 +87,21 @@ public class DefaultTypeConfigSource implements ConfigSource {
         return 50;
     }
 
+    /**
+     * Returns the value associated with the given configuration property name.
+     *
+     * @param propertyName the property name
+     * @return the property value, or {@code null} if the property is not
+     *         present
+     */
     @Override
     public String getValue(String propertyName) {
         return (propertyName == null) ? null : PROPERTIES.get(propertyName);
     }
 
+    /**
+     * {@return the human-readable name of this config source}
+     */
     @Override
     public String getName() {
         return "OS-Aware Default WebDriver Config Source";

@@ -33,10 +33,10 @@ import java.util.logging.Level;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.util.TypeLiteral;
+import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.GridConfig;
-import net.larrykramer.test.config.DriverConfig;
-import net.larrykramer.test.rule.LogRule;
+import net.larrykramer.test.junit.rule.LogRule;
 import net.larrykramer.test.webdriver.DriverFactory;
 import net.larrykramer.test.webdriver.WebDriverReference;
 import org.junit.Rule;
@@ -751,13 +751,12 @@ public class WebDriverServiceTest {
     public void testDisposeWebDriver_withDriverRef_callsQuit() {
         // Arrange
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
-        WebDriverReference mockRef = mock(WebDriverReference.class);
-        when(mockRef.get()).thenReturn(mockDriver);
+        WebDriverReference spiedDriverRef = spy(new WebDriverReference(mockDriver));
         // Act
-        service.disposeWebDriver(mockRef);
+        service.disposeWebDriver(spiedDriverRef);
         // Assert
         verify(mockDriver).quit();
-        verify(mockRef).clear();
+        verify(spiedDriverRef).clear();
     }
 
     @Test
@@ -789,18 +788,18 @@ public class WebDriverServiceTest {
     public void testDisposeWebDriver_withEmptyWebDriverReference_doesNothing() {
         // Arrange
         // We simulate the specific exception thrown by an empty reference.
-        WebDriverReference mockRef = mock(WebDriverReference.class);
+        WebDriverReference mockDriverRef = mock(WebDriverReference.class);
         var ise = new IllegalStateException("WebDriverReference not initialized");
-        doThrow(ise).when(mockRef).get();
+        doThrow(ise).when(mockDriverRef).get();
 
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
 
         // Act
-        service.disposeWebDriver(mockRef);
+        service.disposeWebDriver(mockDriverRef);
 
         // Assert
         verify(mockDriver, never()).quit();
-        verify(mockRef).clear();
+        verify(mockDriverRef).clear();
     }
 
     @Test
@@ -889,20 +888,20 @@ public class WebDriverServiceTest {
         // Arrange
         // Simulate the reference throwing on ALL method calls. This could happen if the reference
         // is broken in an unrecoverable way (e.g., the CDI proxy is failing).
-        WebDriverReference mockRef = mock(WebDriverReference.class);
+        WebDriverReference mockDriverRef = mock(WebDriverReference.class);
         RuntimeException re = new RuntimeException("Broken WebDriverReference");
-        doThrow(re).when(mockRef).get();
-        doThrow(re).when(mockRef).clear();
+        doThrow(re).when(mockDriverRef).get();
+        doThrow(re).when(mockDriverRef).clear();
 
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
 
         // Act
-        service.disposeWebDriver(mockRef);
+        service.disposeWebDriver(mockDriverRef);
 
         // Assert
-        verify(mockRef).get();
+        verify(mockDriverRef).get();
         verify(mockDriver, never()).quit();
-        verify(mockRef).clear();
+        verify(mockDriverRef).clear();
     }
 
     private void assertConstructorLogsNullDriverTypeWarning(DriverFactory<?> factory,
@@ -975,11 +974,11 @@ public class WebDriverServiceTest {
 
         List<Instance.Handle<DriverFactory<?>>> handles = new ArrayList<>();
         for (var factory : factories) {
-            // For each provided DriverFactory we create a mocked CDI Bean and (leniently) stub it
-            // to report the factory’s runtime class via getBeanClass() and the corresponding CDI
-            // bean types via getTypes() (the class plus its supertypes, interfaces, and Object),
-            // so the Instance handles look like real CDI beans while remaining tolerant of tests
-            // that don’t exercise every stub.
+            // For each provided DriverFactory, create a mocked CDI Bean. Stub getBeanClass() to
+            // return the factory’s runtime class. In addition, stub getTypes() to return the CDI
+            // bean types for that class (the class, its supertypes, its interfaces, plus Object).
+            // This makes the Instance handles behave like real CDI beans. The stubs are lenient so
+            // tests don’t fail if they don’t use every method.
             @SuppressWarnings("unchecked")
             Bean<DriverFactory<?>> mockBean = mock(Bean.class);
             lenient().doReturn(factory.getClass()).when(mockBean).getBeanClass();

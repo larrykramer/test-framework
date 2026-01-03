@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,36 +42,39 @@ import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 
 /**
- * Cucumber {@link ObjectFactory} and CDI {@link Extension} that boots a Weld SE container and
- * provides the custom {@link ScenarioScoped} context.
+ * Cucumber {@code ObjectFactory} and CDI {@code Extension} that boots a Weld SE
+ * container and provides the custom {@link ScenarioScoped @ScenarioScoped} CDI
+ * context.
  * <p>
- * Cucumber creates exactly one instance of this class per test run. The constructor stores a
- * static reference so glue code (typically hooks) can obtain it via {@link #getInstance()} and
- * interact with the scenario lifecycle.
+ * Cucumber creates exactly one instance of this class per test run. The
+ * constructor stores a static reference so glue code (typically hooks) can
+ * obtain it via {@link #getInstance()} and interact with the scenario
+ * lifecycle.
  * <p>
  * Lifecycle overview for each scenario:
  * <ol>
- * <li>{@link #start()} – invoked by Cucumber before the first glue class is instantiated. Boots
- *   Weld on first use, registers this object as an extension, and activates the scenario scope
- *   with no associated scenario.
- * <li>{@link #associate(Scenario)} – should be called from an {@code @Before} hook with a low
- *   order value. Associates the current Cucumber {@link Scenario} with the already-active scope
- *   and fires {@code @Initialized(ScenarioScoped.class)} with the scenario payload.
- * <li>{@link #getInstance(Class)} – returns CDI-managed glue beans. Glue classes collected via
- *   {@link #addClass(Class)} are registered dynamically as {@code @ScenarioScoped} beans, ensuring
- *   they are unique per scenario.
- * <li>{@link #stop()} – invoked by Cucumber after each scenario. Disposes any unmanaged glue
- *   instances and deactivates the current scenario context, firing
- *   {@code @Destroyed(ScenarioScoped.class)}.
+ * <li>{@link #start()} – invoked by Cucumber before the first glue class is
+ *   instantiated. Boots Weld on first use, registers this object as an
+ *   extension, and activates the scenario scope with no associated scenario.
+ * <li>{@link #associate(Scenario)} – should be called from an {@code @Before}
+ *   hook with a low order value. Associates the current Cucumber
+ *   {@code Scenario} with the already-active scope and fires
+ *   {@code @Initialized(ScenarioScoped.class)} with the scenario payload.
+ * <li>{@link #getInstance(Class)} – returns CDI-managed glue beans. Glue
+ *   classes collected via {@link #addClass(Class)} are registered dynamically
+ *   as {@code @ScenarioScoped} beans, ensuring they are unique per scenario.
+ * <li>{@link #stop()} – invoked by Cucumber after each scenario. Disposes any
+ *   unmanaged glue instances and deactivates the current scenario context,
+ *   firing {@code @Destroyed(ScenarioScoped.class)}.
  * </ol>
  * <p>
  * To cleanly shut down Weld when all scenarios in the JVM have finished, call
- * {@link #shutdownWeldContainer()} from a Cucumber {@code @AfterAll} hook (or let the JVM shutdown
- * hook added by {@link #start()} handle it).
+ * {@link #shutdownWeldContainer()} from a Cucumber {@code @AfterAll} hook (or
+ * let the JVM shutdown hook added by {@link #start()} handle it).
  * <p>
- * <strong>Note:</strong> This implementation assumes that scenarios in a single JVM execute
- * sequentially on a single thread. If parallel execution is enabled, each thread must activate,
- * associate, and deactivate its own scope instance.
+ * <b>Note:</b> This implementation assumes that scenarios in a single JVM
+ * execute sequentially on a single thread. If parallel execution is enabled,
+ * each thread must activate, associate, and deactivate its own scope instance.
  */
 public class WeldObjectFactory implements ObjectFactory, Extension {
     /**
@@ -116,34 +119,30 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
     private final Set<Class<?>> glueClasses;
 
     /**
-     * Constructs a {@code WeldObjectFactory} that uses the default Weld builder supplied by
-     * {@link #createDefaultWeld()}.
-     * <p>
-     * This constructor is the one invoked by Cucumber via reflection when the object factory is
-     * listed in the runtime options. It delegates to {@link #WeldObjectFactory(Supplier)} with a
-     * supplier that returns a fresh {@link Weld} instance for each container boot.
+     * Constructs a {@code WeldObjectFactory} that uses the default Weld builder
+     * supplied by {@link #createDefaultWeld()}.
      */
     public WeldObjectFactory() {
         this(WeldObjectFactory::createDefaultWeld);
     }
 
     /**
-     * Creates a new Cucumber {@link ObjectFactory} that obtains its {@link Weld} builder from the
-     * supplied builder factory.
+     * Creates a new Cucumber {@code ObjectFactory} that obtains its
+     * {@code Weld} builder from the supplied builder factory.
      * <p>
-     * <strong>Important:</strong> The supplier must return a <em>fresh</em> {@link Weld} builder
-     * on every invocation. A {@link Weld} instance is single-use. Once {@link Weld#initialize()}
-     * has been called the builder cannot be reused&mdash;callers must not cache or recycle the
-     * same builder.
+     * <b>Important:</b> The supplier must return a <i>fresh</i> {@code Weld}
+     * builder on every invocation. A {@code Weld} instance is single-use. Once
+     * {@code Weld.initialize()} has been called the builder cannot be
+     * reused&mdash;callers must not cache or recycle the same builder.
      *
-     * @param weldFactory function that supplies the {@code Weld} builder to initialize the
-     *                    container
+     * @param weldFactory function that supplies the {@code Weld} builder to
+     *                    initialize the container
      */
     WeldObjectFactory(Supplier<Weld> weldFactory) {
         this.instances = new HashMap<>();
         this.glueClasses = new HashSet<>();
 
-        this.weldFactory = Objects.requireNonNull(weldFactory);
+        this.weldFactory = Objects.requireNonNull(weldFactory, "weldFactory is null");
 
         this.started = new AtomicBoolean(false); // Weld container not started
 
@@ -167,19 +166,32 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
     }
 
     /**
-     * Returns the singleton {@code WeldObjectFactory} instance created by Cucumber.
+     * Returns the singleton {@code WeldObjectFactory} instance created by
+     * Cucumber.
+     *
+     * @apiNote
+     * This method may be called from glue code (for example {@code @Before},
+     * {@code @After}, or {@code @AfterAll} hooks) to interact with the scenario
+     * lifecycle.
      * <p>
-     * <strong>Lifecycle Note:</strong> The static reference to this factory is deliberately
-     * retained even after {@link #shutdownWeldContainer()} is invoked. This is a defensive measure
-     * that allows multiple {@code @AfterAll} hooks to safely obtain the factory instance without
-     * encountering an {@link IllegalStateException} due to a non-deterministic teardown order.
-     * <p>
-     * Callers receiving the factory after shutdown will get a valid, non-null instance, but it
-     * will be in a "closed" state. Attempting retrieve beans from a closed factory will result in
-     * an exception, as the underlying CDI container will have been stopped.
+     * If {@link #shutdownWeldContainer()} has already been invoked, this method
+     * still returns a non-null factory instance, but it will be in a "closed"
+     * state (i.e., no Weld container is running). Attempting to obtain CDI
+     * managed glue instances without (re)starting the container (for example
+     * via {@link #getInstance(Class)}) will fail with an
+     * {@link IllegalStateException}.
+     *
+     * @implNote
+     * The static reference to this factory is deliberately retained even after
+     * {@link #shutdownWeldContainer()} is invoked. This defensive choice makes
+     * teardown order resilient: multiple {@code @AfterAll} hooks (or other
+     * shutdown paths) can still obtain the factory instance without
+     * encountering {@link IllegalStateException} due to non-deterministic hook
+     * execution order.
      *
      * @return the active or closed singleton instance of the factory
-     * @throws IllegalStateException if Cucumber has not yet constructed the factory
+     * @throws IllegalStateException if Cucumber has not yet constructed the
+     *                               factory
      */
     public static WeldObjectFactory getInstance() {
         WeldObjectFactory instance = SELF.get();
@@ -190,12 +202,13 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
     }
 
     /**
-     * Stops the Weld SE container and clears any state associated with the previous run.
+     * Stops the Weld SE container and clears any state associated with the
+     * previous run.
      * <p>
-     * This should be called once after all scenarios have finished (for example from a Cucumber
-     * {@code @AfterAll} hook or a JVM shutdown hook). Once the container is shut down, the next
-     * call to {@link #start()} will boot a fresh instance and the glue classes will be
-     * rediscovered.
+     * This should be called once after all scenarios have finished (for example
+     * from a Cucumber {@code @AfterAll} hook or a JVM shutdown hook). Once the
+     * container is shut down, the next call to {@link #start()} will boot a
+     * fresh instance and the glue classes will be rediscovered.
      */
     public void shutdownWeldContainer() {
         final WeldContainer container = this.container; // local snapshot
@@ -221,19 +234,20 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
     }
 
     /**
-     * Associates the current Cucumber {@link Scenario} with the already–activated
-     * {@code @ScenarioScoped} CDI context.
+     * Associates the current Cucumber {@code Scenario} with the
+     * already–activated {@code @ScenarioScoped} CDI context.
      * <p>
-     * The scenario scope is activated during {@link #start()}; when Cucumber later supplies the
-     * {@link Scenario} object to a {@code @Before} hook, the hook should call this method so that
-     * the context can record the scenario and fire the {@code @Initialized(ScenarioScoped.class)}
-     * CDI event with the correct payload.
-     * <p>
-     * <strong>Important:</strong> This method should be invoked once per scenario, prior to
-     * accessing any scenario-scoped beans.
+     * The scenario scope is activated during {@link #start()}; when Cucumber
+     * later supplies the {@code Scenario} object to a {@code @Before} hook, the
+     * hook should call this method so that the context can record the scenario
+     * and fire the {@code @Initialized(ScenarioScoped.class)} CDI event with
+     * the correct payload.
      *
      * @param scenario the Cucumber scenario that is currently executing
-     * @throws IllegalStateException if the scenario-scoped context has not been registered yet
+     * @throws IllegalStateException if the {@code @ScenarioScoped} CDI context
+     *                               has not been registered yet
+     * @apiNote This method should be invoked once per scenario, prior to
+     *          accessing any scenario-scoped beans.
      */
     public void associate(Scenario scenario) {
         ContextImpl context = this.context; // local snapshot
@@ -255,14 +269,14 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
     // -- ObjectFactory methods --
 
     /**
-     * Instantiate glue code <strong>before</strong> scenario execution.
+     * Instantiate glue code <b>before</b> scenario execution.
      * Called once per scenario.
      */
     @Override
     public void start() {
         if (started.compareAndSet(false, true)) {
             try {
-                Weld weld = Objects.requireNonNull(this.weldFactory.get());
+                Weld weld = Objects.requireNonNull(this.weldFactory.get(), "Weld is null");
                 weld.addExtension(this);
                 container = weld.initialize();
                 closed.set(false);
@@ -284,7 +298,7 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
     }
 
     /**
-     * Dispose glue code <strong>after</strong> scenario execution.
+     * Dispose glue code <b>after</b> scenario execution.
      * Called once per scenario.
      */
     @Override
@@ -317,10 +331,11 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
      * Collects glue classes in the classpath.
      * Called once on init.
      *
-     * @param glueClass glue class containing {@code cucumber.api} annotations ({@code Before},
-     *                  {@code Given}, {@code When}, ...)
-     * @return {@code true} if step definitions and hooks in this class should be used,
-     *         {@code false} if they should be ignored.
+     * @param glueClass glue class containing Cucumber step definition and hook
+     *                  annotations ({@code @Before}, {@code @Given},
+     *                  {@code @When}, ...)
+     * @return {@code true} if step definitions and hooks in this class should
+     *         be used, {@code false} if they should be ignored.
      */
     @Override
     public boolean addClass(Class<?> glueClass) {

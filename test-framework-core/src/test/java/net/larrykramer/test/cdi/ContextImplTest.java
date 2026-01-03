@@ -97,9 +97,12 @@ public class ContextImplTest {
     @Test
     @SuppressWarnings("unchecked")
     public void testDestroy_missingInstance_doesNotInvokeContextualDestroy() {
+        // Arrange
         Contextual<String> mockContextual = createMockContextual();
         context.activate(mockScenario);
+        // Act
         context.destroy(mockContextual);
+        // Assert
         verify(mockContextual, never()).destroy(anyString(), any(CreationalContext.class));
     }
 
@@ -158,8 +161,10 @@ public class ContextImplTest {
     @Test
     @SuppressWarnings("unchecked")
     public void testGet_withoutCreationalContextAndMissingBean_returnsNull() {
+        // Arrange
         Contextual<String> mockContextual = createMockContextual();
         context.activate(mockScenario);
+        // Act & Assert
         assertNull(context.get(mockContextual));
         verify(mockContextual, never()).create(any(CreationalContext.class));
     }
@@ -190,8 +195,10 @@ public class ContextImplTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testGet_withNullContext_throwsIllegalArgumentException() {
+        // Arrange
         CreationalContext<Object> mockCreationalContext = createMockCreationalContext();
         context.activate(mockScenario);
+        // Act
         context.get(null, mockCreationalContext);
     }
 
@@ -271,7 +278,9 @@ public class ContextImplTest {
 
     @Test
     public void testAssociate_withoutActiveContext_activatesAndFiresInitializedEvent() {
+        // Act
         context.associate(mockScenario);
+        // Assert
         assertTrue(context.isActive());
         verify(mockInitializedEvent).fire(mockScenario);
     }
@@ -355,15 +364,20 @@ public class ContextImplTest {
 
     @Test
     public void testDeactivate_withNullScenario_doesNotFireDestroyedEvent() {
+        // Arrange
         context.activate(null);
+        // Act
         context.deactivate();
+        // Assert
         assertFalse(context.isActive());
-        verify(mockDestroyedEvent, never()).fire(any(ScenarioScoped.class));
+        verify(mockDestroyedEvent, never()).fire(any(Scenario.class));
     }
 
     @Test
     public void testDeactivate_withoutActiveContext_doesNothing() {
+        // Act
         context.deactivate();
+        // Assert
         assertFalse(context.isActive());
         verify(mockBeanManager, never()).getEvent();
     }

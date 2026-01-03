@@ -37,35 +37,39 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Specifies that a bean is scenario scoped.
  * <p>
- * While {@code ScenarioScoped} must be associated with the Cucumber CDI scenario context,
- * integrators are free to associate it with their own custom scenario context. Behavior described
- * below relates to the scenario context supplied with this framework.
+ * While {@code ScenarioScoped} must be associated with the Cucumber CDI
+ * scenario context, integrators are free to associate it with their own custom
+ * scenario context. Behavior described below relates to the scenario context
+ * supplied with this framework.
  * <p>
  * The scenario scope is active:
  * <ul>
- * <li>for the duration of a single Cucumber scenario, beginning from the point the context is
- *   initialized is executed and continuing through all steps until it is destroyed,
- * <li>during execution of any {@code @BeforeStep} or {@code @AfterStep} hook associated with that
- *   scenario, and
- * <li>during execution of any {@code @Given}, {@code @When} or {@code @Then} step definition
- *   associated with that scenario, and
- * <li>during any CDI-managed lifecycle callback, such as {@code @PostConstruct}, invoked while the
- *   scenario context is active.
+ * <li>For the duration of a single Cucumber scenario, beginning when the
+ *   context is initialized and continuing through all steps until it is
+ *   destroyed.
+ * <li>During execution of any {@code @BeforeStep} or {@code @AfterStep} hook
+ *   associated with that scenario.
+ * <li>During execution of any {@code @Given}, {@code @When} or {@code @Then}
+ *   step definition associated with that scenario.
+ * <li>During any CDI-managed lifecycle callback, such as
+ *   {@code @PostConstruct}, invoked while the scenario context is active.
  * </ul>
  * <p>
  * The scenario context is destroyed:
  * <ul>
- * <li>after the scenario completes, once all steps and hooks, including {@code AfterStep} hooks,
- *   have finished execution, or
- * <li>immediately if the scenario is aborted before completing its normal execution flow.
+ * <li>After the scenario completes, once all steps and hooks, including
+ *   {@code @AfterStep} hooks, have finished execution, or
+ * <li>Immediately if the scenario is aborted before completing its normal
+ *   execution flow.
  * </ul>
  * <p>
- * The scenario context is typically managed in a Cucumber {@code Before} and {@code After} hook.
+ * The scenario context is typically managed in a Cucumber {@code @Before} and
+ * {@code @After} hook.
  * <p>
- * An event with qualifier {@code @Initialized(ScenarioScoped.class)} is fired when the scenario
- * context is initialized and an event with qualifier {@code @Destroyed(ScenarioScoped.class)} when
- * the scenario context is destroyed. The event payload is the corresponding
- * {@link io.cucumber.java.Scenario Scenario} instance.
+ * An event with qualifier {@code @Initialized(ScenarioScoped.class)} is fired
+ * when the scenario context is initialized and an event with qualifier
+ * {@code @Destroyed(ScenarioScoped.class)} when the scenario context is
+ * destroyed. The event payload is the corresponding {@code Scenario} instance.
  */
 @Target({ TYPE, METHOD, FIELD })
 @Retention(RUNTIME)
