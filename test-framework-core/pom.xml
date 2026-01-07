@@ -99,6 +99,7 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -108,13 +109,12 @@
           </execution>
         </executions>
       </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <!--suppress UnresolvedMavenProperty -->
-          <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+          <argLine>@{surefire.system.args} -javaagent:${org.mockito:mockito-core:jar}</argLine>
         </configuration>
       </plugin>
     </plugins>

@@ -54,7 +54,7 @@ There are many ways to contribute:
     ```
     Please use a descriptive branch name.
 6.  **Set Up Development Environment:**
-    * Ensure you have JDK 21 or higher and Apache Maven 3.6.3 or higher installed.
+    * Ensure you have JDK 21 or higher and Apache Maven 3.8.8 or higher installed.
     * Build the core module and run its unit tests:
     ```shell
     mvn -pl test-framework-core -am clean test
