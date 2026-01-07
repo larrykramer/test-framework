@@ -89,12 +89,13 @@ public final class SafariDriverFactory extends DriverFactory<SafariOptions> {
         // Deleting all cookies while Safari is still on the default Start Page causes the next
         // WebDriver command to throw a NoSuchWindowException, which in turn crashes our test
         // framework.
-        super.configure(driver); // apply common config
+        WebDriver.Options options = driver.manage();
+        setImplicitWait(options);
         try {
             if (config.windowSize.isPresent()) {
-                driver.manage().window().setSize(config.windowSize.get());
+                options.window().setSize(config.windowSize.get());
             } else if (config.maximize) {
-                driver.manage().window().maximize();
+                options.window().maximize();
             }
         } catch (WebDriverException e) {
             LOGGER.log(Level.FINER, "Ignoring Safari window operation failure");

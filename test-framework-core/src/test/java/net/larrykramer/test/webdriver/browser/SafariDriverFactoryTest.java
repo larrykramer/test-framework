@@ -269,6 +269,8 @@ public class SafariDriverFactoryTest {
 
         config.allowInsecureCerts = false;
 
+        config.failOnCookieDeleteError = false;
+
         config.proxyAddress = Optional.empty();
         config.proxyUser = Optional.empty();
         config.proxyPassword = Optional.empty();

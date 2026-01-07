@@ -141,43 +141,33 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
      * <p>
      * This method is invoked by
      * {@link net.larrykramer.test.service.WebDriverService WebDriverService}
-     * immediately after a {@code WebDriver} has been created (either locally
-     * or remotely).
+     * immediately after a {@code WebDriver} has been created (either locally or
+     * remotely) and before it is exposed for scenario use.
      *
      * @implSpec
-     * Overriding implementations <i>must</i> preserve the observable behavior
-     * of this method as defined by {@code DriverFactory}. In particular, an
-     * override <i>must</i> either delegate to the superclass implementation or
-     * provide behavior that is functionally equivalent, and it <i>must not</i>
-     * undo, contradict, or otherwise interfere with the configuration that the
-     * base implementation applies.
+     * Overriding implementations <em>may</em> perform any driver-specific
+     * initialization required by the factory (for example, deleting cookies,
+     * setting the initial window size, maximizing the window, or registering
+     * wrappers).
      * <p>
-     * In addition, overriding implementations <i>must</i> choose an appropriate
-     * failure policy for these configuration operations based on the
-     * capabilities and quirks of the underlying WebDriver:
-     * <ul>
-     * <li>For WebDrivers where configuration operations are known to be
-     *   unreliable or unsupported, implementations <i>may</i> catch
-     *   {@link WebDriverException}, log the failure, and continue.
-     * <li>For WebDrivers where these configuration operations are essential to
-     *   test correctness, implementations <i>may</i> allow exceptions to
-     *   propagate in order to fail fast when the environment is misconfigured.
-     * </ul>
+     * Overriding implementations <em>must not</em> assume ownership of the
+     * {@code WebDriver}: they <em>must not</em> call {@code driver.quit()} and
+     * they <em>must not</em> retain, cache, or otherwise publish the
+     * {@code WebDriver} reference for later use outside the scenario lifecycle.
+     * <p>
+     * If an implementation wishes to set the globally configured implicit-wait
+     * timeout, it <em>must</em> do so by calling
+     * {@link #setImplicitWait(WebDriver.Options)}.
      *
      * @implNote
-     * The default implementation sets the
-     * {@linkplain DriverConfig#implicitTimeout implicit wait timeout}. Negative
-     * timeout values are ignored and no implicit wait is applied.
+     * The base implementation is a no-op. Implicit-wait configuration is
+     * opt-in: implementations that want the global implicit-wait behavior
+     * should call {@link #setImplicitWait(WebDriver.Options)}.
      *
      * @param driver the {@code WebDriver} instance to configure
      */
     public void configure(WebDriver driver) {
-        Duration timeout = Duration.ofMillis(config.implicitTimeout);
-        if (timeout.isNegative()) {
-            LOGGER.log(Level.WARNING, "Ignoring negative implicit timeout {0}", timeout);
-            return;
-        }
-        driver.manage().timeouts().implicitlyWait(timeout);
+        /* no-op */
     }
 
     /**
@@ -212,19 +202,60 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
     }
 
     /**
-     * Deletes all cookies for the given {@code WebDriver} in a lenient manner.
+     * Applies the globally configured implicit-wait timeout to the given
+     * {@code WebDriver}.
      * <p>
-     * By default, this method logs and ignores {@code WebDriverException} to
-     * avoid failing WebDriver creation when a particular implementation does
-     * not support cookie deletion reliably (e.g. some remote or vendor-specific
-     * WebDrivers).
+     * The {@link DriverConfig#implicitTimeout implicit wait timeout} is
+     * taken from {@link #config} and is applied to the driver's implicit-wait
+     * setting. If the configured timeout is negative, this method logs a
+     * warning and leaves the driver's implicit-wait setting unchanged.
+     *
+     * @implNote
+     * Implicit waits affect all subsequent element-finding operations executed
+     * by the driver and may interact with explicit waits. This helper exists so
+     * factory implementations can consistently apply the framework's global
+     * implicit-wait behavior from {@link #configure(WebDriver)} without
+     * duplicating configuration logic.
+     *
+     * @param options the {@code WebDriver.Options} to configure
+     */
+    protected void setImplicitWait(WebDriver.Options options) {
+        Duration timeout = Duration.ofMillis(config.implicitTimeout);
+        if (timeout.isNegative()) {
+            LOGGER.log(Level.WARNING, "Ignoring negative implicit timeout {0}", timeout);
+            return;
+        }
+        options.timeouts().implicitlyWait(timeout);
+    }
+
+    /**
+     * Deletes all cookies for the given {@code WebDriver}.
+     * <p>
+     * If cookie deletion fails with a {@link WebDriverException}, the behavior
+     * depends on {@code driver.fail-on-cookie-delete-error}:
+     * <ul>
+     * <li>When {@code false} (default), the failure is treated as non-fatal:
+     *   the error is logged and the session continues.</li>
+     * <li>When {@code true}, the failure is treated as fatal and the
+     *   {@code WebDriverException} is propagated.</li>
+     * </ul>
+     *
+     * This is intended to accommodate environments where cookie deletion may
+     * be unreliable for certain WebDriver implementations while still allowing
+     * strict isolation when required.
      *
      * @param options the {@code WebDriver.Options} for the driver
+     * @throws WebDriverException if cookie deletion fails and
+     *                            {@code driver.fail-on-cookie-delete-error} is
+     *                            true
      */
-    protected void deleteAllCookies(WebDriver.Options options) {
+    protected void deleteAllCookies(WebDriver.Options options) throws WebDriverException {
         try {
             options.deleteAllCookies();
         } catch (WebDriverException e) {
+            if (config.failOnCookieDeleteError) {
+                throw e;
+            }
             LOGGER.log(Level.WARNING, "Unable to delete all cookies");
             LOGGER.throwing(getClass().getName(), "deleteAllCookies", e);
         }

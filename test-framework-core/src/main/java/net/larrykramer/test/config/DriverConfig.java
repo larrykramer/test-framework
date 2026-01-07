@@ -120,6 +120,32 @@ public class DriverConfig {
     public boolean allowInsecureCerts;
 
     /**
+     * Controls how the framework reacts when an error occurs while deleting all
+     * cookies at the start of a WebDriver session.
+     * <p>
+     * When set to {@code false} (the default), failures from
+     * {@link org.openqa.selenium.WebDriver.Options#deleteAllCookies() deleteAllCookies()}
+     * are treated as non-fatal: the exception is logged and ignored so that
+     * WebDriver creation can continue even if a particular WebDriver
+     * implementation does not fully support cookie deletion.
+     * <p>
+     * When set to {@code true}, any such failure is treated as a fatal error:
+     * the underlying {@code WebDriverException} is allowed to propagate,
+     * causing the scenario to fail fast. This is useful in environments where
+     * reliable cookie clearing is required to guarantee test isolation.
+     * <p>
+     * This property only affects drivers and factories that choose to clear
+     * cookies during configuration. Drivers that do not attempt to delete
+     * cookies are unaffected.
+     * <p>
+     * Defaults to {@code false}.
+     * <p>
+     * This property maps to {@code driver.fail-on-cookie-delete-error}.
+     */
+    @ConfigProperty(defaultValue = "false")
+    public boolean failOnCookieDeleteError;
+
+    /**
      * The URI of the proxy server to be used for all WebDriver-initiated
      * network requests.
      * <p>
