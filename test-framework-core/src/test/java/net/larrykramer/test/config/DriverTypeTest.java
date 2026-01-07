@@ -38,18 +38,18 @@ public class DriverTypeTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    public void testOf_givenNameWithWhitespace_throwsIllegalArgumentException() {
+        DriverType.of("CHROME  ");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void testOf_givenInvalidName_throwsIllegalArgumentException() {
-        DriverType.of("opera");
+        DriverType.of("invalid-driver-name");
     }
 
     @Test(expected = NullPointerException.class)
     public void testOf_givenNull_throwsNullPointerException() {
         DriverType.of(null);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testOf_givenNameWithWhitespace_throwsIllegalArgumentException() {
-        DriverType.of("CHROME  ");
     }
 
     @Test
