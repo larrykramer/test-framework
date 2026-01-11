@@ -160,9 +160,7 @@ public abstract class DriverFactory<T extends MutableCapabilities> {
      * {@link #setImplicitWait(WebDriver.Options)}.
      *
      * @implNote
-     * The base implementation is a no-op. Implicit-wait configuration is
-     * opt-in: implementations that want the global implicit-wait behavior
-     * should call {@link #setImplicitWait(WebDriver.Options)}.
+     * The base implementation is a no-op.
      *
      * @param driver the {@code WebDriver} instance to configure
      */
