@@ -57,6 +57,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports-${{ matrix.os }}
+          name: surefire-reports-${{ matrix.os }}-jdk${{ matrix.java-version }}
           path: 'test-framework-core/target/surefire-reports/*'
           if-no-files-found: ignore
