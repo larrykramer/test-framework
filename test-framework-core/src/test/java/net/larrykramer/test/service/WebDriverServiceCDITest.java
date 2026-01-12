@@ -133,6 +133,8 @@ public class WebDriverServiceCDITest {
 
             config.allowInsecureCerts = false;
 
+            config.failOnCookieDeleteError = false;
+
             config.proxyAddress = Optional.empty();
             config.proxyUser = Optional.empty();
             config.proxyPassword = Optional.empty();
@@ -170,11 +172,6 @@ public class WebDriverServiceCDITest {
         public WebDriver create() {
             // Return a mock to avoid spinning up a real browser during tests.
             return Mockito.mock(WebDriver.class);
-        }
-
-        @Override
-        public void configure(WebDriver driver) {
-            // No-op
         }
 
         @Override

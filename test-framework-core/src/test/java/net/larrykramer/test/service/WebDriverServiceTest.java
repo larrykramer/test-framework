@@ -73,7 +73,6 @@ public class WebDriverServiceTest {
         class SPIDriverFactory extends IntermediateFactory {
             @Override public DriverType getDriverType() { return DriverType.SPI; }
             @Override public WebDriver create() { return mockDriver; }
-            @Override public void configure(WebDriver driver) {}
         }
         class FactoryProducer {}
         //@formatter:on
@@ -120,7 +119,6 @@ public class WebDriverServiceTest {
         class SPIDriverFactory extends DriverFactory<MutableCapabilities> {
             @Override public DriverType getDriverType() { return DriverType.SPI; }
             @Override public WebDriver create() { return mockDriver; }
-            @Override public void configure(WebDriver driver) {}
         }
         class SPIDriverFactory_ClientProxy extends SPIDriverFactory {}
         //@formatter:on
@@ -199,7 +197,6 @@ public class WebDriverServiceTest {
         class SPIDriverFactory_$$_WeldClientProxy extends DriverFactory<MutableCapabilities> {
             @Override public DriverType getDriverType() { return DriverType.SPI; }
             @Override public WebDriver create() { return mockDriver; }
-            @Override public void configure(WebDriver driver) {}
         }
         //@formatter:on
         var factory = new SPIDriverFactory_$$_WeldClientProxy();
@@ -282,7 +279,6 @@ public class WebDriverServiceTest {
         class NullTypeFactory extends DriverFactory<MutableCapabilities> {
             @Override public DriverType getDriverType() { return null; }
             @Override public WebDriver create() { return null; }
-            @Override public void configure(WebDriver driver) {}
         }
         class FactoryProducer {}
         //@formatter:on
@@ -311,7 +307,6 @@ public class WebDriverServiceTest {
         class NullTypeFactory extends DriverFactory<MutableCapabilities> {
             @Override public DriverType getDriverType() { return null; }
             @Override public WebDriver create() { return null; }
-            @Override public void configure(WebDriver driver) {}
         }
         class NullTypeFactory$$Proxy extends NullTypeFactory {}
         //@formatter:on
@@ -332,7 +327,6 @@ public class WebDriverServiceTest {
         class NullTypeFactory$$Proxy extends DriverFactory<MutableCapabilities> {
             @Override public DriverType getDriverType() { return null; }
             @Override public WebDriver create() { return null; }
-            @Override public void configure(WebDriver driver) {}
         }
         //@formatter:on
 
@@ -943,6 +937,8 @@ public class WebDriverServiceTest {
         config.implicitTimeout = 0L;
 
         config.allowInsecureCerts = false;
+
+        config.failOnCookieDeleteError = false;
 
         config.proxyAddress = Optional.empty();
         config.proxyUser = Optional.empty();

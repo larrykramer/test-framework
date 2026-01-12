@@ -52,8 +52,9 @@ abstract sealed class ChromiumDriverFactory<T extends ChromiumOptions<T>>
      */
     @Override
     public void configure(WebDriver driver) {
-        super.configure(driver); // apply common config
-        deleteAllCookies(driver.manage());
+        WebDriver.Options options = driver.manage();
+        setImplicitWait(options);
+        deleteAllCookies(options);
         // Window sizing is handled via buildChromiumOptions, so no sizing is needed here.
     }
 

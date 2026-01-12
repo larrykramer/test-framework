@@ -28,7 +28,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.FirefoxConfig;
-import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.webdriver.DriverFactory;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.openqa.selenium.WebDriver;
@@ -79,9 +78,8 @@ public final class FirefoxDriverFactory extends DriverFactory<FirefoxOptions> {
      */
     @Override
     public void configure(WebDriver driver) {
-        super.configure(driver); // apply common config
-
         WebDriver.Options options = driver.manage();
+        setImplicitWait(options);
         deleteAllCookies(options);
         if (config.windowSize.isPresent()) {
             options.window().setSize(config.windowSize.get());

@@ -470,6 +470,22 @@ public class DriverFactoryTest {
                 .anyMatch(r -> "Unable to delete all cookies".equals(r.getMessage())));
     }
 
+    @Test
+    public void testDeleteAllCookies_withFailOnCookieDeleteErrorTrue_propagatesException() {
+        // Arrange
+        WebDriver.Options mockOptions = mock(WebDriver.Options.class);
+        doThrow(new WebDriverException("deleteAllCookies")).when(mockOptions).deleteAllCookies();
+
+        DriverConfig config = createConfig();
+        config.failOnCookieDeleteError = true;
+
+        SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
+
+        // Act & Assert
+        assertThrows(WebDriverException.class, () -> factory.deleteAllCookies(mockOptions));
+        verify(mockOptions).deleteAllCookies();
+    }
+
     private static DriverConfig createConfig() {
         DriverConfig config = new DriverConfig();
 
@@ -484,6 +500,8 @@ public class DriverFactoryTest {
         config.implicitTimeout = 0L;
 
         config.allowInsecureCerts = false;
+
+        config.failOnCookieDeleteError = false;
 
         config.proxyAddress = Optional.empty();
         config.proxyUser = Optional.empty();
@@ -514,6 +532,11 @@ public class DriverFactoryTest {
         public WebDriver create() {
             lastCapabilities = getCapabilities();
             return driver;
+        }
+
+        @Override
+        public void configure(WebDriver driver) {
+            setImplicitWait(driver.manage());
         }
 
         @Override
