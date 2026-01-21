@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,13 +26,41 @@ import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.util.*;
 
+import org.junit.AssumptionViolatedException;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mockStatic;
 
 public class StringLocalizerTest {
+    private static Set<Locale> candidateLocales;
+
+    @BeforeClass
+    public static void setupCandidateLocales() {
+        LinkedHashSet<Locale> set = new LinkedHashSet<>();
+        // A small, stable, "fast first" set of commonly available JDK locales.
+        // High-signal first: usually different date order/words and/or currency formatting.
+        set.add(Locale.GERMANY);        // "26. Oktober 2025", currency "12.345,67 €"
+        set.add(Locale.FRANCE);         // "26 octobre 2025", currency often "12 345,67 €"
+        set.add(Locale.CANADA_FRENCH);  // French conventions; differs strongly from US/EN-CA
+        set.add(Locale.UK);             // often "26 October 2025" (day-month), vs US month-day
+        set.add(Locale.ITALY);
+        set.add(Locale.JAPAN);
+        set.add(Locale.KOREA);
+        set.add(Locale.CHINA);
+        set.add(Locale.TAIWAN);
+        // Likely defaults last (to avoid wasting early attempts).
+        set.add(Locale.US);
+        set.add(Locale.CANADA);
+        // Add all available as a fallback for obscure environments.
+        Collections.addAll(set, Locale.getAvailableLocales());
+
+        candidateLocales = Collections.unmodifiableSet(set);
+    }
+
     @Test(expected = NullPointerException.class)
     public void testConstructor_givenNullLocale_throwsNullPointerException() {
         new StringLocalizer(null);
@@ -63,18 +91,23 @@ public class StringLocalizerTest {
 
     @Test
     public void testGetLocale_givenDifferentJVMDefault_returnsConstructorLocale() {
-        // Arrange: Part 1
-        Locale locale = Locale.CANADA_FRENCH;
-        Locale previousDefault = Locale.getDefault();
-        Locale.setDefault(Locale.US);
-        try {
-            // Arrange: Part 2
-            StringLocalizer localizer = newLocalizer(locale);
-            // Act & Assert
-            assertSame(locale, localizer.getLocale());
-        } finally {
-            Locale.setDefault(previousDefault);
-        }
+        // Arrange
+        // Find a locale that is different from the default locale.
+        // If no such locale is available, the test is skipped.
+        Locale baseline = Locale.getDefault();
+        Locale targetLocale = candidateLocales.stream()
+                .filter(l -> isCandidate(baseline, l))
+                .findFirst()
+                .orElseThrow(() -> new AssumptionViolatedException("No suitable locale found"));
+
+        StringLocalizer localizer = newLocalizer(targetLocale);
+
+        // Act
+        Locale result = localizer.getLocale();
+
+        // Assert
+        assertSame(targetLocale, result);
+        assertNotEquals(baseline, result);
     }
 
     @Test
@@ -101,54 +134,38 @@ public class StringLocalizerTest {
 
     @Test
     public void testLocalize_withNumericArgument_useInstanceLocaleNotJVMDefault() {
-        // Arrange: Part 1
-        // The JVM defaults to '.' as the decimal separator and ',' as the grouping separator.
-        // NumberFormat and StringLocalizer are localized to CANADA_FRENCH which uses ',' as the
-        // decimal separator and narrow no-break space (\u202F) as the grouping separator.
-        Locale locale = Locale.CANADA_FRENCH;
-        Locale previousDefault = Locale.getDefault();
-        Locale.setDefault(Locale.US);
-        try {
-            // Arrange: Part 2
-            double amount = 12345.67;
+        // Arrange
+        double amount = 12345.67;
+        Locale targetLocale = assumeLocaleWithDifferentCurrencyFormat(amount);
 
-            NumberFormat nf = NumberFormat.getCurrencyInstance(locale);
-            String expected = "Balance: " + nf.format(amount);
+        StringLocalizer localizer = newLocalizer(targetLocale);
 
-            StringLocalizer localizer = newLocalizer(locale);
+        // Act
+        String result = localizer.localize("balance", amount);
 
-            // Act & Assert
-            assertEquals(expected, localizer.localize("balance", amount));
-        } finally {
-            Locale.setDefault(previousDefault);
-        }
+        // Assert
+        String expected = "Balance: " + formatCurrency(targetLocale, amount);
+        assertEquals(expected, result);
     }
 
     @Test
     public void testLocalize_withDateArgument_useInstanceLocaleNotJVMDefault() {
-        // Arrange: Part 1
-        // The JVM default: "Month Day, Year".
-        // DateFormat and StringLocalizer are localized to GERMANY which uses "Day. Month Year".
-        Locale locale = Locale.GERMANY;
-        Locale previousDefault = Locale.getDefault();
-        Locale.setDefault(Locale.US);
-        try {
-            // Arrange: Part 2
-            Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-            calendar.set(2025, Calendar.OCTOBER, 26, 0, 0, 0);
-            calendar.set(Calendar.MILLISECOND, 0);
-            Date date = calendar.getTime();
+        // Arrange
+        Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+        calendar.set(2025, Calendar.OCTOBER, 26, 0, 0, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        Date date = calendar.getTime();
 
-            DateFormat df = DateFormat.getDateInstance(DateFormat.LONG, locale);
-            String expected = "Date: " + df.format(date);
+        Locale targetLocale = assumeLocaleWithDifferentDateFormat(date);
 
-            StringLocalizer localizer = newLocalizer(locale);
+        StringLocalizer localizer = newLocalizer(targetLocale);
 
-            // Act & Assert
-            assertEquals(expected, localizer.localize("date", date));
-        } finally {
-            Locale.setDefault(previousDefault);
-        }
+        // Act
+        String result = localizer.localize("date", date);
+
+        // Assert
+        String expected = "Date: " + formatLongDate(targetLocale, date);
+        assertEquals(expected, result);
     }
 
     @Test
@@ -200,6 +217,81 @@ public class StringLocalizerTest {
             localizer = new StringLocalizer(locale);
         }
         return localizer;
+    }
+
+    private static String formatCurrency(Locale locale, double amount) {
+        NumberFormat nf = NumberFormat.getCurrencyInstance(locale);
+        return nf.format(amount);
+    }
+
+    private static String formatLongDate(Locale locale, Date date) {
+        DateFormat df = DateFormat.getDateInstance(DateFormat.LONG, locale);
+        // StringLocalizer uses MessageFormat, which uses the JVM default TimeZone.
+        // We must use the same TimeZone for our expectation to match.
+        df.setTimeZone(TimeZone.getDefault());
+        return df.format(date);
+    }
+
+    private static Locale assumeLocaleWithDifferentCurrencyFormat(double amount) {
+        final Locale baseline = Locale.getDefault();
+        final String formattedAmount;
+        try {
+            formattedAmount = formatCurrency(baseline, amount);
+        } catch (RuntimeException e) {
+            throw new AssumptionViolatedException(
+                    "Default locale cannot format currency: " + baseline, e);
+        }
+
+        for (var candidate : candidateLocales) {
+            if (!isCandidate(baseline, candidate)) {
+                continue;
+            }
+            try {
+                if (!formattedAmount.equals(formatCurrency(candidate, amount))) {
+                    return candidate;
+                }
+            } catch (RuntimeException e) {
+                // Some locales/providers can throw for missing data; just skip.
+            }
+        }
+
+        throw new AssumptionViolatedException("No locale with different currency format than"
+                + " default locale: "
+                + baseline
+                + " ('" + formattedAmount + "')");
+    }
+
+    private static Locale assumeLocaleWithDifferentDateFormat(Date date) {
+        final Locale baseline = Locale.getDefault();
+        final String formattedDate;
+        try {
+            formattedDate = formatLongDate(baseline, date);
+        } catch (RuntimeException e) {
+            throw new AssumptionViolatedException(
+                    "Default locale cannot format date: " + baseline, e);
+        }
+
+        for (var candidate : candidateLocales) {
+            if (!isCandidate(baseline, candidate)) {
+                continue;
+            }
+            try {
+                if (!formattedDate.equals(formatLongDate(candidate, date))) {
+                    return candidate;
+                }
+            } catch (RuntimeException e) {
+                // Some locales/providers can throw for missing data; just skip.
+            }
+        }
+
+        throw new AssumptionViolatedException("No locale with different LONG date format than"
+                + " default locale: "
+                + baseline
+                + " ('" + formattedDate + "')");
+    }
+
+    private static boolean isCandidate(Locale baseline, Locale candidate) {
+        return candidate != null && !Locale.ROOT.equals(candidate) && !candidate.equals(baseline);
     }
 
     private static class StringLocalizerTestBundle extends ListResourceBundle {
