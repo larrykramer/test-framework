@@ -43,7 +43,7 @@ import org.openqa.selenium.safari.SafariOptions;
  * execution.
  */
 @ApplicationScoped
-public final class SafariDriverFactory extends DriverFactory<SafariOptions> {
+public class SafariDriverFactory extends DriverFactory<SafariOptions> {
     /**
      * {@inheritDoc}
      */
