@@ -78,7 +78,13 @@ public class DriverFactoryCDITest {
 
         @Parameterized.Parameters(name = "{0}")
         public static Iterable<Object[]> data() throws Exception {
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl == null) {
+                cl = DriverFactoryRegistrationTest.class.getClassLoader();
+                if (cl == null) {
+                    cl = ClassLoader.getSystemClassLoader();
+                }
+            }
 
             URL url = DriverFactory.class.getProtectionDomain().getCodeSource().getLocation();
             String mainRoot = (url != null) ? url.toString() : null;
@@ -86,6 +92,7 @@ public class DriverFactoryCDITest {
 
             Set<Class<?>> classes = new HashSet<>();
 
+            final ClassLoader loader = cl;
             Enumeration<URL> roots = loader.getResources(packageName.replace('.', '/'));
             while (roots.hasMoreElements()) {
                 url = roots.nextElement();
@@ -105,14 +112,17 @@ public class DriverFactoryCDITest {
                 }
             }
 
-            List<Object[]> params = new ArrayList<>(classes.size());
-            for (var c : classes) {
-                params.add(new Object[] {
-                        !c.getSimpleName().isBlank() ? c.getSimpleName() : c.getName(),
-                        c
-                });
+            if (classes.isEmpty()) {
+                throw new AssertionError(
+                        "No DriverFactory implementations discovered under " + packageName);
             }
-            return params;
+
+            return classes.stream()
+                    .sorted(Comparator.comparing(Class::getName))
+                    .map(c -> new Object[] {
+                            c.getSimpleName().isBlank() ? c.getName() : c.getSimpleName(), c
+                    })
+                    .toList();
         }
 
         private static String toClassName(Path file, Path rootDir, String packageName) {
