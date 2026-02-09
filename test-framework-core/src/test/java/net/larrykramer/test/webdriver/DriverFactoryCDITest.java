@@ -140,12 +140,6 @@ public class DriverFactoryCDITest {
                 Class<?> clazz = Class.forName(name, false, loader);
                 if (DriverFactory.class.isAssignableFrom(clazz)
                         && !Modifier.isAbstract(clazz.getModifiers())) {
-                    if (!clazz.isAnnotationPresent(ApplicationScoped.class)) {
-                        System.err.println("Skipping "
-                                + clazz.getCanonicalName()
-                                + ": Missing @ApplicationScoped annotation");
-                        return null;
-                    }
                     return clazz;
                 }
             } catch (ClassNotFoundException | LinkageError e) {
@@ -163,9 +157,16 @@ public class DriverFactoryCDITest {
         public void testFactoryResolution_givenWeldContainer_shouldResolveProxyableFactory() {
             // Arrange
             initializeWeldContainer();
-            // Act & Assert
-            // If the class was 'final', Weld will throw UnproxyableResolutionException here.
-            assertNotNull(container.select(factoryClass).get());
+
+            // Act
+            // select() returns a handle and doesn't throw if the bean is 'final' or missing.
+            var beanInstance = container.select(factoryClass);
+
+            // Assert
+            // If the bean was 'final', Weld will throw UnproxyableResolutionException when get()
+            // is called.
+            assertTrue(factoryClass.isAnnotationPresent(ApplicationScoped.class));
+            assertNotNull(beanInstance.get());
         }
     }
 
