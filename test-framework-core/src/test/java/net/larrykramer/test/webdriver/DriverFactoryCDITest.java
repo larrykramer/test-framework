@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 import io.smallrye.config.inject.ConfigExtension;
+import jakarta.enterprise.context.ApplicationScoped;
 import net.larrykramer.test.cdi.WeldObjectFactory;
 import net.larrykramer.test.config.ChromiumConfig;
 import net.larrykramer.test.config.DriverConfig;
@@ -74,6 +75,8 @@ public class DriverFactoryCDITest {
 
     @RunWith(Parameterized.class)
     public static class DriverFactoryRegistrationTest extends DriverFactoryCDITestBase {
+        private static final String CLASS_EXTENSION = ".class";
+
         private final Class<?> factoryClass;
 
         @Parameterized.Parameters(name = "{0}")
@@ -104,7 +107,7 @@ public class DriverFactoryCDITest {
                 Path rootDir = Path.of(url.toURI());
                 try (var entries = Files.walk(rootDir)) {
                     entries.filter(Files::isRegularFile)
-                            .filter(p -> p.getFileName().toString().endsWith(".class"))
+                            .filter(p -> p.getFileName().toString().endsWith(CLASS_EXTENSION))
                             .map(file -> toClassName(file, rootDir, packageName))
                             .map(name -> toClass(name, loader))
                             .filter(Objects::nonNull)
@@ -127,7 +130,7 @@ public class DriverFactoryCDITest {
 
         private static String toClassName(Path file, Path rootDir, String packageName) {
             String name = rootDir.relativize(file).toString();
-            name = name.substring(0, name.length() - ".class".length());
+            name = name.substring(0, name.length() - CLASS_EXTENSION.length());
             name = name.replace('\\', '.').replace('/', '.');
             return packageName + "." + name;
         }
@@ -137,6 +140,12 @@ public class DriverFactoryCDITest {
                 Class<?> clazz = Class.forName(name, false, loader);
                 if (DriverFactory.class.isAssignableFrom(clazz)
                         && !Modifier.isAbstract(clazz.getModifiers())) {
+                    if (!clazz.isAnnotationPresent(ApplicationScoped.class)) {
+                        System.err.println("Skipping "
+                                + clazz.getCanonicalName()
+                                + ": Missing @ApplicationScoped annotation");
+                        return null;
+                    }
                     return clazz;
                 }
             } catch (ClassNotFoundException | LinkageError e) {
