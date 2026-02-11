@@ -36,7 +36,7 @@ import org.openqa.selenium.chromium.ChromiumOptions;
  * Factory that constructs Google Chrome {@code WebDriver} instances.
  */
 @ApplicationScoped
-public final class ChromeDriverFactory extends ChromiumDriverFactory<ChromeOptions> {
+public non-sealed class ChromeDriverFactory extends ChromiumDriverFactory<ChromeOptions> {
     @Inject
     @ConfigProperties(prefix = "driver.chrome")
     private ChromiumConfig chromeConfig;

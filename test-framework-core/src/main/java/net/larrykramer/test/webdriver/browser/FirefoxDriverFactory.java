@@ -39,7 +39,7 @@ import org.openqa.selenium.firefox.FirefoxOptions;
  * Factory that constructs Firefox {@code WebDriver} instances.
  */
 @ApplicationScoped
-public final class FirefoxDriverFactory extends DriverFactory<FirefoxOptions> {
+public class FirefoxDriverFactory extends DriverFactory<FirefoxOptions> {
     @Inject
     @ConfigProperties
     private FirefoxConfig firefoxConfig;

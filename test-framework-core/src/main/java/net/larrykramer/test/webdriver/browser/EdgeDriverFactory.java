@@ -36,7 +36,7 @@ import org.openqa.selenium.edge.EdgeOptions;
  * Factory that constructs Microsoft Edge {@code WebDriver} instances.
  */
 @ApplicationScoped
-public final class EdgeDriverFactory extends ChromiumDriverFactory<EdgeOptions> {
+public non-sealed class EdgeDriverFactory extends ChromiumDriverFactory<EdgeOptions> {
     @Inject
     @ConfigProperties(prefix = "driver.edge")
     private ChromiumConfig edgeConfig;
