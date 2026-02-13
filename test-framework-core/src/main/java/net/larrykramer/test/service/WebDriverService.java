@@ -23,7 +23,9 @@
 package net.larrykramer.test.service;
 
 import java.lang.reflect.Modifier;
-import java.net.*;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -364,23 +366,22 @@ public class WebDriverService {
      * Grid-specific capabilities.
      */
     private WebDriver createRemoteWebDriver(MutableCapabilities capabilities) {
-        assert gridConfig.uri.isPresent() : "Trusted caller missed precondition";
+        URI uri = gridConfig.uri.orElseThrow(IllegalStateException::new); //trusted-caller invar.
         URL gridURL;
         try {
-            gridURL = gridConfig.uri.get().toURL();
-            String path = gridURL.getPath();
-            if (path != null && !path.isEmpty() && !path.endsWith("/")
-                    && !path.endsWith("/wd/hub")) {
-                LOGGER.log(Level.INFO, "Configured Selenium URL is ''{0}''.\nIf you encounter "
-                                + "connection issues, ensure {0} is the correct session "
-                                + "endpoint.",
-                        sanitizeURI(gridConfig.uri.get()));
+            if (uri.isOpaque()) {
+                throw new IllegalArgumentException("URI is not hierarchical");
             }
-        } catch (MalformedURLException e) {
-            String msg = "Invalid Selenium Grid URL '"
-                    + (gridConfig.uri.isPresent() ? sanitizeURI(gridConfig.uri.get()) : "")
-                    + "'";
-            throw new IllegalArgumentException(msg, e);
+
+            // Check for query/fragment which are known to break RemoteWebDriver URL construction.
+            // See https://github.com/SeleniumHQ/selenium/issues/9011
+            if (uri.getRawQuery() != null || uri.getRawFragment() != null) {
+                throw new IllegalArgumentException("URI has a query or fragment");
+            }
+
+            gridURL = uri.toURL();
+        } catch (IllegalArgumentException | MalformedURLException e) {
+            throw new IllegalArgumentException("Invalid Grid URL: " + uri, e);
         }
 
         // Create a defensive copy of the capabilities options to ensure isolation.
@@ -453,22 +454,5 @@ public class WebDriverService {
         }
         key = key.strip();
         return key.isEmpty() ? null : key;
-    }
-
-    private static String sanitizeURI(URI uri) {
-        try {
-            // Attempt to reconstruct the URI without the user-info.
-            //@formatter:off
-            return new URI(uri.getScheme(),
-                    null, // masks user information
-                    uri.getHost(), uri.getPort(),
-                    uri.getPath(), uri.getQuery(), uri.getFragment()).toString();
-            //@formatter:on
-        } catch (URISyntaxException e) {
-            // Reconstruction failed.
-            // Use a manually constructed fallback which identifies the host.
-            String host = (uri.getHost() != null) ? uri.getHost() : "unknown-host";
-            return (uri.getScheme() != null) ? (uri.getScheme() + "://<masked>@" + host) : host;
-        }
     }
 }

@@ -25,7 +25,6 @@ package net.larrykramer.test.service;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.*;
 import java.util.logging.Level;
@@ -510,11 +509,16 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_withInvalidGridURL_throwsIllegalArgumentException() {
+    public void testCreateWebDriver_withQueryFragmentInGridURI_throwsIllegalArgumentException() {
         // Arrange
+        // Set up a Grid URI containing a query and fragment to trigger validation failure.
+        // Query/fragment are rejected because they are known to break RemoteWebDriver URL
+        // construction.
+        URI uri = URI.create("https://selenium-hub.local:4444?p=1#f");
+
         DriverConfig config = createConfig(DriverType.CHROME);
         GridConfig grid = createGridConfig();
-        grid.uri = Optional.of(URI.create("grid://admin:s3cr3t@selenium-hub.local:4444"));
+        grid.uri = Optional.of(uri);
 
         when(mockFactory.getDriverType()).thenReturn(config.type);
         when(mockFactory.getCapabilities()).thenReturn(new MutableCapabilities());
@@ -523,24 +527,21 @@ public class WebDriverServiceTest {
 
         // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
-        assertEquals("Invalid Selenium Grid URL 'grid://selenium-hub.local:4444'", e.getMessage());
+        assertNotNull(e.getMessage());
+        assertTrue(e.getMessage().contains("Invalid Grid URL"));
+        assertTrue(e.getMessage().contains(uri.toString()));
+        assertNotNull(e.getCause());
+        assertEquals(IllegalArgumentException.class, e.getCause().getClass());
     }
 
     @Test
-    public void testCreateWebDriver_whenSanitizationFails_returnsSafeFallback() throws Exception {
+    public void testCreateWebDriver_withOpaqueGridURI_throwsIllegalArgumentException() {
         // Arrange
-        // Setup mock values to trigger URISyntaxException in the sanitization helper.
-        // The 7-arg URI constructor throws if a Host is present but the Path is relative.
-        URI mockURI = mock(URI.class);
-        when(mockURI.toURL()).thenThrow(new MalformedURLException("Invalid protocol"));
-        when(mockURI.getScheme()).thenReturn("grid");
-        when(mockURI.getHost()).thenReturn("selenium-hub");
-        when(mockURI.getPort()).thenReturn(4444);
-        when(mockURI.getPath()).thenReturn("relative/path"); // the trap
-
+        // Set up an opaque Grid URI to trigger validation failure.
+        // Opaque URIs are rejected because they break RemoteWebDriver URL construction.
         DriverConfig config = createConfig(DriverType.CHROME);
         GridConfig grid = createGridConfig();
-        grid.uri = Optional.of(mockURI);
+        grid.uri = Optional.of(URI.create("urn:example://selenium-hub.local"));
 
         when(mockFactory.getDriverType()).thenReturn(config.type);
         when(mockFactory.getCapabilities()).thenReturn(new MutableCapabilities());
@@ -549,7 +550,9 @@ public class WebDriverServiceTest {
 
         // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
-        assertEquals("Invalid Selenium Grid URL 'grid://<masked>@selenium-hub'", e.getMessage());
+        Throwable cause = e.getCause();
+        assertNotNull(cause);
+        assertEquals(IllegalArgumentException.class, cause.getClass());
     }
 
     @Test
@@ -655,47 +658,6 @@ public class WebDriverServiceTest {
 
         MutableCapabilities capturedCaps = (MutableCapabilities) capturedArguments.get(1);
         assertEquals("mock-browser", capturedCaps.getCapability(CapabilityType.BROWSER_NAME));
-    }
-
-    @Test
-    @LogRule.UsesLogger(level = "INFO")
-    public void testCreateWebDriver_whenGridURLHasCustomPath_logsInfoMessage() {
-        // Arrange
-        final String gridUri = "https://localhost:4444/custom/grid";
-
-        DriverConfig config = createConfig(DriverType.CHROME);
-        config.spi = Optional.of(mockFactory.getClass().getName());
-        GridConfig grid = createGridConfig();
-        grid.uri = Optional.of(URI.create(gridUri));
-
-        when(mockFactory.getDriverType()).thenReturn(config.type);
-        when(mockFactory.getCapabilities()).thenReturn(new MutableCapabilities());
-
-        try (var mocked = mockConstruction(RemoteWebDriver.class)) {
-            WebDriverService service = createService(config, grid, mockFactory);
-
-            // Act
-            service.createWebDriver();
-
-            // Assert
-            final String expectedPrefix = "Configured Selenium URL is ''{0}''";
-            assertTrue(logRule.getRecords().stream()
-                    .filter(r -> r.getLevel() == Level.INFO)
-                    .filter(r -> {
-                        // Match the template (not a formatted message)
-                        // It must start with the expected prefix and contain a second "{0}"
-                        // placeholder. Checks for the second occurrence beyond the prefix so we
-                        // don’t just match the "{0}" already in the prefix.
-                        final String msg = r.getMessage();
-                        return msg != null
-                                && msg.startsWith(expectedPrefix)
-                                && msg.indexOf("{0}", expectedPrefix.length()) > -1;
-                    })
-                    .anyMatch(r -> {
-                        final Object[] params = r.getParameters();
-                        return params != null && params.length == 1 && gridUri.equals(params[0]);
-                    }));
-        }
     }
 
     @Test
