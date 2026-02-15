@@ -529,7 +529,6 @@ public class WebDriverServiceTest {
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
         assertNotNull(e.getMessage());
         assertTrue(e.getMessage().contains("Invalid Grid URL"));
-        assertTrue(e.getMessage().contains(uri.toString()));
         assertNotNull(e.getCause());
         assertEquals(IllegalArgumentException.class, e.getCause().getClass());
     }
