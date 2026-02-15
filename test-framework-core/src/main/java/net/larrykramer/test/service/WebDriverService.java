@@ -366,7 +366,8 @@ public class WebDriverService {
      * Grid-specific capabilities.
      */
     private WebDriver createRemoteWebDriver(MutableCapabilities capabilities) {
-        URI uri = gridConfig.uri.orElseThrow(IllegalStateException::new); //trusted-caller invar.
+        assert gridConfig.uri.isPresent() : "Trusted caller missed precondition";
+        URI uri = gridConfig.uri.get();
         URL gridURL;
         try {
             if (uri.isOpaque()) {
