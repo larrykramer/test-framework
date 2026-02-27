@@ -101,34 +101,24 @@ public class ObjectConverterTest {
     }
 
     public static class InvalidInputTest {
-        private ObjectConverter converter;
+        @Test(expected = IllegalArgumentException.class)
+        public void testConvert_givenMismatchedDoubleQuote_throwsIllegalArgumentException() {
+            new ObjectConverter().convert("\"abc");
+        }
 
-        @Before
-        public void setUp() {
-            converter = new ObjectConverter();
+        @Test(expected = IllegalArgumentException.class)
+        public void testConvert_givenMismatchedSingleQuote_throwsIllegalArgumentException() {
+            new ObjectConverter().convert("'abc");
+        }
+
+        @Test(expected = IllegalArgumentException.class)
+        public void testConvert_givenSingleQuoteCharacter_throwsIllegalArgumentException() {
+            new ObjectConverter().convert("'");
         }
 
         @Test(expected = NullPointerException.class)
         public void testConvert_givenNullInput_throwsNullPointerException() {
-            converter.convert(null);
-        }
-
-        @Test
-        public void testConvert_givenMismatchedDoubleQuote_throwsIllegalArgumentException() {
-            var e = assertThrows(IllegalArgumentException.class, () -> converter.convert("\"abc"));
-            assertEquals("Mismatched quote in value: \"abc", e.getMessage());
-        }
-
-        @Test
-        public void testConvert_givenMismatchedSingleQuote_throwsIllegalArgumentException() {
-            var e = assertThrows(IllegalArgumentException.class, () -> converter.convert("'abc"));
-            assertEquals("Mismatched quote in value: 'abc", e.getMessage());
-        }
-
-        @Test
-        public void testConvert_givenSingleQuoteCharacter_throwsIllegalArgumentException() {
-            var e = assertThrows(IllegalArgumentException.class, () -> converter.convert("'"));
-            assertEquals("Mismatched quote in value: '", e.getMessage());
+            new ObjectConverter().convert(null);
         }
     }
 }

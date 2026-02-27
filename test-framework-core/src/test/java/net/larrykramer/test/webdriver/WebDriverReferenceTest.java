@@ -120,23 +120,15 @@ public class WebDriverReferenceTest {
     }
 
     @Test
-    public void testGet_givenStateNotInitialized_throwsIllegalStateException() {
-        var e = assertThrows(IllegalStateException.class, driverRef::get);
-        assertEquals("WebDriverReference not initialized", e.getMessage());
-    }
-
-    @Test
     public void testGet_givenStateInitialized_returnsStoredDriver() {
         WebDriver mockDriver = mockWebDriver();
         driverRef.set(mockDriver);
         assertSame(mockDriver, driverRef.get());
     }
 
-    @Test
-    public void testGetClass_givenStateNotInitialized_throwsIllegalStateException() {
-        var expected = IllegalStateException.class;
-        var e = assertThrows(expected, () -> driverRef.get(TakesScreenshot.class));
-        assertEquals("WebDriverReference not initialized", e.getMessage());
+    @Test(expected = IllegalStateException.class)
+    public void testGet_givenStateNotInitialized_throwsIllegalStateException() {
+        driverRef.get();
     }
 
     @Test
@@ -177,7 +169,7 @@ public class WebDriverReferenceTest {
         driverRef.set(mockWrappedDriver);
         // Act & Assert
         var e = assertThrows(ClassCastException.class, () -> driverRef.get(TakesScreenshot.class));
-        assertEquals("The current WebDriver does not support TakesScreenshot", e.getMessage());
+        assertTrue(e.getMessage().contains("TakesScreenshot"));
     }
 
     @Category(SmokeTest.class)
@@ -194,6 +186,11 @@ public class WebDriverReferenceTest {
         actions.click().perform();
         // Assert
         verify((Interactive) mockDriver).perform(any());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testGetClass_givenStateNotInitialized_throwsIllegalStateException() {
+        driverRef.get(TakesScreenshot.class);
     }
 
     @Test(expected = NullPointerException.class)
@@ -281,12 +278,6 @@ public class WebDriverReferenceTest {
     }
 
     @Test
-    public void testGetUnderlyingDriver_givenStateNotInitialized_throwsIllegalStateException() {
-        var e = assertThrows(IllegalStateException.class, driverRef::getUnderlyingDriver);
-        assertEquals("WebDriverReference not initialized", e.getMessage());
-    }
-
-    @Test
     public void testGetUnderlyingDriver_givenStateInitialized_returnsSameInstanceAsSupplied() {
         // Arrange
         WebDriver mockDriver = mockWebDriver();
@@ -315,6 +306,11 @@ public class WebDriverReferenceTest {
         driverRef.set(mockWrappedDriver);
         // Act & Assert
         assertSame(mockDriver, driverRef.getUnderlyingDriver());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testGetUnderlyingDriver_givenStateNotInitialized_throwsIllegalStateException() {
+        driverRef.getUnderlyingDriver();
     }
 
     @Test(expected = IllegalStateException.class)

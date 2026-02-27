@@ -254,8 +254,8 @@ public class WebDriverService {
      *                                  configured driver type is unsupported,
      *                                  no matching SPI factory is found, the
      *                                  SPI factory identifier is missing when
-     *                                  {@code driver.type=SPI}, or the Grid URL
-     *                                  is invalid
+     *                                  {@code driver.type=SPI}, or if an
+     *                                  invalid Grid URL is configured
      * @throws IllegalStateException    if the selected factory cannot create a
      *                                  WebDriver locally or indicates that
      *                                  Grid execution is not supported for the

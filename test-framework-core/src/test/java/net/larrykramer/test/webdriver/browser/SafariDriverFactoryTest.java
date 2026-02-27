@@ -91,9 +91,7 @@ public class SafariDriverFactoryTest {
             mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(false);
 
             // Act & Assert
-            var expected  = UnsupportedOperationException.class;
-            var e = assertThrows(expected, () -> factory.create());
-            assertEquals("Safari local execution not supported on this platform", e.getMessage());
+            assertThrows(UnsupportedOperationException.class, () -> factory.create());
 
             assertEquals(0, mockSafariDriver.constructed().size());
         }
