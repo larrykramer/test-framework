@@ -266,17 +266,17 @@ public class WebDriverService {
     @ScenarioScoped
     public WebDriverReference createWebDriver() {
         if (driverConfig.type == null) {
-            throw new IllegalArgumentException(
-                    "Missing required configuration property: driver.type");
+            throw new IllegalArgumentException("Required config property not set: driver.type");
         }
 
         DriverFactory<?> factory = findDriverFactory();
         if (factory == null) {
             String msg;
-            if (driverConfig.type == DriverType.SPI && driverConfig.spi.isPresent()) {
-                msg = "No SPI factory found for " + normalizeKey(driverConfig.spi.get());
+            if (driverConfig.type == DriverType.SPI) {
+                msg = "No matching SPI driver factory: ";
+                msg += normalizeKey(driverConfig.spi.orElse(null));
             } else {
-                msg = "Unsupported driver " + driverConfig.type;
+                msg = "Unsupported driver type: " + driverConfig.type;
             }
             throw new IllegalArgumentException(msg);
         }
@@ -288,16 +288,15 @@ public class WebDriverService {
         if (gridConfig.uri.isPresent()) {
             MutableCapabilities capabilities = factory.getCapabilities();
             if (capabilities == null) {
-                String msg = "Grid execution not supported for driver " + driverConfig.type;
-                throw new IllegalStateException(msg);
+                throw new IllegalStateException(
+                        "Grid execution not supported for driver type: " + driverConfig.type);
             }
             driver = createRemoteWebDriver(capabilities);
         } else {
             driver = factory.create();
         }
         if (driver == null) {
-            String name = factory.getClass().getName();
-            throw new IllegalStateException("Unable to create driver using factory " + name);
+            throw new IllegalStateException(factory.getClass().getName() + ": null driver created");
         }
 
         try {

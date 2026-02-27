@@ -72,8 +72,8 @@ public class DimensionConverter implements Converter<Dimension> {
             String height = value.substring(idx + 1).strip();
             return new Dimension(Integer.parseInt(width), Integer.parseInt(height));
         } catch (NumberFormatException nfe) {
-            String msg = "Dimension components must be numeric: " + value;
-            throw new IllegalArgumentException(msg, nfe);
+            throw new IllegalArgumentException(
+                    "Dimension components must be numeric: " + value, nfe);
         }
     }
 }

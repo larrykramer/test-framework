@@ -174,7 +174,7 @@ public final class Repository {
     }
 
     private static IllegalArgumentException invalidFormat(String key, String value, Throwable t) {
-        final String msg = String.format("Invalid locator format for '%s': %s", key, value);
-        return new IllegalArgumentException(msg, t);
+        return new IllegalArgumentException(
+                String.format("Invalid locator format for '%s': %s", key, value), t);
     }
 }

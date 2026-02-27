@@ -79,12 +79,12 @@ public final class DriverFactoryTestHelper {
             boolean hasInject = field.isAnnotationPresent(Inject.class);
             boolean hasConfigProperties = field.isAnnotationPresent(ConfigProperties.class);
             if (!hasInject || !hasConfigProperties) {
-                String msg = "Field '" + name + "' in " + clazz.getName()
+                throw new IllegalStateException("Field '" + name + "' in "
+                        + clazz.getName()
                         + " must be annotated with both @Inject and @ConfigProperties. Found: "
                         + (hasInject ? "@Inject" : "no @Inject")
                         + " and "
-                        + (hasConfigProperties ? "@ConfigProperties" : "no @ConfigProperties");
-                throw new IllegalStateException(msg);
+                        + (hasConfigProperties ? "@ConfigProperties" : "no @ConfigProperties"));
             }
 
             field.set(target, config);
