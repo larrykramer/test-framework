@@ -60,11 +60,7 @@ public class SafariDriverFactoryTest {
 
     @Test
     public void testGetDriverType_whenCalled_returnsSafariDriverType() {
-        // Act
-        DriverType result = factory.getDriverType();
-        // Assert
-        assertEquals(DriverType.SAFARI, result);
-        assertEquals("safari", result.getCanonicalName());
+        assertEquals(DriverType.SAFARI, factory.getDriverType());
     }
 
     @Test

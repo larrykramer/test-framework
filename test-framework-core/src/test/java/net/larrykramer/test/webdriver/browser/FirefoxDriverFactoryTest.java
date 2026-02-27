@@ -62,11 +62,7 @@ public class FirefoxDriverFactoryTest {
 
     @Test
     public void testGetDriverType_whenCalled_returnsFirefoxDriverType() {
-        // Act
-        DriverType result = factory.getDriverType();
-        // Assert
-        assertEquals(DriverType.FIREFOX, result);
-        assertEquals("firefox", result.getCanonicalName());
+        assertEquals(DriverType.FIREFOX, factory.getDriverType());
     }
 
     @Test

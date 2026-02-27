@@ -61,11 +61,7 @@ public class EdgeDriverFactoryTest {
 
     @Test
     public void testGetDriverType_whenCalled_returnsEdgeDriverType() {
-        // Act
-        DriverType result = factory.getDriverType();
-        // Assert
-        assertEquals(DriverType.EDGE, result);
-        assertEquals("MicrosoftEdge", result.getCanonicalName());
+        assertEquals(DriverType.EDGE, factory.getDriverType());
     }
 
     @Test

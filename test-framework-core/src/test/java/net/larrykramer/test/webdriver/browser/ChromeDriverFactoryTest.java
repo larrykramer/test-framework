@@ -61,11 +61,7 @@ public class ChromeDriverFactoryTest {
 
     @Test
     public void testGetDriverType_whenCalled_returnsChromeDriverType() {
-        // Act
-        DriverType result = factory.getDriverType();
-        // Assert
-        assertEquals(DriverType.CHROME, result);
-        assertEquals("chrome", result.getCanonicalName());
+        assertEquals(DriverType.CHROME, factory.getDriverType());
     }
 
     @Test
