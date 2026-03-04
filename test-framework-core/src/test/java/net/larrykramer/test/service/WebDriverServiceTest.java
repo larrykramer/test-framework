@@ -501,29 +501,7 @@ public class WebDriverServiceTest {
 
         // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
-        assertTrue(e.getMessage().contains("Invalid Grid URL"));
-        assertTrue(e.getCause() instanceof IllegalArgumentException);
-    }
-
-    @Test
-    public void testCreateWebDriver_withOpaqueGridURI_throwsIllegalArgumentException() {
-        // Arrange
-        // Set up an opaque Grid URI to trigger validation failure.
-        // Opaque URIs are rejected because they break RemoteWebDriver URL construction.
-        DriverConfig config = createConfig(DriverType.CHROME);
-        GridConfig grid = createGridConfig();
-        grid.uri = Optional.of(URI.create("urn:example://selenium-hub.local"));
-
-        when(mockFactory.getDriverType()).thenReturn(config.type);
-        when(mockFactory.getCapabilities()).thenReturn(new MutableCapabilities());
-
-        WebDriverService service = createService(config, grid, mockFactory);
-
-        // Act & Assert
-        var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
-        Throwable cause = e.getCause();
-        assertNotNull(cause);
-        assertEquals(IllegalArgumentException.class, cause.getClass());
+        assertTrue(e.getMessage().contains("grid.url"));
     }
 
     @Test
@@ -687,6 +665,24 @@ public class WebDriverServiceTest {
         when(mockFactory.getDriverType()).thenReturn(config.type);
 
         WebDriverService service = createService(config, null, mockFactory);
+
+        // Act
+        service.createWebDriver();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateWebDriver_withOpaqueGridURI_throwsIllegalArgumentException() {
+        // Arrange
+        // Set up an opaque Grid URI to trigger validation failure.
+        // Opaque URIs are rejected because they break RemoteWebDriver URL construction.
+        DriverConfig config = createConfig(DriverType.CHROME);
+        GridConfig grid = createGridConfig();
+        grid.uri = Optional.of(URI.create("urn:example://selenium-hub.local"));
+
+        when(mockFactory.getDriverType()).thenReturn(config.type);
+        when(mockFactory.getCapabilities()).thenReturn(new MutableCapabilities());
+
+        WebDriverService service = createService(config, grid, mockFactory);
 
         // Act
         service.createWebDriver();

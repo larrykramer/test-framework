@@ -255,7 +255,7 @@ public class WebDriverService {
      *                                  no matching SPI factory is found, the
      *                                  SPI factory identifier is missing when
      *                                  {@code driver.type=SPI}, or if an
-     *                                  invalid Grid URL is configured
+     *                                  invalid {@code grid.url} is configured
      * @throws IllegalStateException    if the selected factory cannot create a
      *                                  WebDriver locally or indicates that
      *                                  Grid execution is not supported for the
@@ -273,8 +273,8 @@ public class WebDriverService {
         if (factory == null) {
             String msg;
             if (driverConfig.type == DriverType.SPI) {
-                msg = "No matching SPI driver factory: ";
-                msg += normalizeKey(driverConfig.spi.orElse(null));
+                String key = normalizeKey(driverConfig.spi.orElse(null));
+                msg = "No matching SPI driver factory: " + ((key == null) ? "<missing>" : key);
             } else {
                 msg = "Unsupported driver type: " + driverConfig.type;
             }
@@ -289,14 +289,14 @@ public class WebDriverService {
             MutableCapabilities capabilities = factory.getCapabilities();
             if (capabilities == null) {
                 throw new IllegalStateException(
-                        "Grid execution not supported for driver type: " + driverConfig.type);
+                        "Grid not supported for driver type: " + driverConfig.type);
             }
             driver = createRemoteWebDriver(capabilities);
         } else {
             driver = factory.create();
         }
         if (driver == null) {
-            throw new IllegalStateException(factory.getClass().getName() + ": null driver created");
+            throw new IllegalStateException("Driver creation failed: " + identityToString(factory));
         }
 
         try {
@@ -381,7 +381,7 @@ public class WebDriverService {
 
             gridURL = uri.toURL();
         } catch (IllegalArgumentException | MalformedURLException e) {
-            throw new IllegalArgumentException("Invalid Grid URL: " + uri, e);
+            throw new IllegalArgumentException("Invalid grid.url: " + uri, e);
         }
 
         // Create a defensive copy of the capabilities options to ensure isolation.
