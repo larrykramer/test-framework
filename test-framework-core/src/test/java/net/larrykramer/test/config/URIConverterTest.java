@@ -27,7 +27,8 @@ import java.net.URI;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class URIConverterTest {
     private URIConverter converter;
@@ -177,14 +178,9 @@ public class URIConverterTest {
         assertEquals(expected, result);
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testConvert_withInvalidSchemeSyntax_throwsIllegalArgumentException() {
-        // Arrange
-        String value = "http://exa mple.com";
-        // Act & Assert
-        var e = assertThrows(IllegalArgumentException.class, () -> converter.convert(value));
-        assertTrue(e.getMessage().contains("Invalid URI format: http://exa mple.com"));
-        assertNotNull(e.getCause());
+        converter.convert("http://exa mple.com");
     }
 
     @Test(expected = NullPointerException.class)

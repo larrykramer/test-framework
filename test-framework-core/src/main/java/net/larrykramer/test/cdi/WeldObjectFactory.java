@@ -349,6 +349,11 @@ public class WeldObjectFactory implements ObjectFactory, Extension {
      * @param <T>       the type of glue class
      * @param glueClass type of instance of be created
      * @return new glue instance of type {@code T}
+     * @throws IllegalStateException        if the Weld container is not started
+     * @throws AmbiguousResolutionException if multiple CDI beans match
+     *                                      {@code glueClass} and the container
+     *                                      cannot unambiguously resolve a
+     *                                      single instance
      */
     @Override
     public <T> T getInstance(Class<T> glueClass) {

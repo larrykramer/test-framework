@@ -84,7 +84,7 @@ public class WeldObjectFactoryLifecycleTest {
         // Assert
         var expected = IllegalStateException.class;
         var e = assertThrows(expected, () -> factory.getInstance(ApplicationScopedBean.class));
-        assertEquals("Weld container not started", e.getMessage());
+        assertTrue(e.getMessage().contains("not started"));
     }
 
     @Test

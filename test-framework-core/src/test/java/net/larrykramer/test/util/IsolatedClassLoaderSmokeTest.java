@@ -27,9 +27,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import net.larrykramer.test.junit.categories.SmokeTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @Category(SmokeTest.class)
 public class IsolatedClassLoaderSmokeTest {
@@ -50,8 +52,8 @@ public class IsolatedClassLoaderSmokeTest {
         });
 
         // Assert
-        Assert.assertEquals(content, result);
-        Assert.assertNull(ResourceReader.readResource(name));
+        assertEquals(content, result);
+        assertNull(ResourceReader.readResource(name));
     }
 
     public static class ResourceReader {

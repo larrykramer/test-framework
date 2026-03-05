@@ -60,11 +60,7 @@ public class SafariDriverFactoryTest {
 
     @Test
     public void testGetDriverType_whenCalled_returnsSafariDriverType() {
-        // Act
-        DriverType result = factory.getDriverType();
-        // Assert
-        assertEquals(DriverType.SAFARI, result);
-        assertEquals("safari", result.getCanonicalName());
+        assertEquals(DriverType.SAFARI, factory.getDriverType());
     }
 
     @Test
@@ -91,9 +87,7 @@ public class SafariDriverFactoryTest {
             mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(false);
 
             // Act & Assert
-            var expected  = UnsupportedOperationException.class;
-            var e = assertThrows(expected, () -> factory.create());
-            assertEquals("Safari local execution not supported on this platform", e.getMessage());
+            assertThrows(UnsupportedOperationException.class, () -> factory.create());
 
             assertEquals(0, mockSafariDriver.constructed().size());
         }

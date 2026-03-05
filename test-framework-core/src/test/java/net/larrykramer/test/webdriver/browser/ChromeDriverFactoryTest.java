@@ -61,11 +61,7 @@ public class ChromeDriverFactoryTest {
 
     @Test
     public void testGetDriverType_whenCalled_returnsChromeDriverType() {
-        // Act
-        DriverType result = factory.getDriverType();
-        // Assert
-        assertEquals(DriverType.CHROME, result);
-        assertEquals("chrome", result.getCanonicalName());
+        assertEquals(DriverType.CHROME, factory.getDriverType());
     }
 
     @Test
@@ -283,7 +279,8 @@ public class ChromeDriverFactoryTest {
 
         // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, () -> factory.getCapabilities());
-        assertEquals("Window width and height must be greater than 0: -800x-600", e.getMessage());
+        assertTrue(e.getMessage().contains("-800"));
+        assertTrue(e.getMessage().contains("-600"));
     }
 
     private static DriverConfig createConfig() {

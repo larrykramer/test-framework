@@ -23,9 +23,10 @@
 package net.larrykramer.test.util;
 
 import net.larrykramer.test.junit.categories.SmokeTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import static org.junit.Assert.assertEquals;
 
 @Category(SmokeTest.class)
 public class ScopedSystemPropertiesSmokeTest {
@@ -38,10 +39,10 @@ public class ScopedSystemPropertiesSmokeTest {
         // Act & Assert
         try (var env = ScopedSystemProperties.open()) {
             env.setProperty(key, "new-value");
-            Assert.assertEquals("new-value", System.getProperty(key));
+            assertEquals("new-value", System.getProperty(key));
         }
 
         // Assert
-        Assert.assertEquals(original, System.getProperty(key));
+        assertEquals(original, System.getProperty(key));
     }
 }

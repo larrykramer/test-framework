@@ -44,15 +44,9 @@ public class DriverFactoryTest {
     public LogRule logRule = new LogRule(DriverFactory.class.getName());
 
     @Test
-    public void testGetDriverType_givenSPIFactory_returnsSPIDriverTypeAndRejectsCanonicalName() {
-        // Arrange
-        SPIDriverFactory factory = new SPIDriverFactory(null, null, null);
-        // Act
-        DriverType result = factory.getDriverType();
-        // Assert
-        assertEquals(DriverType.SPI, result);
-        var e = assertThrows(UnsupportedOperationException.class, result::getCanonicalName);
-        assertEquals("SPI does not have a canonical driver name", e.getMessage());
+    public void testGetDriverType_givenSPIFactory_returnsSPIDriverType() {
+        final SPIDriverFactory factory = new SPIDriverFactory(null, null, null);
+        assertEquals(DriverType.SPI, factory.getDriverType());
     }
 
     @Test

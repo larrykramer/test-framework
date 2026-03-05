@@ -167,8 +167,7 @@ public class WebDriverReference {
             return underlyingDriver;
         }
 
-        String msg = "The current WebDriver does not support " + interfaceClass.getSimpleName();
-        throw new ClassCastException(msg);
+        throw new ClassCastException("Unsupported interface: " + interfaceClass.getSimpleName());
     }
 
     /**

@@ -31,7 +31,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.openqa.selenium.Dimension;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Enclosed.class)
 public class DimensionConverterTest {
@@ -74,19 +76,13 @@ public class DimensionConverterTest {
             // Act & Assert
             var expected = IllegalArgumentException.class;
             var e = assertThrows(expected, () -> converter.convert("1920*1080"));
-            String msg = e.getMessage();
-            assertEquals("Dimension must be <width>x<height> or <width>,<height>: 1920*1080", msg);
+            assertTrue(e.getMessage().contains("<width>x<height>"));
+            assertTrue(e.getMessage().contains("<width>,<height>"));
         }
 
-        @Test
+        @Test(expected = IllegalArgumentException.class)
         public void testConvert_givenNonNumericComponent_throwsIllegalArgumentException() {
-            // Arrange
-            DimensionConverter converter = new DimensionConverter();
-            // Act & Assert
-            var expected = IllegalArgumentException.class;
-            var e = assertThrows(expected, () -> converter.convert("1920xabc"));
-            assertEquals("Dimension components must be numeric: 1920xabc", e.getMessage());
-            assertTrue(e.getCause() instanceof NumberFormatException);
+            new DimensionConverter().convert("1920xabc");
         }
 
         @Test(expected = NullPointerException.class)

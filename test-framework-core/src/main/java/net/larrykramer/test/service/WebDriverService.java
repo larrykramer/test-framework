@@ -254,8 +254,8 @@ public class WebDriverService {
      *                                  configured driver type is unsupported,
      *                                  no matching SPI factory is found, the
      *                                  SPI factory identifier is missing when
-     *                                  {@code driver.type=SPI}, or the Grid URL
-     *                                  is invalid
+     *                                  {@code driver.type=SPI}, or if an
+     *                                  invalid {@code grid.url} is configured
      * @throws IllegalStateException    if the selected factory cannot create a
      *                                  WebDriver locally or indicates that
      *                                  Grid execution is not supported for the
@@ -266,17 +266,17 @@ public class WebDriverService {
     @ScenarioScoped
     public WebDriverReference createWebDriver() {
         if (driverConfig.type == null) {
-            throw new IllegalArgumentException(
-                    "Missing required configuration property: driver.type");
+            throw new IllegalArgumentException("Required config property not set: driver.type");
         }
 
         DriverFactory<?> factory = findDriverFactory();
         if (factory == null) {
             String msg;
-            if (driverConfig.type == DriverType.SPI && driverConfig.spi.isPresent()) {
-                msg = "No SPI factory found for " + normalizeKey(driverConfig.spi.get());
+            if (driverConfig.type == DriverType.SPI) {
+                String key = normalizeKey(driverConfig.spi.orElse(null));
+                msg = "No matching SPI driver factory: " + ((key == null) ? "<missing>" : key);
             } else {
-                msg = "Unsupported driver " + driverConfig.type;
+                msg = "Unsupported driver type: " + driverConfig.type;
             }
             throw new IllegalArgumentException(msg);
         }
@@ -288,16 +288,15 @@ public class WebDriverService {
         if (gridConfig.uri.isPresent()) {
             MutableCapabilities capabilities = factory.getCapabilities();
             if (capabilities == null) {
-                String msg = "Grid execution not supported for driver " + driverConfig.type;
-                throw new IllegalStateException(msg);
+                throw new IllegalStateException(
+                        "Grid not supported for driver type: " + driverConfig.type);
             }
             driver = createRemoteWebDriver(capabilities);
         } else {
             driver = factory.create();
         }
         if (driver == null) {
-            String name = factory.getClass().getName();
-            throw new IllegalStateException("Unable to create driver using factory " + name);
+            throw new IllegalStateException("Driver creation failed: " + identityToString(factory));
         }
 
         try {
@@ -382,7 +381,7 @@ public class WebDriverService {
 
             gridURL = uri.toURL();
         } catch (IllegalArgumentException | MalformedURLException e) {
-            throw new IllegalArgumentException("Invalid Grid URL: " + uri, e);
+            throw new IllegalArgumentException("Invalid grid.url: " + uri, e);
         }
 
         // Create a defensive copy of the capabilities options to ensure isolation.
