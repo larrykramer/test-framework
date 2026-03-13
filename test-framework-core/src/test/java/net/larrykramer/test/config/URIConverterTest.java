@@ -140,6 +140,28 @@ public class URIConverterTest {
     }
 
     @Test
+    public void testConvert_givenUnbracketedIPv6WithZoneId_returnsHttpURIWithEscapedZoneId() {
+        // Act
+        URI result = converter.convert("fe80::1%eth0");
+        // Assert
+        assertEquals("http://[fe80::1%25eth0]", result.toString());
+        assertEquals("http", result.getScheme());
+        assertEquals("[fe80::1%25eth0]", result.getHost());
+        assertEquals(-1, result.getPort());
+    }
+
+    @Test
+    public void testConvert_givenUnbracketedIPv4MappedIPv6_returnsHttpURI() {
+        // Act
+        URI result = converter.convert("::ffff:192.168.1.1");
+        // Assert
+        assertEquals("http://[::ffff:192.168.1.1]", result.toString());
+        assertEquals("http", result.getScheme());
+        assertEquals("[::ffff:192.168.1.1]", result.getHost());
+        assertEquals(-1, result.getPort());
+    }
+
+    @Test
     public void testConvert_givenWssScheme_returnsParsedURI() {
         // Act
         URI result = converter.convert("wss://securechat.example.com");
@@ -181,6 +203,11 @@ public class URIConverterTest {
     @Test(expected = IllegalArgumentException.class)
     public void testConvert_withInvalidSchemeSyntax_throwsIllegalArgumentException() {
         converter.convert("http://exa mple.com");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testConvert_withInvalidIPv6ZoneId_throwsIllegalArgumentException() {
+        converter.convert("fe80::1%eth0%oops");
     }
 
     @Test(expected = NullPointerException.class)

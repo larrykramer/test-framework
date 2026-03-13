@@ -55,12 +55,12 @@ public class URIConverterFuzzerTest {
         }
 
         // Category 2: Randomly generated strings.
-        for (String s : generator.generateRandomStrings(2000, 100)) {
+        for (String s : generator.generateRandomStrings(4000, 200)) {
             params.add(new Object[] { s, "Random" });
         }
 
-        // Category 3: Mutated valid URI strings.
-        for (String s : generator.generateMutatedUris(2000, 5)) {
+        // Category 3: Mutations of  valid URI strings.
+        for (String s : generator.generateMutatedUris(4000, 8)) {
             params.add(new Object[] { s, "Mutation" });
         }
 
@@ -126,7 +126,7 @@ public class URIConverterFuzzerTest {
 
     static class FuzzGenerator {
         private static final String URI_CHARS
-                = "abcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=";
+                = "abcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
         private static final String WHITESPACE = " \t\r\n";
         //@formatter:off
         private static final String[] VALID_URI_SAMPLES = {
@@ -139,7 +139,9 @@ public class URIConverterFuzzerTest {
                 "127.0.0.1",
                 "192.168.1.1:8080",
                 "[::1]",
-                "[fe80::1ff:fe23:4567:89ab]:443"
+                "[fe80::1ff:fe23:4567:89ab]:443",
+                "fe80::1%eth0",
+                "::ffff:192.168.1.1"
         };
         //@formatter:on
 
@@ -162,7 +164,7 @@ public class URIConverterFuzzerTest {
             cases.add("1http://example.com");
             cases.add("http:/example.com");
             cases.add("http//example.com");
-            cases.add("http:example.com"); // Should be handled, but good to test.
+            cases.add("http:example.com"); // should be handled, but good to test.
             cases.add("a b://c");
 
             // Invalid ports.
@@ -174,13 +176,15 @@ public class URIConverterFuzzerTest {
             cases.add("[::1]:xyz");
 
             // Malformed IPv6.
-            cases.add("[fe80::1"); // Missing closing bracket
-            cases.add("fe80::1]"); // Missing opening bracket
-            cases.add("[fe80::1]extra"); // Trailing garbage
-            cases.add("[[fe80::1]]"); // Nested brackets
+            cases.add("[fe80::1"); // missing closing bracket
+            cases.add("fe80::1]"); // missing opening bracket
+            cases.add("[fe80::1]extra"); // trailing garbage
+            cases.add("[[fe80::1]]"); // nested brackets
             cases.add("[]");
             cases.add("[:]");
             cases.add("[]:8080");
+            cases.add("fe80::1%"); // missing zone ID after %
+            cases.add("::ffff:256.256.256.256"); // invalid IPv4-mapped IPv6
 
             // Malformed IPv4.
             cases.add("256.0.0.1");
@@ -245,7 +249,7 @@ public class URIConverterFuzzerTest {
             return strings;
         }
 
-        private char[] deleteCharAt(char[] src, int pos) {
+        private static char[] deleteCharAt(char[] src, int pos) {
             char[] dest = new char[src.length - 1];
             if (pos > 0) {
                 System.arraycopy(src, 0, dest, 0, pos);
@@ -256,7 +260,7 @@ public class URIConverterFuzzerTest {
             return dest;
         }
 
-        private char[] insertCharAt(char[] src, int pos, char c) {
+        private static char[] insertCharAt(char[] src, int pos, char c) {
             char[] dest = new char[src.length + 1];
             if (pos > 0) {
                 System.arraycopy(src, 0, dest, 0, pos);
