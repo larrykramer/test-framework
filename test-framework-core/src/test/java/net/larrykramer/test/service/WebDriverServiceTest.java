@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,6 @@
 package net.larrykramer.test.service;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.*;
@@ -63,90 +62,112 @@ public class WebDriverServiceTest {
     private WebDriver mockDriver;
 
     @Test
-    public void testConstructor_givenProducerBean_resolvesTypeFromBeanTypes() {
-        // Arrange
-        // Simulates a Producer Bean which produces an SPI factory.
-        // getBeanClass() return the Producer (FactoryProducer), NOT the factory.
-        //@formatter:off
-        abstract class IntermediateFactory extends DriverFactory<MutableCapabilities> {}
-        class SPIDriverFactory extends IntermediateFactory {
-            @Override public DriverType getDriverType() { return DriverType.SPI; }
-            @Override public WebDriver create() { return mockDriver; }
-        }
-        class FactoryProducer {}
-        //@formatter:on
-
-        // We use a LinkedHashSet to enforce a specific iteration order.
-        // We place the "wrong" types first to ensure the loop logic correctly filters them out
-        // before finding the correct SPIDriverFactory.
-        LinkedHashSet<Type> types = new LinkedHashSet<>();
-        types.add(mock(ParameterizedType.class));
-        types.add(Object.class);
-        types.add(DriverFactory.class);
-        types.add(IntermediateFactory.class);
-        types.add(SPIDriverFactory.class);
-
-        @SuppressWarnings("unchecked")
-        Bean<DriverFactory<?>> mockBean = mock(Bean.class);
-        doReturn(FactoryProducer.class).when(mockBean).getBeanClass();
-        doReturn(types).when(mockBean).getTypes();
-
-        SPIDriverFactory factory = new SPIDriverFactory();
-
-        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, mockBean);
-        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
-
-        DriverConfig config = createConfig(DriverType.SPI);
-        config.spi = Optional.of(SPIDriverFactory.class.getName());
+    public void testCreateWebDriver_whenGridNotConfigured_usesLocalFactory() {
+        DriverConfig config = createConfig(DriverType.CHROME);
+        stubFactory(mockFactory, config);
+        WebDriverService service = createService(config, null, mockFactory);
 
         // Act
-        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
-
         WebDriverReference driverRef = service.createWebDriver();
 
         // Assert
         assertNotNull(driverRef);
-        assertSame(mockDriver, driverRef.get());
+        WebDriver driver = driverRef.get();
+
+        assertSame(mockDriver, driver);
+        verify(mockFactory).create();
+        verify(mockFactory).configure(mockDriver);
     }
 
     @Test
-    public void testConstructor_givenGenericProducerBean_unwrapsProxyRuntimeClass() {
+    public void testCreateWebDriver_givenNullDriverType_throwsIllegalArgumentException() {
         // Arrange
-        // Simulates a Producer Bean that only knows about the generic DriverFactory. This mimics
-        // a producer returning DriverFactory<?> where getType() is insufficient.
+        WebDriverService service = createService(createConfig(null), null);
+        // Act & Assert
+        var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
+        assertTrue(e.getMessage().contains("driver.type"));
+    }
+
+    @Test
+    public void testCreateWebDriver_givenFactoryReturnsNull_throwsIllegalStateException() {
+        // Arrange
+        DriverConfig config = createConfig(DriverType.CHROME);
+        when(mockFactory.getDriverType()).thenReturn(config.type);
+        when(mockFactory.create()).thenReturn(null);
+        WebDriverService service = createService(config, null, mockFactory);
+        // Act & Assert
+        assertThrows(IllegalStateException.class, service::createWebDriver);
+        verify(mockFactory, never()).configure(any());
+    }
+
+    @Test
+    @LogRule.UsesLogger
+    public void testCreateWebDriver_givenFactoryReturnsNullType_logsWarningAndResolutionFails() {
+        // Arrange
         //@formatter:off
-        class SPIDriverFactory extends DriverFactory<MutableCapabilities> {
-            @Override public DriverType getDriverType() { return DriverType.SPI; }
-            @Override public WebDriver create() { return mockDriver; }
+        class NullTypeFactory extends DriverFactory<MutableCapabilities> {
+            @Override public DriverType getDriverType() { return null; }
+            @Override public WebDriver create() { return null; }
         }
-        class SPIDriverFactory_ClientProxy extends SPIDriverFactory {}
+        class NullTypeFactory$$Proxy extends NullTypeFactory {}
         //@formatter:on
 
+        Instance<DriverFactory<?>> mockInstance = new MockInstance(
+                new MockInstance.MockHandle(new NullTypeFactory$$Proxy(), /*bean=*/null));
+        DriverConfig config = createConfig(DriverType.EDGE);
+        GridConfig grid = createGridConfig();
+
+        WebDriverService service = new WebDriverService(config, grid, mockInstance);
+
+        // Act & Assert
+        // This should throw as the factory was never added to map of available factories.
+        assertThrows(IllegalArgumentException.class, service::createWebDriver);
+
+        // The log message parameter (factory name) should resolve to the unproxied class name.
+        // The unproxied class name is NullTypeFactory.
+        final String expectedName = NullTypeFactory.class.getName();
+        final String expected = "DriverFactory.getDriverType() returned null for {0}";
+        assertTrue(logRule.getRecords().stream()
+                .filter(r -> r.getLevel() == Level.WARNING)
+                .filter(r -> expected.equals(r.getMessage()))
+                .anyMatch(r -> {
+                    final Object[] params = r.getParameters();
+                    return params != null && params.length == 1 && expectedName.equals(params[0]);
+                }));
+    }
+
+    @Test
+    public void testCreateWebDriver_givenConfiguredSPIIdentifier_returnsConfiguredWebDriver() {
+        // Arrange
         @SuppressWarnings("unchecked")
-        Bean<DriverFactory<?>> mockBean = mock(Bean.class);
-        doReturn(DriverFactory.class).when(mockBean).getBeanClass();
-        doReturn(Set.of(DriverFactory.class)).when(mockBean).getTypes();
-
-        var factory = new SPIDriverFactory_ClientProxy();
-
-        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, mockBean);
-        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
+        DriverFactory<MutableCapabilities> mockFirstSPIFactory = mock(DriverFactory.class);
+        @SuppressWarnings("unchecked")
+        DriverFactory<MutableCapabilities> mockSecondSPIFactory = mock(DriverFactory.class);
 
         DriverConfig config = createConfig(DriverType.SPI);
-        config.spi = Optional.of(SPIDriverFactory.class.getName());
+        config.spi = Optional.of(mockSecondSPIFactory.getClass().getName());
+        stubFactory(mockFirstSPIFactory, config);
+        stubFactory(mockSecondSPIFactory, config);
+
+        WebDriverService service;
+        service = createService(config, null, mockFirstSPIFactory, mockSecondSPIFactory);
 
         // Act
-        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
-
         WebDriverReference driverRef = service.createWebDriver();
 
         // Assert
         assertNotNull(driverRef);
-        assertSame(mockDriver, driverRef.get());
+        WebDriver driver = driverRef.get();
+
+        assertSame(mockDriver, driver);
+        verify(mockSecondSPIFactory).create();
+        verify(mockSecondSPIFactory).configure(mockDriver);
+        verify(mockFirstSPIFactory, never()).create();
+        verify(mockFirstSPIFactory, never()).configure(any());
     }
 
     @Test
-    public void testConstructor_givenNamedProducerBeans_resolvesFactoryByBeanNameAlias() {
+    public void testCreateWebDriver_givenSPIBeanNameAlias_usesMatchingFactory() {
         // Arrange
         // Simulate two producers that exposes only DriverFactory as bean type (no concrete type),
         // but provides a CDI bean name.
@@ -190,194 +211,6 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testConstructor_givenProxyClassExtendsAbstractClass_fallsBackToRuntimeClassName() {
-        // Arrange
-        //@formatter:off
-        class SPIDriverFactory_$$_WeldClientProxy extends DriverFactory<MutableCapabilities> {
-            @Override public DriverType getDriverType() { return DriverType.SPI; }
-            @Override public WebDriver create() { return mockDriver; }
-        }
-        //@formatter:on
-        var factory = new SPIDriverFactory_$$_WeldClientProxy();
-
-        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, null);
-        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
-
-        DriverConfig config = createConfig(DriverType.SPI);
-        config.spi = Optional.of(SPIDriverFactory_$$_WeldClientProxy.class.getName());
-
-        // Act
-        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
-
-        WebDriverReference driverRef = service.createWebDriver();
-
-        // Assert
-        assertNotNull(driverRef);
-        assertSame(mockDriver, driverRef.get());
-    }
-
-    @Test
-    public void testConstructor_givenBeanMetadataMissing_usesConcreteRuntimeClass() {
-        // Arrange
-        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(mockFactory, null);
-        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
-
-        DriverConfig config = createConfig(DriverType.SPI);
-        config.spi = Optional.of(mockFactory.getClass().getName());
-        stubFactory(mockFactory, config);
-
-        // Act
-        WebDriverService service = new WebDriverService(config, createGridConfig(), mockInstance);
-
-        WebDriverReference driverRef = service.createWebDriver();
-
-        // Assert
-        assertNotNull(driverRef);
-        verify(mockFactory).create();
-        assertSame(mockDriver, driverRef.get());
-    }
-
-    @Test
-    @LogRule.UsesLogger
-    public void testConstructor_givenNamedBeanAndFactoryReturnsNullType_logsWarning() {
-        // Arrange
-        @SuppressWarnings("unchecked")
-        Bean<DriverFactory<?>> mockNamedBean = mock(Bean.class);
-        doReturn(" \u2003my-named-factory  ").when(mockNamedBean).getName();
-        when(mockFactory.getDriverType()).thenReturn(null);
-
-        // Act & Assert
-        // The log message parameter (factory name) should resolve to the bean name.
-        assertConstructorLogsNullDriverTypeWarning(mockFactory, mockNamedBean, "my-named-factory");
-    }
-
-    @Test
-    @LogRule.UsesLogger
-    public void testConstructor_givenNamedManagedBeanAndFactoryReturnsNullType_logsWarning() {
-        // Arrange
-        @SuppressWarnings("unchecked")
-        Bean<DriverFactory<?>> mockNamedManagedBean = mock(Bean.class);
-        doReturn("  \u2005  ").when(mockNamedManagedBean).getName(); // force to bean class name
-        doReturn(mockFactory.getClass()).when(mockNamedManagedBean).getBeanClass();
-        when(mockFactory.getDriverType()).thenReturn(null);
-
-        // Act & Assert
-        // The log message parameter (factory name) should resolve to the bean class name.
-        // In this case, getBeanClass() returns the concrete factory which is also the
-        // implementation class.
-        assertConstructorLogsNullDriverTypeWarning(mockFactory,
-                mockNamedManagedBean,
-                mockFactory.getClass().getName());
-    }
-
-    @Test
-    @LogRule.UsesLogger
-    public void testConstructor_givenProducerBeanAndFactoryReturnsNullType_logsWarning() {
-        // Arrange
-        //@formatter:off
-        class NullTypeFactory extends DriverFactory<MutableCapabilities> {
-            @Override public DriverType getDriverType() { return null; }
-            @Override public WebDriver create() { return null; }
-        }
-        class FactoryProducer {}
-        //@formatter:on
-        final Set<Type> types = Set.of(Object.class, DriverFactory.class, NullTypeFactory.class);
-        @SuppressWarnings("unchecked")
-        Bean<DriverFactory<?>> mockBean = mock(Bean.class);
-        doReturn(null).when(mockBean).getName(); // force to bean class name
-        doReturn(FactoryProducer.class).when(mockBean).getBeanClass();
-        doReturn(types).when(mockBean).getTypes();
-
-        NullTypeFactory factory = new NullTypeFactory();
-
-        // Act & Assert
-        // The log message parameter (factory name) should resolve to the underlying factory class
-        // name.
-        assertConstructorLogsNullDriverTypeWarning(factory,
-                mockBean,
-                NullTypeFactory.class.getName());
-    }
-
-    @Test
-    @LogRule.UsesLogger
-    public void testConstructor_givenFactoryReturnsNullType_logsWarning() {
-        // Arrange
-        //@formatter:off
-        class NullTypeFactory extends DriverFactory<MutableCapabilities> {
-            @Override public DriverType getDriverType() { return null; }
-            @Override public WebDriver create() { return null; }
-        }
-        class NullTypeFactory$$Proxy extends NullTypeFactory {}
-        //@formatter:on
-
-        // Act & Assert
-        // The log message parameter (factory name) should resolve to the unproxied class name.
-        // The unproxied class name is NullTypeFactory.
-        assertConstructorLogsNullDriverTypeWarning(new NullTypeFactory$$Proxy(),
-                /*bean=*/null,
-                NullTypeFactory.class.getName());
-    }
-
-    @Test
-    @LogRule.UsesLogger
-    public void testConstructor_givenProxyClassAndFactoryReturnsNullType_logsWarning() {
-        // Arrange
-        //@formatter:off
-        class NullTypeFactory$$Proxy extends DriverFactory<MutableCapabilities> {
-            @Override public DriverType getDriverType() { return null; }
-            @Override public WebDriver create() { return null; }
-        }
-        //@formatter:on
-
-        // Act & Assert
-        // The log message parameter (factory name) should resolve to the runtime class name.
-        // In this case, the runtime class name is the proxied class name.
-        assertConstructorLogsNullDriverTypeWarning(new NullTypeFactory$$Proxy(),
-                /*bean=*/null,
-                NullTypeFactory$$Proxy.class.getName());
-    }
-
-    @Test
-    public void testCreateWebDriver_withLocalConfig_returnsConfiguredWebDriver() {
-        // Arrange
-        DriverConfig config = createConfig(DriverType.CHROME);
-        stubFactory(mockFactory, config);
-        WebDriverService service = createService(config, null, mockFactory);
-
-        // Act
-        WebDriverReference driverRef = service.createWebDriver();
-
-        // Assert
-        assertNotNull(driverRef);
-        WebDriver driver = driverRef.get();
-
-        assertSame(mockDriver, driver);
-        verify(mockFactory).create();
-        verify(mockFactory).configure(mockDriver);
-    }
-
-    @Test
-    public void testCreateWebDriver_givenNullDriverType_throwsIllegalArgumentException() {
-        // Arrange
-        WebDriverService service = createService(createConfig(null), null);
-        // Act & Assert
-        var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
-        assertTrue(e.getMessage().contains("driver.type"));
-    }
-
-    @Test
-    public void testCreateWebDriver_givenFactoryReturnsNull_throwsIllegalStateException() {
-        // Arrange
-        DriverConfig config = createConfig(DriverType.CHROME);
-        when(mockFactory.getDriverType()).thenReturn(config.type);
-        when(mockFactory.create()).thenReturn(null);
-        WebDriverService service = createService(config, null, mockFactory);
-        // Act & Assert
-        assertThrows(IllegalStateException.class, service::createWebDriver);
-        verify(mockFactory, never()).configure(any());
-    }
-
-    @Test
     public void testCreateWebDriver_givenSPIIsBlank_throwsIllegalArgumentException() {
         // Arrange
         DriverConfig config = createConfig(DriverType.SPI);
@@ -405,36 +238,6 @@ public class WebDriverServiceTest {
         // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
         assertTrue(e.getMessage().contains("MissingFactory"));
-    }
-
-    @Test
-    public void testCreateWebDriver_givenConfiguredSPIFactoryClass_returnsConfiguredWebDriver() {
-        // Arrange
-        @SuppressWarnings("unchecked")
-        DriverFactory<MutableCapabilities> mockFirstSPIFactory = mock(DriverFactory.class);
-        @SuppressWarnings("unchecked")
-        DriverFactory<MutableCapabilities> mockSecondSPIFactory = mock(DriverFactory.class);
-
-        DriverConfig config = createConfig(DriverType.SPI);
-        config.spi = Optional.of(mockSecondSPIFactory.getClass().getName());
-        stubFactory(mockFirstSPIFactory, config);
-        stubFactory(mockSecondSPIFactory, config);
-
-        WebDriverService service;
-        service = createService(config, null, mockFirstSPIFactory, mockSecondSPIFactory);
-
-        // Act
-        WebDriverReference driverRef = service.createWebDriver();
-
-        // Assert
-        assertNotNull(driverRef);
-        WebDriver driver = driverRef.get();
-
-        assertSame(mockDriver, driver);
-        verify(mockSecondSPIFactory).create();
-        verify(mockSecondSPIFactory).configure(mockDriver);
-        verify(mockFirstSPIFactory, never()).create();
-        verify(mockFirstSPIFactory, never()).configure(any());
     }
 
     @Test
@@ -649,16 +452,6 @@ public class WebDriverServiceTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateWebDriver_givenFactoryReturnsNullType_throwsIllegalArgumentException() {
-        // Arrange
-        when(mockFactory.getDriverType()).thenReturn(null);
-        WebDriverService service = createService(createConfig(DriverType.EDGE), null, mockFactory);
-        // Act
-        // This should throw as the factory was never added to map of available factories.
-        service.createWebDriver();
-    }
-
-    @Test(expected = IllegalArgumentException.class)
     public void testCreateWebDriver_givenSPIWithoutFactoryClass_throwsIllegalArgumentException() {
         // Arrange
         DriverConfig config = createConfig(DriverType.SPI);
@@ -843,26 +636,6 @@ public class WebDriverServiceTest {
         verify(mockDriverRef).get();
         verify(mockDriver, never()).quit();
         verify(mockDriverRef).clear();
-    }
-
-    private void assertConstructorLogsNullDriverTypeWarning(DriverFactory<?> factory,
-            Bean<?> bean, String expectedName) {
-        // Arrange
-        MockInstance.MockHandle mockHandle = new MockInstance.MockHandle(factory, bean);
-        Instance<DriverFactory<?>> mockInstance = new MockInstance(mockHandle);
-
-        // Act
-        new WebDriverService(createConfig(null), createGridConfig(), mockInstance);
-
-        // Assert
-        final String expected = "DriverFactory.getDriverType() returned null for {0}";
-        assertTrue(logRule.getRecords().stream()
-                .filter(r -> r.getLevel() == Level.WARNING)
-                .filter(r -> expected.equals(r.getMessage()))
-                .anyMatch(r -> {
-                    final Object[] params = r.getParameters();
-                    return params != null && params.length == 1 && expectedName.equals(params[0]);
-                }));
     }
 
     private void stubFactory(DriverFactory<?> factory, DriverConfig config) {

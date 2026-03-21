@@ -32,7 +32,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.Interactive;
 
-import static net.larrykramer.test.util.SharedUtils.identityToString;
+import static net.larrykramer.test.util.SharedUtils.toIdentityString;
 import static net.larrykramer.test.webdriver.WebDriverReference.MAX_UNWRAP_DEPTH;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -322,7 +322,7 @@ public class WebDriverReferenceTest {
 
     @Test
     public void testToString_whenUninitialized_returnsUninitializedMarker() {
-        assertEquals(identityToString(null), driverRef.toString());
+        assertEquals(toIdentityString(null), driverRef.toString());
     }
 
     @Test
@@ -332,8 +332,7 @@ public class WebDriverReferenceTest {
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
         // Act
         driverRef.set(mockWrappedDriver);
-        // Assert
-        assertEquals(identityToString(mockWrappedDriver), driverRef.toString());
+        assertEquals(toIdentityString(mockWrappedDriver), driverRef.toString());
     }
 
     private WebDriver createWrapsDriver(WebDriver driver) {

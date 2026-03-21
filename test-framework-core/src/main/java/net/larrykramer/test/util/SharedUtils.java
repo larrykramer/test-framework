@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,6 @@
  */
 
 package net.larrykramer.test.util;
-
-import java.lang.reflect.Proxy;
-import java.util.Objects;
 
 /**
  * Shared utility methods.
@@ -52,7 +49,7 @@ public final class SharedUtils {
      * @return an identity-style string for {@code obj}, or
      *         {@code "<uninitialized>"} if {@code obj} is null
      */
-    public static String identityToString(Object obj) {
+    public static String toIdentityString(Object obj) {
         if (obj == null) {
             return "<uninitialized>";
         }
@@ -61,41 +58,33 @@ public final class SharedUtils {
     }
 
     /**
-     * Attempts to return the "real" (unproxied) class for the given class.
+     * Returns the given string with leading and trailing whitespace removed, or
+     * {@code null} if the input is {@code null} or contains no non-whitespace
+     * characters.
      * <p>
-     * This method is intended for frameworks that create subclass-based proxies
-     * (e.g., CDI/Weld/Quarkus). It walks up the superclass hierarchy while the
-     * current class appears to be a proxy and returns the first superclass that
-     * no longer looks proxied.
-     * <p>
-     * Note: for JDK dynamic proxy classes, there is no meaningful "user class"
-     * in the superclass chain (dynamic proxies implement interfaces), so this
-     * method will typically return {@code Proxy}.
+     * Whitespace is defined by {@link Character#isWhitespace(char)}.
      *
-     * @param c the class to inspect
-     * @return the unproxied/base class, or {@code c} if {@code c} is not
-     *         recognized as a proxy (or if unproxying cannot proceed beyond
-     *         {@code Object})
-     * @throws NullPointerException if {@code c} is null
+     * <pre>{@code
+     * SharedUtils.stripToNull(null)     = null
+     * SharedUtils.stripToNull("")       = null
+     * SharedUtils.stripToNull("   ")    = null
+     * SharedUtils.stripToNull("abc")    = "abc"
+     * SharedUtils.stripToNull("  abc")  = "abc"
+     * SharedUtils.stripToNull("abc  ")  = "abc"
+     * SharedUtils.stripToNull(" abc ")  = "abc"
+     * SharedUtils.stripToNull(" ab c ") = "ab c"
+     * }</pre>
+     *
+     * @param s the string to normalize; may be {@code null}
+     * @return the stripped string, or {@code null} if {@code s} is
+     *         {@code null}, empty, or consists only of whitespace
      */
-    public static Class<?> getUnproxiedClass(Class<?> c) {
-        Objects.requireNonNull(c, "c is null");
-        Class<?> unproxiedClass = c;
-        while (isProxiedClass(unproxiedClass)) {
-            Class<?> clazz = unproxiedClass.getSuperclass();
-            if (clazz == null || clazz == Object.class) {
-                break;
-            }
-            unproxiedClass = clazz;
+    public static String stripToNull(String s) {
+        if (s == null) {
+            return null;
         }
-        return unproxiedClass;
-    }
 
-    private static boolean isProxiedClass(Class<?> c) {
-        String name = c.getName();
-        return name.contains("$$") // CDI
-                || name.contains("_WeldClientProxy") // Weld
-                || name.contains("_ClientProxy") // Quarkus
-                || Proxy.isProxyClass(c); // JDK
+        s = s.strip();
+        return s.isEmpty() ? null : s;
     }
 }
