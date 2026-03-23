@@ -116,19 +116,19 @@ public class IPAddressUtilTest {
         }
 
         @Test
-        public void testIsIPv6LiteralAddress_givenInput_returnsExpectedResult() throws Throwable {
+        public void testIsIPv6LiteralAddress_sampleInput_returnsExpectedValue() throws Throwable {
             assertEquals(expected, invokeIsIPv6LiteralAddress(input, false));
         }
     }
 
     public static class NonParameterizedTest extends IPAddressUtilTestBase {
         @Test
-        public void testIsIPv6LiteralAddress_whenAmbiguousAllowed_returnsTrue() throws Throwable {
+        public void testIsIPv6LiteralAddress_ambiguousInputAllowed_returnsTrue() throws Throwable {
             assertTrue(invokeIsIPv6LiteralAddress("::ffff:١.٢.٣.٤", true));
         }
 
         @Test(expected = NullPointerException.class)
-        public void testIsIPv6LiteralAddress_givenNullInput_throwsNullPointerException() {
+        public void testIsIPv6LiteralAddress_nullInput_throwsNullPointerException() {
             IPAddressUtil.isIPv6LiteralAddress(null);
         }
     }

@@ -77,7 +77,7 @@ public class OperatingSystemTest {
         }
 
         @Test
-        public void testCurrent_givenOSName_returnsCorrectOperatingSystemEnum() throws Throwable {
+        public void testCurrent_osNameValue_returnsCorrectOperatingSystemEnum() throws Throwable {
             // A scoped system property sandbox ensures the "os.name" property override stays
             // isolated to the test iteration.
             try (var env = ScopedSystemProperties.open()) {
@@ -103,7 +103,7 @@ public class OperatingSystemTest {
 
     public static class IntegrationTest {
         @Test
-        public void testEnum_onMacOS_isConsistentWithActualOperatingSystem() {
+        public void testEnum_macOS_isConsistentWithActualOperatingSystem() {
             assumeTrue("Skipping macOS-specific test", OperatingSystem.isMacOS());
 
             assertEquals(OperatingSystem.MACOS, OperatingSystem.current());
@@ -113,7 +113,7 @@ public class OperatingSystemTest {
         }
 
         @Test
-        public void testEnum_onWindows_isConsistentWithActualOperatingSystem() {
+        public void testEnum_windows_isConsistentWithActualOperatingSystem() {
             assumeTrue("Skipping Windows-specific test", OperatingSystem.isWindows());
 
             assertEquals(OperatingSystem.WINDOWS, OperatingSystem.current());
@@ -123,7 +123,7 @@ public class OperatingSystemTest {
         }
 
         @Test
-        public void testEnum_onLinux_isConsistentWithActualOperatingSystem() {
+        public void testEnum_linux_isConsistentWithActualOperatingSystem() {
             assumeTrue("Skipping Linux-specific test", OperatingSystem.isLinux());
 
             assertEquals(OperatingSystem.LINUX, OperatingSystem.current());
@@ -133,7 +133,7 @@ public class OperatingSystemTest {
         }
 
         @Test
-        public void testEnum_onUnsupportedOS_returnsUnsupportedAndFlagsAreFalse() {
+        public void testEnum_unsupportedOS_returnsUnsupportedAndFlagsAreFalse() {
             OperatingSystem current = OperatingSystem.current();
             assumeTrue("Skipping unsupported OS test", current == OperatingSystem.UNSUPPORTED);
 

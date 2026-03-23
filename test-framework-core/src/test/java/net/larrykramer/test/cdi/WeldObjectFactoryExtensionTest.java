@@ -115,7 +115,7 @@ public class WeldObjectFactoryExtensionTest {
         }
 
         @Test
-        public void testVetoGlueBeans_whenBeanIsAdded_registersWithCorrectScope() {
+        public void testVetoGlueBeans_glueBean_registersWithCorrectScope() {
             factory.addClass(beanClass);
 
             initializeWeldContainer(beanClass);
@@ -150,7 +150,7 @@ public class WeldObjectFactoryExtensionTest {
 
     public static class ExtensionSideEffectsTest extends ExtensionTestBase {
         @Test
-        public void testVetoGlueBeans_withScenarioScopedBeanNotAdded_keepsManagedBean() {
+        public void testVetoGlueBeans_nonGlueBean_keepsManagedBean() {
             // ScenarioScopedBean is NOT added via factory.addClass(), so it's
             // not "glue". The veto observer should ignore it, and Weld should
             // discover it normally.
@@ -166,7 +166,7 @@ public class WeldObjectFactoryExtensionTest {
         }
 
         @Test
-        public void testVetoGlueBeans_withVetoedBean_isNotRegistered() {
+        public void testVetoGlueBeans_vetoedBean_isNotRegistered() {
             factory.addClass(VetoedBean.class);
 
             initializeWeldContainer(VetoedBean.class);
@@ -176,7 +176,7 @@ public class WeldObjectFactoryExtensionTest {
         }
 
         @Test
-        public void testBeforeBeanDiscovery_whenContainerStarts_registersScenarioScope() {
+        public void testBeforeBeanDiscovery_extensionLoaded_registersScenarioScope() {
             // The factory is added as an extension, which will trigger the
             // beanDiscovery event.
             initializeWeldContainer();
@@ -187,7 +187,7 @@ public class WeldObjectFactoryExtensionTest {
         }
 
         @Test
-        public void testAfterBeanDiscovery_whenContainerStarts_registersScenarioScopeContext() {
+        public void testAfterBeanDiscovery_extensionLoaded_registersScenarioScopeContext() {
             // The factory is added as an extension, which will trigger the
             // beanDiscovery event.
             initializeWeldContainer();

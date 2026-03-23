@@ -28,58 +28,58 @@ import static org.junit.Assert.assertEquals;
 
 public class LocatorTest {
     @Test
-    public void testConstructor_typeWithWhitespace_normalizesTypeToLowercase() {
+    public void testConstructor_paddedType_normalizesTypeToLowercase() {
         Locator locator = new Locator("  XPATH  ", "button");
         assertEquals("xpath", locator.type());
         assertEquals("button", locator.selector());
     }
 
     @Test
-    public void testConstructor_selectorWithWhitespace_trimsSelector() {
+    public void testConstructor_paddedSelector_trimsSelector() {
         Locator locator = new Locator("css", "   div > span   ");
         assertEquals("css", locator.type());
         assertEquals("div > span", locator.selector());
     }
 
     @Test
-    public void testConstructor_selectorWithSingleQuotes_preservesInnerWhitespace() {
+    public void testConstructor_quotedSelector_preservesInnerWhitespace() {
         Locator locator = new Locator("css", " '  div span  ' ");
         assertEquals("css", locator.type());
         assertEquals("  div span  ", locator.selector());
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_selectorWithBlankQuotes_throwsIllegalArgumentException() {
+    public void testConstructor_blankQuotedSelector_throwsIllegalArgumentException() {
         new Locator("css", "  \" \" ");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_selectorWithMismatchedQuotes_throwsIllegalArgumentException() {
+    public void testConstructor_unmatchedDoubleQuote_throwsIllegalArgumentException() {
         new Locator("css", "\"div");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_selectorWithSingleQuoteOnly_throwsIllegalArgumentException() {
+    public void testConstructor_singleQuoteOnly_throwsIllegalArgumentException() {
         new Locator("css", "'");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_withNullType_throwsIllegalArgumentException() {
+    public void testConstructor_nullType_throwsIllegalArgumentException() {
         new Locator(null, "value");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_withBlankType_throwsIllegalArgumentException() {
+    public void testConstructor_blankType_throwsIllegalArgumentException() {
         new Locator("   ", "value");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_withNullSelector_throwsIllegalArgumentException() {
+    public void testConstructor_nullSelector_throwsIllegalArgumentException() {
         new Locator("css", null);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testConstructor_withBlankSelector_throwsIllegalArgumentException() {
+    public void testConstructor_blankSelector_throwsIllegalArgumentException() {
         new Locator("css", "   ");
     }
 }

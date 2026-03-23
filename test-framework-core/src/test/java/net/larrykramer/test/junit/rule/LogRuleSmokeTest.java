@@ -46,7 +46,7 @@ public class LogRuleSmokeTest {
 
     @Test
     @LogRule.UsesLogger
-    public void testApply_withLoggerAnnotation_capturesLogRecords() {
+    public void testApply_usesLoggerAnnotation_capturesLogRecords() {
         Logger logger = Logger.getLogger(LOGGER_NAME);
 
         Level level = logger.getLevel();
@@ -65,7 +65,7 @@ public class LogRuleSmokeTest {
 
     @Test
     @LogRule.UsesLogger(level = "INFO")
-    public void testApply_withOverriddenLevel_capturesAtNewLevel() {
+    public void testApply_levelOverride_capturesAtNewLevel() {
         Logger logger = Logger.getLogger(LOGGER_NAME);
 
         Level level = logger.getLevel();
@@ -86,7 +86,7 @@ public class LogRuleSmokeTest {
 
     @Test
     @LogRule.UsesLogger(name = CUSTOM_LOGGER_NAME, level = "WARNING")
-    public void testApply_withOverriddenNameAndLevel_capturesForDifferentLoggerAtNewLevel() {
+    public void testApply_differentLogger_capturesForDifferentLoggerAtNewLevel() {
         Logger defaultLogger = Logger.getLogger(LOGGER_NAME);
         Logger customLogger = Logger.getLogger(CUSTOM_LOGGER_NAME);
 

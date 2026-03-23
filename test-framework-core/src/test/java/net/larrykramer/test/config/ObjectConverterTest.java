@@ -85,7 +85,7 @@ public class ObjectConverterTest {
         }
 
         @Test
-        public void testConvert_givenInput_returnsExpectedResult() {
+        public void testConvert_supportedValues_returnsExpectedResult() {
             Object result = new ObjectConverter().convert(input);
             assertNotNull(result);
             assertEquals(expectedClass, result.getClass());
@@ -101,22 +101,22 @@ public class ObjectConverterTest {
 
     public static class InvalidInputTest {
         @Test(expected = IllegalArgumentException.class)
-        public void testConvert_givenMismatchedDoubleQuote_throwsIllegalArgumentException() {
+        public void testConvert_unmatchedDoubleQuote_throwsIllegalArgumentException() {
             new ObjectConverter().convert("\"abc");
         }
 
         @Test(expected = IllegalArgumentException.class)
-        public void testConvert_givenMismatchedSingleQuote_throwsIllegalArgumentException() {
+        public void testConvert_unmatchedSingleQuote_throwsIllegalArgumentException() {
             new ObjectConverter().convert("'abc");
         }
 
         @Test(expected = IllegalArgumentException.class)
-        public void testConvert_givenSingleQuoteCharacter_throwsIllegalArgumentException() {
+        public void testConvert_singleQuoteOnly_throwsIllegalArgumentException() {
             new ObjectConverter().convert("'");
         }
 
         @Test(expected = NullPointerException.class)
-        public void testConvert_givenNullInput_throwsNullPointerException() {
+        public void testConvert_nullInput_throwsNullPointerException() {
             new ObjectConverter().convert(null);
         }
     }

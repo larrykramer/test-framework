@@ -72,7 +72,7 @@ public class WebDriverServiceCDITest {
     }
 
     @Test
-    public void testCreateWebDriver_givenFactoryIsCDIProxy_resolvesFactoryAndReturnsDriverRef() {
+    public void testCreateWebDriver_proxyFactory_returnsDriverRef() {
         // Precondition: Ensure CDI gave us a proxy, not the raw factory.
         DriverFactory<?> factory = container.select(SPIDriverFactory.class).get();
         assertTrue("Expected Weld client proxy but got: "

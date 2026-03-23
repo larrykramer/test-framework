@@ -71,7 +71,7 @@ public class DefaultTypeConfigSourceTest {
         }
 
         @Test
-        public void testGetValue_givenOSName_returnsCorrectDefaultDriverType() throws Throwable {
+        public void testGetValue_osNameValue_returnsCorrectDefaultDriverType() throws Throwable {
             // A scoped system property sandbox ensures the "os.name" property override stays
             // isolated to the test iteration.
             try (var env = ScopedSystemProperties.open()) {
@@ -105,7 +105,7 @@ public class DefaultTypeConfigSourceTest {
         }
 
         @Test
-        public void testGetProperties_whenCalled_returnsMapWithCorrectStructure() {
+        public void testGetProperties_defaultSource_returnsMapWithCorrectStructure() {
             Map<String, String> properties = configSource.getProperties();
             assertNotNull(properties);
             assertEquals(1, properties.size());
@@ -114,29 +114,29 @@ public class DefaultTypeConfigSourceTest {
         }
 
         @Test
-        public void testGetPropertyNames_whenCalled_returnsCorrectPropertySet() {
+        public void testGetPropertyNames_defaultSource_returnsCorrectPropertySet() {
             Set<String> propertyNames = configSource.getPropertyNames();
             assertNotNull(propertyNames);
             assertEquals(Set.of("driver.type"), propertyNames);
         }
 
         @Test
-        public void testGetOrdinal_whenCalled_returnsLowPriorityValue() {
+        public void testGetOrdinal_defaultSource_returnsLowPriorityValue() {
             assertTrue(configSource.getOrdinal() < 100);
         }
 
         @Test
-        public void testGetValue_withNullPropertyName_returnsNull() {
+        public void testGetValue_nullKey_returnsNull() {
             assertNull(configSource.getValue(null));
         }
 
         @Test
-        public void testGetValue_withMissingPropertyName_returnsNull() {
+        public void testGetValue_unknownKey_returnsNull() {
             assertNull(configSource.getValue("absent"));
         }
 
         @Test
-        public void testGetName_whenCalled_returnsDescriptiveName() {
+        public void testGetName_defaultSource_returnsDescriptiveName() {
             assertEquals("OS-Aware Default WebDriver Config Source", configSource.getName());
         }
     }

@@ -154,7 +154,7 @@ public class DriverFactoryCDITest {
         }
 
         @Test
-        public void testFactoryResolution_givenWeldContainer_shouldResolveProxyableFactory() {
+        public void testFactoryResolution_discoveredFactories_shouldResolveProxyableFactory() {
             initializeWeldContainer();
 
             // select() returns a handle and doesn't throw if the bean is 'final' or missing.
@@ -181,7 +181,7 @@ public class DriverFactoryCDITest {
      */
     public static class ChromiumConfigMappingTest extends DriverFactoryCDITestBase {
         @Test
-        public void testGetCapabilities_givenChromeSpecificConfig_shouldOverrideChromiumDefaults() {
+        public void testGetCapabilities_chromePrefix_shouldOverrideChromiumDefaults() {
             String expectedExecutable = "/usr/bin/google-chrome-stable";
             try (var env = ScopedSystemProperties.open()) {
                 env.setProperty("driver.type", "CHROME");

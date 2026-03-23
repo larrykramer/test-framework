@@ -59,12 +59,12 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testGetDriverType_whenCalled_returnsSafariDriverType() {
+    public void testGetDriverType_initializedFactory_returnsSafariDriverType() {
         assertEquals(DriverType.SAFARI, factory.getDriverType());
     }
 
     @Test
-    public void testCreate_whenCalled_returnsWebDriverInstance() {
+    public void testCreate_macOS_returnsWebDriverInstance() {
         try (var mockSafariDriver = mockConstruction(SafariDriver.class);
              var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
             mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(true);
@@ -77,7 +77,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testCreate_givenNonMacOS_throwsUnsupportedOperationException() {
+    public void testCreate_nonMacOS_throwsUnsupportedOperationException() {
         try (var mockSafariDriver = mockConstruction(SafariDriver.class);
              var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
             mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(false);
@@ -89,7 +89,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_withWindowSize_setsImplicitWaitAndWindowSize() {
+    public void testConfigure_windowSizeConfigured_setsImplicitWaitAndWindowSize() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -112,7 +112,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_withMaximize_setsImplicitWaitAndMaximize() {
+    public void testConfigure_maximizeConfigured_setsImplicitWaitAndMaximize() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -136,7 +136,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_withoutWindowConfiguration_setsImplicitWaitOnly() {
+    public void testConfigure_defaultConfig_setsImplicitWaitOnly() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -150,7 +150,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_whenMaximizeThrows_doesNotPropagateException() {
+    public void testConfigure_maximizeFailure_doesNotPropagateException() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -171,7 +171,7 @@ public class SafariDriverFactoryTest {
 
     @Test
     @LogRule.UsesLogger(level = "WARNING")
-    public void testGetCapabilities_whenHeadlessRequested_logsMessageAndReturnsSafariOptions() {
+    public void testGetCapabilities_headlessRequested_logsMessageAndReturnsSafariOptions() {
         try (var mocked = mockStatic(OperatingSystem.class)) {
             mocked.when(OperatingSystem::isMacOS).thenReturn(true);
 
@@ -193,7 +193,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenMacOSConfig_appliesCommonCapabilities() {
+    public void testGetCapabilities_commonCaps_appliesCommonCapabilities() {
         try (var mocked = mockStatic(OperatingSystem.class)) {
             mocked.when(OperatingSystem::isMacOS).thenReturn(true);
 
@@ -211,7 +211,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenNonMacOS_allowsGetCapabilitiesButCreateFails() {
+    public void testGetCapabilities_nonMacOS_allowsGetCapabilitiesButCreateFails() {
         try (var mocked = mockStatic(OperatingSystem.class)) {
             mocked.when(OperatingSystem::isMacOS).thenReturn(false);
 

@@ -62,12 +62,12 @@ public class StringLocalizerTest {
     }
 
     @Test(expected = NullPointerException.class)
-    public void testConstructor_givenNullLocale_throwsNullPointerException() {
+    public void testConstructor_nullLocale_throwsNullPointerException() {
         new StringLocalizer(null);
     }
 
     @Test(expected = MissingResourceException.class)
-    public void testConstructor_givenMissingBundle_throwsMissingResourceException() {
+    public void testConstructor_missingBundle_throwsMissingResourceException() {
         Locale locale = Locale.forLanguageTag("zz-ZZ");
         try (var mocked = mockStatic(ResourceBundle.class)) {
             MissingResourceException e = new MissingResourceException(
@@ -79,14 +79,14 @@ public class StringLocalizerTest {
     }
 
     @Test
-    public void testGetLocale_givenRootLocale_returnsSameInstance() {
+    public void testGetLocale_rootLocale_returnsSameInstance() {
         final Locale locale = Locale.ROOT;
         StringLocalizer localizer = newLocalizer(locale);
         assertSame(locale, localizer.getLocale());
     }
 
     @Test
-    public void testGetLocale_givenDifferentJVMDefault_returnsConstructorLocale() {
+    public void testGetLocale_nonDefaultLocale_returnsConstructorLocale() {
         // Find a locale that is different from the default locale.
         // If no such locale is available, the test is skipped.
         Locale baseline = Locale.getDefault();
@@ -102,19 +102,19 @@ public class StringLocalizerTest {
     }
 
     @Test
-    public void testLocalize_withExistingKey_returnsLocalizedMessage() {
+    public void testLocalize_existingKey_returnsLocalizedMessage() {
         String result = newLocalizer().localize("greeting");
         assertEquals("Hello world", result);
     }
 
     @Test
-    public void testLocalize_withExistingKeyAndArguments_returnsFormattedMessage() {
+    public void testLocalize_formatArgs_returnsFormattedMessage() {
         String result = newLocalizer().localize("welcome", "Jane", "Doe");
         assertEquals("Welcome, Jane Doe!", result);
     }
 
     @Test
-    public void testLocalize_withUnicodeKey_returnsUnicodeMessage() {
+    public void testLocalize_unicodeKeys_returnsUnicodeMessage() {
         final StringLocalizer localizer = newLocalizer();
         assertEquals("Bonjour! Créons une journée géniale.", localizer.localize("french.greeting"));
         assertEquals("Willkommen, Jürgen!", localizer.localize("german.welcome", "Jürgen"));
@@ -122,7 +122,7 @@ public class StringLocalizerTest {
     }
 
     @Test
-    public void testLocalize_withNumericArgument_useInstanceLocaleNotJVMDefault() {
+    public void testLocalize_currencyArg_useInstanceLocaleNotJVMDefault() {
         double amount = 12345.67;
         Locale targetLocale = assumeLocaleWithDifferentCurrencyFormat(amount);
 
@@ -133,7 +133,7 @@ public class StringLocalizerTest {
     }
 
     @Test
-    public void testLocalize_withDateArgument_useInstanceLocaleNotJVMDefault() {
+    public void testLocalize_dateArg_useInstanceLocaleNotJVMDefault() {
         Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
         calendar.set(2025, Calendar.OCTOBER, 26, 0, 0, 0);
         calendar.set(Calendar.MILLISECOND, 0);
@@ -148,39 +148,39 @@ public class StringLocalizerTest {
     }
 
     @Test
-    public void testLocalize_withMoreArgumentsThanPlaceholders_returnsFormattedMessage() {
+    public void testLocalize_extraArgs_returnsFormattedMessage() {
         String result = newLocalizer().localize("welcome", "John", "Michael", "Smit");
         assertEquals("Welcome, John Michael!", result);
     }
 
     @Test
-    public void testLocalize_withInsufficientArguments_returnsPartiallyFormattedMessage() {
+    public void testLocalize_missingArgs_returnsPartiallyFormattedMessage() {
         String result = newLocalizer().localize("welcome", "Jane");
         assertEquals("Welcome, Jane {1}!", result);
     }
 
     @Test
-    public void testLocalize_withNullArguments_returnsLocalizedMessage() {
+    public void testLocalize_nullArgs_returnsLocalizedMessage() {
         assertEquals("Welcome, {0} {1}!", newLocalizer().localize("welcome", (Object[]) null));
     }
 
     @Test
-    public void testLocalize_withNullKey_returnsNullKeyPlaceholder() {
+    public void testLocalize_nullKey_returnsNullKeyPlaceholder() {
         assertEquals("???null_key???", newLocalizer().localize(null));
     }
 
     @Test
-    public void testLocalize_withNonExistentKey_returnsMissingKeyPlaceholder() {
+    public void testLocalize_missingKey_returnsMissingKeyPlaceholder() {
         assertEquals("???absent???", newLocalizer().localize("absent"));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testLocalize_withInvalidMessageFormatPattern_throwsIllegalArgumentException() {
+    public void testLocalize_invalidPattern_throwsIllegalArgumentException() {
         newLocalizer().localize("invalid.pattern", "ignored");
     }
 
     @Test(expected = ClassCastException.class)
-    public void testLocalize_withNonStringValue_throwsClassCastException() {
+    public void testLocalize_nonStringResource_throwsClassCastException() {
         newLocalizer().localize("non.string");
     }
 

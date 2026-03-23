@@ -60,7 +60,7 @@ public class SharedUtilsTest {
     }
 
     @Test
-    public void testStripToNull_paddedInput_returnsStrippedString() {
+    public void testStripToNull_asciiWhitespace_returnsStrippedString() {
         assertEquals("value", stripToNull("  value  "));
     }
 

@@ -89,7 +89,7 @@ public class IPAddressUtilFuzzerTest {
     }
 
     @Test
-    public void testIsIPv6LiteralAddress_givenFuzzedInput_doesNotCrash() {
+    public void testIsIPv6LiteralAddress_fuzzedInput_doesNotCrash() {
         try {
             IPAddressUtil.isIPv6LiteralAddress(fuzzedInput);
             // If the input is a valid IPv6 address, that's acceptable. The fuzzer might

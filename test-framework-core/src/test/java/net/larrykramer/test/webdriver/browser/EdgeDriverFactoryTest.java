@@ -60,12 +60,12 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetDriverType_whenCalled_returnsEdgeDriverType() {
+    public void testGetDriverType_initializedFactory_returnsEdgeDriverType() {
         assertEquals(DriverType.EDGE, factory.getDriverType());
     }
 
     @Test
-    public void testCreate_whenCalled_returnsWebDriverInstance() {
+    public void testCreate_defaultState_returnsWebDriverInstance() {
         try (var mocked = mockConstruction(EdgeDriver.class)) {
             WebDriver driver = factory.create();
             assertEquals(1, mocked.constructed().size());
@@ -74,7 +74,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_whenCalled_appliesCommonAndChromiumConfiguration() {
+    public void testConfigure_standardConfig_appliesCommonAndChromiumConfiguration() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -93,7 +93,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenEdgeAndGlobalConfig_appliesExpectedCapabilities() {
+    public void testGetCapabilities_fullConfig_appliesExpectedCapabilities() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
@@ -122,7 +122,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withMaximizeTrueAndWindowSize_addsOnlyWindowSizeArgument() {
+    public void testGetCapabilities_maximizeTrueAndWindowSize_addsOnlyWindowSizeArgument() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = false;
@@ -144,7 +144,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withMaximizeTrueAndNoWindowSize_addsStartMaximizedArgument() {
+    public void testGetCapabilities_maximizeOnly_addsStartMaximizedArgument() {
         DriverConfig config = createConfig();
         config.headless = false;
         config.maximize = true;
@@ -161,7 +161,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withStartMaximizedArgument_doesNotDuplicateArgument() {
+    public void testGetCapabilities_startMaximizedArgument_doesNotDuplicateArgument() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = false;
@@ -182,7 +182,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withWindowSize_addsWindowSizeArgument() {
+    public void testGetCapabilities_windowSize_addsWindowSizeArgument() {
         DriverConfig config = createConfig();
         config.headless = false;
         config.windowSize = Optional.of(new Dimension(800, 600));
@@ -198,7 +198,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withHeadlessArgument_doesNotDuplicateHeadlessOption() {
+    public void testGetCapabilities_existingHeadless_doesNotDuplicateHeadlessArgument() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
@@ -225,7 +225,7 @@ public class EdgeDriverFactoryTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGetCapabilities_withZeroHeightWindowSize_throwsIllegalArgumentException() {
+    public void testGetCapabilities_invalidWindowSize_throwsIllegalArgumentException() {
         DriverConfig config = createConfig();
         config.windowSize = Optional.of(new Dimension(800, 0));
         setDriverConfig(factory, config);

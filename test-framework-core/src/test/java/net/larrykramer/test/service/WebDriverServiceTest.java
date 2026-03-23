@@ -62,7 +62,7 @@ public class WebDriverServiceTest {
     private WebDriver mockDriver;
 
     @Test
-    public void testCreateWebDriver_whenGridNotConfigured_usesLocalFactory() {
+    public void testCreateWebDriver_localMode_usesLocalFactory() {
         DriverConfig config = createConfig(DriverType.CHROME);
         stubFactory(mockFactory, config);
         WebDriverService service = createService(config, null, mockFactory);
@@ -78,14 +78,14 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenNullDriverType_throwsIllegalArgumentException() {
+    public void testCreateWebDriver_nullDriverType_throwsIllegalArgumentException() {
         WebDriverService service = createService(createConfig(null), null);
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
         assertTrue(e.getMessage().contains("driver.type"));
     }
 
     @Test
-    public void testCreateWebDriver_givenFactoryReturnsNull_throwsIllegalStateException() {
+    public void testCreateWebDriver_factoryReturnsNull_throwsIllegalStateException() {
         DriverConfig config = createConfig(DriverType.CHROME);
         when(mockFactory.getDriverType()).thenReturn(config.type);
         when(mockFactory.create()).thenReturn(null);
@@ -99,7 +99,7 @@ public class WebDriverServiceTest {
 
     @Test
     @LogRule.UsesLogger
-    public void testCreateWebDriver_givenFactoryReturnsNullType_logsWarningAndResolutionFails() {
+    public void testCreateWebDriver_nullFactoryType_logsWarningAndResolutionFails() {
         //@formatter:off
         class NullTypeFactory extends DriverFactory<MutableCapabilities> {
             @Override public DriverType getDriverType() { return null; }
@@ -132,7 +132,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenConfiguredSPIIdentifier_returnsConfiguredWebDriver() {
+    public void testCreateWebDriver_SPIFactory_returnsConfiguredWebDriver() {
         @SuppressWarnings("unchecked")
         DriverFactory<MutableCapabilities> mockFirstSPIFactory = mock(DriverFactory.class);
         @SuppressWarnings("unchecked")
@@ -159,7 +159,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenSPIBeanNameAlias_usesMatchingFactory() {
+    public void testCreateWebDriver_namedSPIFactory_usesMatchingFactory() {
         // Arrange
         // Simulate two producers that exposes only DriverFactory as bean type (no concrete type),
         // but provides a CDI bean name.
@@ -203,7 +203,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenSPIIsBlank_throwsIllegalArgumentException() {
+    public void testCreateWebDriver_blankSPIName_throwsIllegalArgumentException() {
         DriverConfig config = createConfig(DriverType.SPI);
         config.spi = Optional.of("    ");
 
@@ -216,7 +216,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenSPIFactoryClassNotFound_throwsIllegalArgumentException() {
+    public void testCreateWebDriver_missingSPIFactory_throwsIllegalArgumentException() {
         DriverConfig config = createConfig(DriverType.SPI);
         config.spi = Optional.of("  MissingFactory  ");
 
@@ -229,7 +229,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenMultipleFactoriesForSameType_usesLastRegisteredFactory() {
+    public void testCreateWebDriver_duplicateFactories_usesLastRegisteredFactory() {
         @SuppressWarnings("unchecked")
         DriverFactory<MutableCapabilities> mockFirstFactory = mock(DriverFactory.class);
         @SuppressWarnings("unchecked")
@@ -255,7 +255,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenGridUnsupported_throwsIllegalStateException() {
+    public void testCreateWebDriver_unsupportedGridMode_throwsIllegalStateException() {
         DriverConfig config = createConfig(DriverType.CHROME);
         GridConfig grid = createGridConfig();
         grid.uri = Optional.of(URI.create("https://localhost:4444/wd/hub"));
@@ -269,7 +269,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_withQueryFragmentInGridURI_throwsIllegalArgumentException() {
+    public void testCreateWebDriver_invalidGridURI_throwsIllegalArgumentException() {
         // Set up a Grid URI containing a query and fragment to trigger validation failure.
         // Query/fragment are rejected because they are known to break RemoteWebDriver URL
         // construction.
@@ -289,7 +289,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_whenGridIsConfigured_createsRemoteWebDriverWithCapabilities() {
+    public void testCreateWebDriver_remoteGrid_createsRemoteWebDriverWithCapabilities() {
         // Arrange
         DriverConfig config = createConfig(DriverType.FIREFOX);
         GridConfig grid = createGridConfig();
@@ -337,7 +337,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_givenGridWithSPIType_doesNotSetBrowserName() {
+    public void testCreateWebDriver_gridModeWithSPIType_doesNotSetBrowserName() {
         DriverConfig config = createConfig(DriverType.SPI);
         config.spi = Optional.of(mockFactory.getClass().getName());
         GridConfig grid = createGridConfig();
@@ -362,7 +362,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_whenOptionsHasBrowserName_preservesExistingBrowserName() {
+    public void testCreateWebDriver_existingBrowserName_preservesExistingBrowserName() {
         DriverConfig config = createConfig(DriverType.EDGE);
         GridConfig grid = createGridConfig();
         grid.uri = Optional.of(URI.create("https://localhost:4444"));
@@ -390,7 +390,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_whenConfigureWebDriverThrows_quitsDriverAndPropagates() {
+    public void testCreateWebDriver_configureFailure_quitsDriverAndPropagates() {
         DriverConfig config = createConfig(DriverType.CHROME);
         RuntimeException configureException = new RuntimeException("configure");
         stubFactory(mockFactory, config);
@@ -404,7 +404,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testCreateWebDriver_whenConfigureWebDriverAndQuitThrow_quitExceptionIsSuppressed() {
+    public void testCreateWebDriver_quitFailure_quitExceptionIsSuppressed() {
         DriverConfig config = createConfig(DriverType.CHROME);
         RuntimeException quitException = new RuntimeException("quite");
         stubFactory(mockFactory, config);
@@ -419,13 +419,13 @@ public class WebDriverServiceTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateWebDriver_withUnknownType_throwsIllegalArgumentException() {
+    public void testCreateWebDriver_missingFactory_throwsIllegalArgumentException() {
         final WebDriverService service = createService(createConfig(DriverType.EDGE), null);
         service.createWebDriver();
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateWebDriver_givenSPIWithoutFactoryClass_throwsIllegalArgumentException() {
+    public void testCreateWebDriver_missingSPIName_throwsIllegalArgumentException() {
         DriverConfig config = createConfig(DriverType.SPI);
         when(mockFactory.getDriverType()).thenReturn(config.type);
 
@@ -434,7 +434,7 @@ public class WebDriverServiceTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateWebDriver_withOpaqueGridURI_throwsIllegalArgumentException() {
+    public void testCreateWebDriver_opaqueGridURI_throwsIllegalArgumentException() {
         // Set up an opaque Grid URI to trigger validation failure.
         // Opaque URIs are rejected because they break RemoteWebDriver URL construction.
         DriverConfig config = createConfig(DriverType.CHROME);
@@ -449,7 +449,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testDisposeWebDriver_withDriverRef_callsQuit() {
+    public void testDisposeWebDriver_initializedRef_callsQuit() {
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
         WebDriverReference spiedDriverRef = spy(new WebDriverReference(mockDriver));
         service.disposeWebDriver(spiedDriverRef);
@@ -458,7 +458,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testDisposeWebDriver_withWrappedDriver_callsWrappedDriverQuit() {
+    public void testDisposeWebDriver_wrappedDriver_callsWrappedDriverQuit() {
         var settings = withSettings().extraInterfaces(WrapsDriver.class);
         WebDriver mockWrappedDriver = mock(WebDriver.class, settings);
         when(((WrapsDriver) mockWrappedDriver).getWrappedDriver()).thenReturn(mockDriver);
@@ -474,13 +474,13 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testDisposeWebDriver_withNullDriverRef_doesNothing() {
+    public void testDisposeWebDriver_nullRef_doesNothing() {
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
         service.disposeWebDriver(null);
     }
 
     @Test
-    public void testDisposeWebDriver_withEmptyWebDriverReference_doesNothing() {
+    public void testDisposeWebDriver_uninitializedRef_doesNothing() {
         // We simulate the specific exception thrown by an empty reference for this test.
         WebDriverReference mockDriverRef = mock(WebDriverReference.class);
         var ise = new IllegalStateException("WebDriverReference not initialized");
@@ -495,7 +495,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testDisposeWebDriver_whenCalledTwice_quitsOnceAndClearsReference() {
+    public void testDisposeWebDriver_repeatedCalls_quitsOnceAndClearsReference() {
         /*
          * AAA Exception: Interleaved assertions.
          * To verify idempotency correctly without using clearInvocations, we
@@ -529,7 +529,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testDisposeWebDriver_whenCalledTwiceAndQuitThrows_quitsOnceAndClearsReference() {
+    public void testDisposeWebDriver_repeatedQuitFailure_quitsOnceAndClearsReference() {
         /*
          * AAA Exception: Interleaved assertions.
          * To verify idempotency correctly without using clearInvocations, we
@@ -564,7 +564,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testDisposeWebDriver_whenDriverQuitThrows_doesNotPropagateException() {
+    public void testDisposeWebDriver_quitFailure_doesNotPropagateException() {
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
         WebDriverReference driverRef = new WebDriverReference(mockDriver);
         doThrow(new RuntimeException("quit")).when(mockDriver).quit();
@@ -575,7 +575,7 @@ public class WebDriverServiceTest {
     }
 
     @Test
-    public void testDisposeWebDriver_whenReferenceThrows_doesNotPropagateException() {
+    public void testDisposeWebDriver_brokenRef_doesNotPropagateException() {
         // Simulate the reference throwing on ALL method calls. This could happen if the reference
         // is broken in an unrecoverable way (e.g., the CDI proxy is failing).
         WebDriverReference mockDriverRef = mock(WebDriverReference.class);

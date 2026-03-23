@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 @Category(SmokeTest.class)
 public class ScopedSystemPropertiesSmokeTest {
     @Test
-    public void testOpen_whenPropertyIsSetInScope_itIsRestoredAfterClose() {
+    public void testOpen_propertyChanged_itIsRestoredAfterClose() {
         String key = "my.scoped.property.test";
         String original = System.getProperty(key); // could be null
 

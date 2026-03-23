@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNull;
 @Category(SmokeTest.class)
 public class IsolatedClassLoaderSmokeTest {
     @Test
-    public void testDoInvoke_withResourceOverride_classSeesOverriddenResource() throws Throwable {
+    public void testDoInvoke_overriddenResource_classSeesOverriddenResource() throws Throwable {
         final String name = "smoke-test-resource.txt";
         final String content = "Hello from the isolated world!";
 

@@ -60,19 +60,19 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testConstructor_whenAnotherInstanceIsActive_throwsIllegalStateException() {
+    public void testConstructor_existingInstance_throwsIllegalStateException() {
         // The @Before method has already created an active 'factory' instance.
         // The static SELF field now holds a reference to it.
         new WeldObjectFactory();
     }
 
     @Test
-    public void testGetInstance_givenFactoryConstructed_returnsSingletonReference() {
+    public void testGetInstance_initializedFactory_returnsSingletonReference() {
         assertSame(factory, WeldObjectFactory.getInstance());
     }
 
     @Test
-    public void testShutdownWeldContainer_whenContainerIsRunning_stopsAndPreventsReuse() {
+    public void testShutdownWeldContainer_startedFactory_stopsAndPreventsReuse() {
         factory.start();
 
         factory.stop();
@@ -84,7 +84,7 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test
-    public void testAssociate_withActiveContext_firesInitializedEventOnce() {
+    public void testAssociate_sameScenario_firesInitializedEventOnce() {
         Scenario mockScenario = mock(Scenario.class);
         factory.start();
         resolveInstance(ScenarioEventTracker.class);
@@ -97,12 +97,12 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testAssociate_withoutActiveContext_throwsIllegalStateException() {
+    public void testAssociate_factoryNotStarted_throwsIllegalStateException() {
         factory.associate(mock(Scenario.class));
     }
 
     @Test
-    public void testStart_whenContainerNotStarted_initializesContainerAndActivatesContext() {
+    public void testStart_validConfig_initializesContainerAndActivatesContext() {
         factory.addClass(ScenarioScopedBean.class);
 
         factory.start();
@@ -114,7 +114,7 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test(expected = NullPointerException.class)
-    public void testStart_whenWeldInitializationFails_rethrowsException() {
+    public void testStart_failingSupplier_rethrowsException() {
         // Create a factory with a supplier that is guaranteed to fail by returning null. This will
         // cause Objects.requireNonNull() to throw a NullPointerException. We assign it to the
         // class-level factory so the @After tearDown method can clean it up.
@@ -126,7 +126,7 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test
-    public void testStop_withActiveScenario_firesDestroyedEvent() {
+    public void testStop_activeScenario_firesDestroyedEvent() {
         factory.start();
         resolveInstance(ScenarioEventTracker.class);
         factory.associate(mock(Scenario.class));
@@ -138,7 +138,7 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test
-    public void testStop_whenUnmanagedPreDestroyThrows_continuesCleanupAndDoesNotThrow() {
+    public void testStop_preDestroyFailure_continuesCleanupAndDoesNotThrow() {
         factory.start();
         factory.getInstance(UnmanagedBean.class);
         factory.getInstance(FaultyUnmanagedBean.class);
@@ -152,7 +152,7 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test(expected = ContextNotActiveException.class)
-    public void testStop_whenScenarioScopeDeactivated_blocksScenarioScopedLookup() {
+    public void testStop_stoppedContext_blocksScenarioScopedLookup() {
         factory.addClass(ScenarioScopedBean.class);
         factory.start();
         factory.associate(mock(Scenario.class));
@@ -167,12 +167,12 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test
-    public void testAddClass_addGlueClass_returnsTrue() {
+    public void testAddClass_validClass_returnsTrue() {
         assertTrue(factory.addClass(ScenarioScopedBean.class));
     }
 
     @Test
-    public void testGetInstance_withScenarioScopedBean_returnsNewInstancePerScenario() {
+    public void testGetInstance_newScenario_returnsNewInstancePerScenario() {
         /*
          * This test verifies that a new @ScenarioScoped bean instance is created for each distinct
          * scenario lifecycle (start -> stop -> start -> stop).
@@ -221,7 +221,7 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test
-    public void testGetInstance_withApplicationScopedBean_returnsSingleInstance() {
+    public void testGetInstance_applicationScoped_returnsSingleInstance() {
         factory.start();
 
         ApplicationScopedBean first = resolveInstance(ApplicationScopedBean.class);
@@ -233,7 +233,7 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test
-    public void testGetInstance_withUnsatisfiedClass_returnsCachedUnmanagedInstance() {
+    public void testGetInstance_unmanagedBean_returnsCachedUnmanagedInstance() {
         // Arrange
         factory.start();
 
@@ -255,7 +255,7 @@ public class WeldObjectFactoryLifecycleTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testGetInstance_whenCalledBeforeStart_throwsIllegalStateException() {
+    public void testGetInstance_factoryNotStarted_throwsIllegalStateException() {
         factory.getInstance(ApplicationScopedBean.class);
     }
 

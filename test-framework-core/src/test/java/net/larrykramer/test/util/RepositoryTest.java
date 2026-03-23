@@ -44,7 +44,7 @@ public class RepositoryTest {
     public final TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Test
-    public void testGet_withExistingKey_returnsCorrectLocator() throws Throwable {
+    public void testGet_existingKey_returnsCorrectLocator() throws Throwable {
         //language=properties
         final String repository = "login.button=css=.btn-primary\n";
 
@@ -54,7 +54,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withExistingKeyAndArgs_returnsFormattedLocator() throws Throwable {
+    public void testGet_formatArgs_returnsFormattedLocator() throws Throwable {
         //language=properties
         final String repository = "user.link=xpath=//a[@data-user='%s']\n";
 
@@ -64,7 +64,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withUnicodeCharacters_returnsCorrectLocators() throws Throwable {
+    public void testGet_unicodeContent_returnsCorrectLocators() throws Throwable {
         // This string simulates a properties file containing ISO-8859-1 encoded characters.
         // We include a key with a French character and a value to be formatted with a German
         // character. We also include a locator with Japanese text.
@@ -88,7 +88,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withNullArgs_returnsNormalizedLocator() throws Throwable {
+    public void testGet_nullArgs_returnsNormalizedLocator() throws Throwable {
         //language=properties
         final String repository = "null.arguments=css=Item %s\n";
 
@@ -98,7 +98,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_givenRepositoryOverrideProperty_prefersExternalLocator() throws Throwable {
+    public void testGet_externalOverride_prefersExternalLocator() throws Throwable {
         File f = tempFolder.newFile("override-repository.properties");
         Files.writeString(f.toPath(), "key=css=.btn-secondary", StandardCharsets.ISO_8859_1);
 
@@ -115,7 +115,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_givenMalformedOverrideFile_usesFallbackLocator() throws Throwable {
+    public void testGet_malformedExternal_usesFallbackLocator() throws Throwable {
         // Create a properties files with a malformed Unicode escape sequence (e.g., containing an
         // invalid character or an incomplete sequence). This is guaranteed by the Properties.load()
         // specification to throw an exception.
@@ -135,7 +135,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withNonExistentKey_throwsMissingResourceException() {
+    public void testGet_missingKey_throwsMissingResourceException() {
         //language=properties
         final String repository = "login.button=css=.btn\n";
 
@@ -146,7 +146,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_whenMissingRepository_throwsMissingResourceException() {
+    public void testGet_missingRepo_throwsMissingResourceException() {
         Throwable thrown = getLocatorExceptionally(null, "any.key");
         assertNotNull(thrown);
         assertEquals(MissingResourceException.class, thrown.getClass());
@@ -155,7 +155,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withInvalidLocatorFormat_throwsIllegalArgumentException() {
+    public void testGet_invalidFormat_throwsIllegalArgumentException() {
         //language=properties
         final String repository = "broken=css-selector\n";
 
@@ -166,7 +166,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withBlankSelector_throwsIllegalArgumentException() {
+    public void testGet_blankSelector_throwsIllegalArgumentException() {
         //language=properties
         final String repository = "blank=css=\n";
 
@@ -177,7 +177,7 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withInvalidFormatArgs_throwsIllegalArgumentException() {
+    public void testGet_missingFormatArg_throwsIllegalArgumentException() {
 
         //language=properties
         final String repository = "bad.format=css=Item %s %d\n";
