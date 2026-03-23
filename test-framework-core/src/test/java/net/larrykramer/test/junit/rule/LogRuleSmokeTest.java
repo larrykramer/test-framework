@@ -47,16 +47,13 @@ public class LogRuleSmokeTest {
     @Test
     @LogRule.UsesLogger
     public void testApply_withLoggerAnnotation_capturesLogRecords() {
-        // Arrange
         Logger logger = Logger.getLogger(LOGGER_NAME);
 
-        // Act
         Level level = logger.getLevel();
 
         logger.log(Level.FINER, "should not be captured");
         logger.log(Level.FINE, "should be captured");
 
-        // Assert
         // The test suite and this test method write to the LogRuleSmokeTest logger so this code
         // path is non-deterministic. Consequently, we must assert that an expected message exists
         // and *not* the exact count.
@@ -69,16 +66,13 @@ public class LogRuleSmokeTest {
     @Test
     @LogRule.UsesLogger(level = "INFO")
     public void testApply_withOverriddenLevel_capturesAtNewLevel() {
-        // Arrange
         Logger logger = Logger.getLogger(LOGGER_NAME);
 
-        // Act
         Level level = logger.getLevel();
 
         logger.log(Level.FINE, "should not be captured");
         logger.log(Level.INFO, "should be captured");
 
-        // Assert
         // The test suite and this test method write to the LogRuleSmokeTest logger so this code
         // path is non-deterministic. Consequently, we must assert an inexact count (>= 1).
         assertEquals(Level.INFO, level);
@@ -93,18 +87,15 @@ public class LogRuleSmokeTest {
     @Test
     @LogRule.UsesLogger(name = CUSTOM_LOGGER_NAME, level = "WARNING")
     public void testApply_withOverriddenNameAndLevel_capturesForDifferentLoggerAtNewLevel() {
-        // Arrange
         Logger defaultLogger = Logger.getLogger(LOGGER_NAME);
         Logger customLogger = Logger.getLogger(CUSTOM_LOGGER_NAME);
 
-        // Act
         Level customLoggerLevel = customLogger.getLevel();
 
         defaultLogger.log(Level.WARNING, "not captured from default logger");
         customLogger.log(Level.INFO, "not captured, below threshold");
         customLogger.log(Level.WARNING, "captured from other logger");
 
-        // Assert
         // The test suite doesn't write to the custom logger so this code path is deterministic,
         // and we can assert an exact count.
         assertEquals(Level.WARNING, customLoggerLevel);
@@ -118,7 +109,6 @@ public class LogRuleSmokeTest {
 
     @Test
     public void testApply_withoutAnnotation_returnsBaseStatement() {
-        // Arrange
         final Statement base = new Statement() {
             @Override
             public void evaluate() {
@@ -127,9 +117,7 @@ public class LogRuleSmokeTest {
         };
         final String name = "testApply_withoutAnnotation_returnsBaseStatement";
         Description description = Description.createTestDescription(LogRuleSmokeTest.class, name);
-        // Act
         Statement applied = logRule.apply(base, description);
-        // Assert
         assertSame(base, applied);
     }
 }

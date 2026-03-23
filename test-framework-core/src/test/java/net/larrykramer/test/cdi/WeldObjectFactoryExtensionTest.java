@@ -56,9 +56,9 @@ public class WeldObjectFactoryExtensionTest {
 
         @Before
         public void setUp() {
-            // The factory is created with a dummy supplier as the test will manage the Weld instance
-            // directly. The supplier should not be called in these tests. If it is called, something
-            // is wrong with the test setup.
+            // The factory is created with a dummy supplier as the test will manage the Weld
+            // instance directly. The supplier should not be called in these tests. If it is called,
+            // something is wrong with the test setup.
             factory = new WeldObjectFactory(() -> {
                 fail("The default Weld supplier should not be invoked in extension tests.");
                 return null;
@@ -116,11 +116,10 @@ public class WeldObjectFactoryExtensionTest {
 
         @Test
         public void testVetoGlueBeans_whenBeanIsAdded_registersWithCorrectScope() {
-            // Arrange
             factory.addClass(beanClass);
-            // Act
+
             initializeWeldContainer(beanClass);
-            // Assert
+
             Set<Bean<?>> beans = manager.getBeans(beanClass);
             assertNotNull(beans);
             assertEquals(1, beans.size());
@@ -152,14 +151,12 @@ public class WeldObjectFactoryExtensionTest {
     public static class ExtensionSideEffectsTest extends ExtensionTestBase {
         @Test
         public void testVetoGlueBeans_withScenarioScopedBeanNotAdded_keepsManagedBean() {
-            // Arrange
-            // ScenarioScopedBean is NOT added via factory.addClass(), so it's not "glue". The veto
-            // observer should ignore it, and Weld should discover it normally.
+            // ScenarioScopedBean is NOT added via factory.addClass(), so it's
+            // not "glue". The veto observer should ignore it, and Weld should
+            // discover it normally.
 
-            // Act
             initializeWeldContainer(ScenarioScopedBean.class);
 
-            // Assert
             Set<Bean<?>> beans = manager.getBeans(ScenarioScopedBean.class);
             assertEquals(1, beans.size());
 
@@ -170,21 +167,20 @@ public class WeldObjectFactoryExtensionTest {
 
         @Test
         public void testVetoGlueBeans_withVetoedBean_isNotRegistered() {
-            // Arrange
             factory.addClass(VetoedBean.class);
-            // Act
+
             initializeWeldContainer(VetoedBean.class);
-            // Assert
+
             Set<Bean<?>> beans = manager.getBeans(VetoedBean.class);
             assertTrue(beans.isEmpty());
         }
 
         @Test
         public void testBeforeBeanDiscovery_whenContainerStarts_registersScenarioScope() {
-            // Act
-            // The factory is added as an extension, which will trigger the beanDiscovery event.
+            // The factory is added as an extension, which will trigger the
+            // beanDiscovery event.
             initializeWeldContainer();
-            // Assert
+
             assertTrue(manager.isScope(ScenarioScoped.class));
             assertTrue(manager.isNormalScope(ScenarioScoped.class));
             assertFalse(manager.isPassivatingScope(ScenarioScoped.class));
@@ -192,17 +188,18 @@ public class WeldObjectFactoryExtensionTest {
 
         @Test
         public void testAfterBeanDiscovery_whenContainerStarts_registersScenarioScopeContext() {
-            // Act
-            // The factory is added as an extension, which will trigger the beanDiscovery event.
+            // The factory is added as an extension, which will trigger the
+            // beanDiscovery event.
             initializeWeldContainer();
 
-            // Assert
             // We are testing REGISTRATION, not ACTIVATION.
-            // The standard BeanManager.getContext() method cannot be used here, as it only returns
-            // ACTIVE contexts and would throw an exception. Instead, we rely on the
-            // BeanManager.getContexts() method. This method returns all registered , regardless of
-            // their activation state. This allows us to correctly verify that our extension's
-            // afterBeanDiscovery observer has successfully registered the ContextImpl.
+            // The standard BeanManager.getContext() method cannot be used here,
+            // as it only returns ACTIVE contexts and would throw an exception.
+            // Instead, we rely on the BeanManager.getContexts() method. This
+            // method returns all registered contexts, regardless of their
+            // activation state. This allows us to correctly verify that our
+            // extension's afterBeanDiscovery observer has successfully
+            // registered the ContextImpl.
             Collection<Context> contexts = manager.getContexts(ScenarioScoped.class);
             assertNotNull(contexts);
             assertEquals(1, contexts.size());

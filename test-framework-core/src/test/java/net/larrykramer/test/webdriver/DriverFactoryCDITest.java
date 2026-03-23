@@ -155,14 +155,11 @@ public class DriverFactoryCDITest {
 
         @Test
         public void testFactoryResolution_givenWeldContainer_shouldResolveProxyableFactory() {
-            // Arrange
             initializeWeldContainer();
 
-            // Act
             // select() returns a handle and doesn't throw if the bean is 'final' or missing.
             var beanInstance = container.select(factoryClass);
 
-            // Assert
             // If the bean was 'final', Weld will throw UnproxyableResolutionException when get()
             // is called.
             assertTrue(factoryClass.isAnnotationPresent(ApplicationScoped.class));
@@ -170,24 +167,22 @@ public class DriverFactoryCDITest {
         }
     }
 
-    /**
+    /*
      * Verifies that the MicroProfile Config prefix override mechanism functions
      * correctly within the CDI container.
-     * <p>
-     * Specifically, it ensures that {@link ChromeDriverFactory} receives
-     * configuration from {@code driver.chrome.*} (via the injection point
-     * override) rather than the default {@code driver.chromium.*} defined on
-     * the {@link ChromiumConfig} class.
-     * <p>
-     * This test is located here rather than in {@code ChromeDriverFactoryTest}
-     * because the latter is a unit test that manually injects configuration
-     * objects, bypassing the CDI container's configuration resolution logic.
+     *
+     * Specifically, it ensures that ChromeDriverFactory receives configuration
+     * from driver.chrome.* (via the injection point override) rather than the
+     * default driver.chromium.* defined on the ChromiumConfig class.
+     *
+     * This test is located here rather than in ChromeDriverFactoryTest because
+     * the latter is a unit test that manually injects configuration objects,
+     * bypassing the CDI container's configuration resolution logic.
      */
     public static class ChromiumConfigMappingTest extends DriverFactoryCDITestBase {
         @Test
         public void testGetCapabilities_givenChromeSpecificConfig_shouldOverrideChromiumDefaults() {
-            // Arrange
-            final String expectedExecutable = "/usr/bin/google-chrome-stable";
+            String expectedExecutable = "/usr/bin/google-chrome-stable";
             try (var env = ScopedSystemProperties.open()) {
                 env.setProperty("driver.type", "CHROME");
 
@@ -199,17 +194,13 @@ public class DriverFactoryCDITest {
                 initializeWeldContainer();
 
                 ChromeDriverFactory factory = container.select(ChromeDriverFactory.class).get();
-
-                // Act
                 ChromeOptions options = factory.getCapabilities();
-
-                // Assert
-                assertEquals(expectedExecutable, extractChromeOptions(options).get("binary"));
 
                 List<String> args = extractArguments(options);
                 assertEquals(2, args.size());
                 assertTrue(args.contains("--headless=new"));
                 assertTrue(args.contains("--disable-gpu"));
+                assertEquals(expectedExecutable, extractChromeOptions(options).get("binary"));
             }
         }
 

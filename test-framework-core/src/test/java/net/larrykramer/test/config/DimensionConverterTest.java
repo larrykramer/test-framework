@@ -71,9 +71,8 @@ public class DimensionConverterTest {
     public static class InvalidInputTest {
         @Test
         public void testConvert_givenInvalidFormat_throwsIllegalArgumentException() {
-            // Arrange
             DimensionConverter converter = new DimensionConverter();
-            // Act & Assert
+
             var expected = IllegalArgumentException.class;
             var e = assertThrows(expected, () -> converter.convert("1920*1080"));
             assertTrue(e.getMessage().contains("<width>x<height>"));

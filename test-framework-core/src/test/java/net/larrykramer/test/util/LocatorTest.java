@@ -29,27 +29,21 @@ import static org.junit.Assert.assertEquals;
 public class LocatorTest {
     @Test
     public void testConstructor_typeWithWhitespace_normalizesTypeToLowercase() {
-        // Arrange & Act
         Locator locator = new Locator("  XPATH  ", "button");
-        // Assert
         assertEquals("xpath", locator.type());
         assertEquals("button", locator.selector());
     }
 
     @Test
     public void testConstructor_selectorWithWhitespace_trimsSelector() {
-        // Arrange & Act
         Locator locator = new Locator("css", "   div > span   ");
-        // Assert
         assertEquals("css", locator.type());
         assertEquals("div > span", locator.selector());
     }
 
     @Test
     public void testConstructor_selectorWithSingleQuotes_preservesInnerWhitespace() {
-        // Arrange & Act
         Locator locator = new Locator("css", " '  div span  ' ");
-        // Assert
         assertEquals("css", locator.type());
         assertEquals("  div span  ", locator.selector());
     }

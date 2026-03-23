@@ -46,9 +46,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenValueWithScheme_returnsParsedURI() {
-        // Act
         URI result = converter.convert("  https://example.org/resource  ");
-        // Assert
         assertEquals("https://example.org/resource", result.toString());
         assertEquals("https", result.getScheme());
         assertEquals("example.org", result.getHost());
@@ -56,9 +54,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenHostAndPortWithoutScheme_returnsHttpURI() {
-        // Act
         URI result = converter.convert("proxy.example.com:3128");
-        // Assert
         assertEquals("http", result.getScheme());
         assertEquals("proxy.example.com", result.getHost());
         assertEquals(3128, result.getPort());
@@ -67,9 +63,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenHostWithoutScheme_returnsHttpURIWithoutPort() {
-        // Act
-        URI result = converter.convert("proxy");
-        // Assert
+        final URI result = converter.convert("proxy");
         assertEquals("http", result.getScheme());
         assertEquals("proxy", result.getHost());
         assertEquals(-1, result.getPort());
@@ -77,9 +71,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenHostWithLeadingZeroPort_returnsHttpURIWithPort() {
-        // Act
         URI result = converter.convert("example:0123");
-        // Assert
         assertEquals("http://example:0123", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("example", result.getHost());
@@ -88,9 +80,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenHostWithVeryLargePort_returnsHttpURIWithLargePort() {
-        // Act
         URI result = converter.convert("example.com:999999");
-        // Assert
         assertEquals("http://example.com:999999", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("example.com", result.getHost());
@@ -99,9 +89,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenHttpLikeAuthority_returnsHttpURI() {
-        // Act
         URI result = converter.convert("http:8080");
-        // Assert
         assertEquals("http://http:8080", result.toString());
         assertEquals("http", result.getHost());
         assertEquals(8080, result.getPort());
@@ -120,9 +108,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenIPv6HostAndPortWithoutScheme_returnsHttpURI() {
-        // Act
         URI result = converter.convert("[fe80::1]:8080");
-        // Assert
         assertEquals("http://[fe80::1]:8080", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("[fe80::1]", result.getHost());
@@ -131,9 +117,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenBracketedIPv6HostWithoutSchemePort_returnsHttpURIWithoutPort() {
-        // Act
         URI result = converter.convert("[cafe::1]");
-        // Assert
         assertEquals("http://[cafe::1]", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("[cafe::1]", result.getHost());
@@ -142,9 +126,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenBracketedIPv6ZoneIdWithoutSchemePort_returnsHttpURIWithoutPort() {
-        // Act
         URI result = converter.convert("[fe80::1%25eth0]");
-        // Assert
         assertEquals("http://[fe80::1%25eth0]", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("[fe80::1%25eth0]", result.getHost());
@@ -153,9 +135,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenUnbracketedIPv6Address_returnsHttpURIWithoutPort() {
-        // Act
         URI result = converter.convert("2001:db8:85a3::8a2e:370:7334");
-        // Assert
         assertEquals("http://[2001:db8:85a3::8a2e:370:7334]", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("[2001:db8:85a3::8a2e:370:7334]", result.getHost());
@@ -164,9 +144,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenUnbracketedIPv6ZoneId_returnsHttpURIWithoutPort() {
-        // Act
         URI result = converter.convert("2001:db8::1%eth0");
-        // Assert
         assertEquals("http://[2001:db8::1%25eth0]", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("[2001:db8::1%25eth0]", result.getHost());
@@ -175,9 +153,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenUnbracketedIPv6WithEncodedZoneId_returnsHttpURIWithoutPort() {
-        // Act
         URI result = converter.convert("2001:db8::1%25eth0");
-        // Assert
         assertEquals("http://[2001:db8::1%25eth0]", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("[2001:db8::1%25eth0]", result.getHost());
@@ -186,9 +162,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenSchemeLikeValueWithDoubleColon_returnsOpaqueURI() {
-        // Act
         URI result = converter.convert("cafe::1");
-        // Assert
         assertEquals(URI.create("cafe::1"), result);
         assertEquals("cafe", result.getScheme());
         assertEquals(":1", result.getSchemeSpecificPart());
@@ -198,9 +172,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenSchemeLikeValueEndingWithColon_returnsOpaqueURI() {
-        // Act
         URI result = converter.convert("face::");
-        // Assert
         assertEquals(URI.create("face::"), result);
         assertEquals("face", result.getScheme());
         assertEquals(":", result.getSchemeSpecificPart());
@@ -210,9 +182,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenSchemeLikeValue_returnsOpaqueURI() {
-        // Act
         URI result = converter.convert("dead:beef");
-        // Assert
         assertEquals(URI.create("dead:beef"), result);
         assertEquals("dead", result.getScheme());
         assertEquals("beef", result.getSchemeSpecificPart());
@@ -222,9 +192,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenUnbracketedIPv4MappedIPv6_returnsHttpURI() {
-        // Act
         URI result = converter.convert("::ffff:192.168.1.1");
-        // Assert
         assertEquals("http://[::ffff:192.168.1.1]", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("[::ffff:192.168.1.1]", result.getHost());
@@ -233,9 +201,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenWssScheme_returnsParsedURI() {
-        // Act
-        URI result = converter.convert("wss://securechat.example.com");
-        // Assert
+        final URI result = converter.convert("wss://securechat.example.com");
         assertEquals("wss://securechat.example.com", result.toString());
         assertEquals("wss", result.getScheme());
         assertEquals("securechat.example.com", result.getHost());
@@ -263,9 +229,7 @@ public class URIConverterTest {
 
     @Test
     public void testConvert_givenJarScheme_returnsExactURI() {
-        // Act
         URI result = converter.convert("jar:file:/opt/lib/test.jar!/com/foo/Bar.class");
-        // Assert
         URI expected = URI.create("jar:file:/opt/lib/test.jar!/com/foo/Bar.class");
         assertEquals(expected, result);
     }

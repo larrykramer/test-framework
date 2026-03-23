@@ -42,7 +42,6 @@ public class WeldObjectFactoryLifecycleTest {
 
     @Before
     public void setUp() {
-        // Reset the counters.
         ApplicationScopedBean.reset();
         ScenarioScopedBean.reset();
         UnmanagedBean.reset();
@@ -62,10 +61,8 @@ public class WeldObjectFactoryLifecycleTest {
 
     @Test(expected = IllegalStateException.class)
     public void testConstructor_whenAnotherInstanceIsActive_throwsIllegalStateException() {
-        // Arrange
         // The @Before method has already created an active 'factory' instance.
         // The static SELF field now holds a reference to it.
-        // Act & Assert
         new WeldObjectFactory();
     }
 
@@ -76,12 +73,11 @@ public class WeldObjectFactoryLifecycleTest {
 
     @Test
     public void testShutdownWeldContainer_whenContainerIsRunning_stopsAndPreventsReuse() {
-        // Arrange
         factory.start();
-        // Act
+
         factory.stop();
         factory.shutdownWeldContainer();
-        // Assert
+
         var expected = IllegalStateException.class;
         var e = assertThrows(expected, () -> factory.getInstance(ApplicationScopedBean.class));
         assertTrue(e.getMessage().contains("not started"));
@@ -89,16 +85,13 @@ public class WeldObjectFactoryLifecycleTest {
 
     @Test
     public void testAssociate_withActiveContext_firesInitializedEventOnce() {
-        // Arrange
-        final Scenario mockScenario = mock(Scenario.class);
+        Scenario mockScenario = mock(Scenario.class);
         factory.start();
         resolveInstance(ScenarioEventTracker.class);
 
-        // Act
         factory.associate(mockScenario);
         factory.associate(mockScenario);
 
-        // Assert
         assertEquals(1, ScenarioEventTracker.getInitializedCount());
         assertEquals(0, ScenarioEventTracker.getDestroyedCount());
     }
@@ -110,11 +103,10 @@ public class WeldObjectFactoryLifecycleTest {
 
     @Test
     public void testStart_whenContainerNotStarted_initializesContainerAndActivatesContext() {
-        // Arrange
         factory.addClass(ScenarioScopedBean.class);
-        // Act
+
         factory.start();
-        // Assert
+
         ScenarioScopedBean instance = resolveInstance(ScenarioScopedBean.class);
         assertNotNull(instance);
         assertEquals(1, ScenarioScopedBean.getCreatedCount());
@@ -123,7 +115,6 @@ public class WeldObjectFactoryLifecycleTest {
 
     @Test(expected = NullPointerException.class)
     public void testStart_whenWeldInitializationFails_rethrowsException() {
-        // Arrange
         // Create a factory with a supplier that is guaranteed to fail by returning null. This will
         // cause Objects.requireNonNull() to throw a NullPointerException. We assign it to the
         // class-level factory so the @After tearDown method can clean it up.
@@ -131,55 +122,47 @@ public class WeldObjectFactoryLifecycleTest {
             factory.shutdownWeldContainer();
         }
         this.factory = new WeldObjectFactory(() -> null);
-        // Act & Assert
         this.factory.start();
     }
 
     @Test
     public void testStop_withActiveScenario_firesDestroyedEvent() {
-        // Arrange
         factory.start();
         resolveInstance(ScenarioEventTracker.class);
         factory.associate(mock(Scenario.class));
-        // Act
+
         factory.stop();
-        // Assert
+
         assertEquals(1, ScenarioEventTracker.getInitializedCount());
         assertEquals(1, ScenarioEventTracker.getDestroyedCount());
     }
 
     @Test
     public void testStop_whenUnmanagedPreDestroyThrows_continuesCleanupAndDoesNotThrow() {
-        // Arrange
         factory.start();
         factory.getInstance(UnmanagedBean.class);
         factory.getInstance(FaultyUnmanagedBean.class);
 
-        // Act
-        // The stop() method should catch the exception from FaultyUnmanagedBean and continue.
+        // The stop() method should catch the exception from FaultyUnmanagedBean and
+        // continue.
         factory.stop();
 
-        // Assert
         assertEquals(1, UnmanagedBean.getDestroyedCount());
         assertTrue(FaultyUnmanagedBean.wasPreDestroyAttempted());
     }
 
     @Test(expected = ContextNotActiveException.class)
     public void testStop_whenScenarioScopeDeactivated_blocksScenarioScopedLookup() {
-        // Arrange
         factory.addClass(ScenarioScopedBean.class);
         factory.start();
         factory.associate(mock(Scenario.class));
 
         resolveInstance(ScenarioScopedBean.class);
 
-        // Act
         // Deactivate the context.
         factory.stop();
 
-        // Assert
         // Attempting to get AND USE the instance should fail.
-        //noinspection ResultOfMethodCallIgnored
         factory.getInstance(ScenarioScopedBean.class).toString();
     }
 
@@ -239,12 +222,11 @@ public class WeldObjectFactoryLifecycleTest {
 
     @Test
     public void testGetInstance_withApplicationScopedBean_returnsSingleInstance() {
-        // Arrange
         factory.start();
-        // Act
+
         ApplicationScopedBean first = resolveInstance(ApplicationScopedBean.class);
         ApplicationScopedBean second = resolveInstance(ApplicationScopedBean.class);
-        // Assert
+
         assertNotNull(first);
         assertSame(first, second);
         assertEquals(1, ApplicationScopedBean.getCreatedCount());

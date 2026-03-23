@@ -37,13 +37,11 @@ import static org.junit.Assert.assertNull;
 public class IsolatedClassLoaderSmokeTest {
     @Test
     public void testDoInvoke_withResourceOverride_classSeesOverriddenResource() throws Throwable {
-        // Arrange
         final String name = "smoke-test-resource.txt";
         final String content = "Hello from the isolated world!";
 
         Map<String, String> resources = Map.of(name, content);
 
-        // Act
         String result = IsolatedClassLoader.doInvoke(ResourceReader.class, resources, clazz -> {
             // Reflectively invoke ResourceReader.readResource and return its result. A
             // String from the bootstrap loader can cross the class-loader boundaries without
@@ -51,7 +49,6 @@ public class IsolatedClassLoaderSmokeTest {
             return (String) clazz.getMethod("readResource", String.class).invoke(null, name);
         });
 
-        // Assert
         assertEquals(content, result);
         assertNull(ResourceReader.readResource(name));
     }

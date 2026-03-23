@@ -67,10 +67,8 @@ public class WebDriverServiceTest {
         stubFactory(mockFactory, config);
         WebDriverService service = createService(config, null, mockFactory);
 
-        // Act
         WebDriverReference driverRef = service.createWebDriver();
 
-        // Assert
         assertNotNull(driverRef);
         WebDriver driver = driverRef.get();
 
@@ -81,29 +79,27 @@ public class WebDriverServiceTest {
 
     @Test
     public void testCreateWebDriver_givenNullDriverType_throwsIllegalArgumentException() {
-        // Arrange
         WebDriverService service = createService(createConfig(null), null);
-        // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
         assertTrue(e.getMessage().contains("driver.type"));
     }
 
     @Test
     public void testCreateWebDriver_givenFactoryReturnsNull_throwsIllegalStateException() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.CHROME);
         when(mockFactory.getDriverType()).thenReturn(config.type);
         when(mockFactory.create()).thenReturn(null);
+
         WebDriverService service = createService(config, null, mockFactory);
-        // Act & Assert
+
         assertThrows(IllegalStateException.class, service::createWebDriver);
+
         verify(mockFactory, never()).configure(any());
     }
 
     @Test
     @LogRule.UsesLogger
     public void testCreateWebDriver_givenFactoryReturnsNullType_logsWarningAndResolutionFails() {
-        // Arrange
         //@formatter:off
         class NullTypeFactory extends DriverFactory<MutableCapabilities> {
             @Override public DriverType getDriverType() { return null; }
@@ -119,7 +115,6 @@ public class WebDriverServiceTest {
 
         WebDriverService service = new WebDriverService(config, grid, mockInstance);
 
-        // Act & Assert
         // This should throw as the factory was never added to map of available factories.
         assertThrows(IllegalArgumentException.class, service::createWebDriver);
 
@@ -138,7 +133,6 @@ public class WebDriverServiceTest {
 
     @Test
     public void testCreateWebDriver_givenConfiguredSPIIdentifier_returnsConfiguredWebDriver() {
-        // Arrange
         @SuppressWarnings("unchecked")
         DriverFactory<MutableCapabilities> mockFirstSPIFactory = mock(DriverFactory.class);
         @SuppressWarnings("unchecked")
@@ -152,11 +146,9 @@ public class WebDriverServiceTest {
         WebDriverService service;
         service = createService(config, null, mockFirstSPIFactory, mockSecondSPIFactory);
 
-        // Act
         WebDriverReference driverRef = service.createWebDriver();
-
-        // Assert
         assertNotNull(driverRef);
+
         WebDriver driver = driverRef.get();
 
         assertSame(mockDriver, driver);
@@ -212,7 +204,6 @@ public class WebDriverServiceTest {
 
     @Test
     public void testCreateWebDriver_givenSPIIsBlank_throwsIllegalArgumentException() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.SPI);
         config.spi = Optional.of("    ");
 
@@ -220,14 +211,12 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(config, null, mockFactory);
 
-        // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
         assertTrue(e.getMessage().contains("driver.spi"));
     }
 
     @Test
     public void testCreateWebDriver_givenSPIFactoryClassNotFound_throwsIllegalArgumentException() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.SPI);
         config.spi = Optional.of("  MissingFactory  ");
 
@@ -235,14 +224,12 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(config, null, mockFactory);
 
-        // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
         assertTrue(e.getMessage().contains("MissingFactory"));
     }
 
     @Test
     public void testCreateWebDriver_givenMultipleFactoriesForSameType_usesLastRegisteredFactory() {
-        // Arrange
         @SuppressWarnings("unchecked")
         DriverFactory<MutableCapabilities> mockFirstFactory = mock(DriverFactory.class);
         @SuppressWarnings("unchecked")
@@ -255,11 +242,9 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(config, null, mockFirstFactory, mockSecondFactory);
 
-        // Act
         WebDriverReference driverRef = service.createWebDriver();
-
-        // Assert
         assertNotNull(driverRef);
+
         WebDriver driver = driverRef.get();
 
         assertSame(mockDriver, driver);
@@ -271,7 +256,6 @@ public class WebDriverServiceTest {
 
     @Test
     public void testCreateWebDriver_givenGridUnsupported_throwsIllegalStateException() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.CHROME);
         GridConfig grid = createGridConfig();
         grid.uri = Optional.of(URI.create("https://localhost:4444/wd/hub"));
@@ -280,14 +264,12 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(config, grid, mockFactory);
 
-        // Act & Assert
         var e = assertThrows(IllegalStateException.class, service::createWebDriver);
         assertTrue(e.getMessage().contains("not supported"));
     }
 
     @Test
     public void testCreateWebDriver_withQueryFragmentInGridURI_throwsIllegalArgumentException() {
-        // Arrange
         // Set up a Grid URI containing a query and fragment to trigger validation failure.
         // Query/fragment are rejected because they are known to break RemoteWebDriver URL
         // construction.
@@ -302,7 +284,6 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(config, grid, mockFactory);
 
-        // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, service::createWebDriver);
         assertTrue(e.getMessage().contains("grid.url"));
     }
@@ -334,29 +315,29 @@ public class WebDriverServiceTest {
 
             // Assert
             assertNotNull(driverRef);
+
             WebDriver driver = driverRef.get();
 
             assertSame(mocked.constructed().getFirst(), driver);
             verify(mockFactory, never()).create();
             verify(mockFactory).configure(driver);
+
+            assertEquals(2, capturedArguments.size());
+
+            MutableCapabilities capturedCaps = (MutableCapabilities) capturedArguments.get(1);
+            assertNotEquals(caps, capturedCaps);
+
+            assertEquals("firefox", capturedCaps.getCapability(CapabilityType.BROWSER_NAME));
+            assertEquals("140.5.0", capturedCaps.getCapability(CapabilityType.BROWSER_VERSION));
+            assertEquals(Platform.LINUX, capturedCaps.getCapability(CapabilityType.PLATFORM_NAME));
+            assertEquals("suite", capturedCaps.getCapability("applicationName"));
+            assertEquals("suite", capturedCaps.getCapability("se:applicationName"));
+            assertEquals("value", capturedCaps.getCapability("custom"));
         }
-
-        assertEquals(2, capturedArguments.size());
-
-        MutableCapabilities capturedCaps = (MutableCapabilities) capturedArguments.get(1);
-        assertNotEquals(caps, capturedCaps);
-
-        assertEquals("firefox", capturedCaps.getCapability(CapabilityType.BROWSER_NAME));
-        assertEquals("140.5.0", capturedCaps.getCapability(CapabilityType.BROWSER_VERSION));
-        assertEquals(Platform.LINUX, capturedCaps.getCapability(CapabilityType.PLATFORM_NAME));
-        assertEquals("suite", capturedCaps.getCapability("applicationName"));
-        assertEquals("suite", capturedCaps.getCapability("se:applicationName"));
-        assertEquals("value", capturedCaps.getCapability("custom"));
     }
 
     @Test
     public void testCreateWebDriver_givenGridWithSPIType_doesNotSetBrowserName() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.SPI);
         config.spi = Optional.of(mockFactory.getClass().getName());
         GridConfig grid = createGridConfig();
@@ -371,20 +352,17 @@ public class WebDriverServiceTest {
                 (mock, context) -> capturedArguments.addAll(context.arguments()))) {
             WebDriverService service = createService(config, grid, mockFactory);
 
-            // Act
             service.createWebDriver();
+
+            assertEquals(2, capturedArguments.size());
+
+            MutableCapabilities capabilities = (MutableCapabilities) capturedArguments.get(1);
+            assertNull(capabilities.getCapability(CapabilityType.BROWSER_NAME));
         }
-
-        // Assert
-        assertEquals(2, capturedArguments.size());
-
-        MutableCapabilities capabilities = (MutableCapabilities) capturedArguments.get(1);
-        assertNull(capabilities.getCapability(CapabilityType.BROWSER_NAME));
     }
 
     @Test
     public void testCreateWebDriver_whenOptionsHasBrowserName_preservesExistingBrowserName() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.EDGE);
         GridConfig grid = createGridConfig();
         grid.uri = Optional.of(URI.create("https://localhost:4444"));
@@ -401,20 +379,18 @@ public class WebDriverServiceTest {
                 (mock, context) -> capturedArguments.addAll(context.arguments()))) {
             WebDriverService service = createService(config, grid, mockFactory);
 
-            // Act
             service.createWebDriver();
+
+            assertEquals(2, capturedArguments.size());
+
+            MutableCapabilities capturedCaps = (MutableCapabilities) capturedArguments.get(1);
+            assertEquals("mock-browser", capturedCaps.getCapability(CapabilityType.BROWSER_NAME));
         }
 
-        // Assert
-        assertEquals(2, capturedArguments.size());
-
-        MutableCapabilities capturedCaps = (MutableCapabilities) capturedArguments.get(1);
-        assertEquals("mock-browser", capturedCaps.getCapability(CapabilityType.BROWSER_NAME));
     }
 
     @Test
     public void testCreateWebDriver_whenConfigureWebDriverThrows_quitsDriverAndPropagates() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.CHROME);
         RuntimeException configureException = new RuntimeException("configure");
         stubFactory(mockFactory, config);
@@ -422,7 +398,6 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(config, null, mockFactory);
 
-        // Act & Assert
         var e = assertThrows(RuntimeException.class, service::createWebDriver);
         assertSame(configureException, e);
         verify(mockDriver).quit();
@@ -430,7 +405,6 @@ public class WebDriverServiceTest {
 
     @Test
     public void testCreateWebDriver_whenConfigureWebDriverAndQuitThrow_quitExceptionIsSuppressed() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.CHROME);
         RuntimeException quitException = new RuntimeException("quite");
         stubFactory(mockFactory, config);
@@ -439,7 +413,6 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(config, null, mockFactory);
 
-        // Act & Assert
         var e = assertThrows(RuntimeException.class, service::createWebDriver);
         assertEquals(1, e.getSuppressed().length);
         assertSame(quitException, e.getSuppressed()[0]);
@@ -453,19 +426,15 @@ public class WebDriverServiceTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateWebDriver_givenSPIWithoutFactoryClass_throwsIllegalArgumentException() {
-        // Arrange
         DriverConfig config = createConfig(DriverType.SPI);
         when(mockFactory.getDriverType()).thenReturn(config.type);
 
         WebDriverService service = createService(config, null, mockFactory);
-
-        // Act
         service.createWebDriver();
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateWebDriver_withOpaqueGridURI_throwsIllegalArgumentException() {
-        // Arrange
         // Set up an opaque Grid URI to trigger validation failure.
         // Opaque URIs are rejected because they break RemoteWebDriver URL construction.
         DriverConfig config = createConfig(DriverType.CHROME);
@@ -476,26 +445,20 @@ public class WebDriverServiceTest {
         when(mockFactory.getCapabilities()).thenReturn(new MutableCapabilities());
 
         WebDriverService service = createService(config, grid, mockFactory);
-
-        // Act
         service.createWebDriver();
     }
 
     @Test
     public void testDisposeWebDriver_withDriverRef_callsQuit() {
-        // Arrange
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
         WebDriverReference spiedDriverRef = spy(new WebDriverReference(mockDriver));
-        // Act
         service.disposeWebDriver(spiedDriverRef);
-        // Assert
         verify(mockDriver).quit();
         verify(spiedDriverRef).clear();
     }
 
     @Test
     public void testDisposeWebDriver_withWrappedDriver_callsWrappedDriverQuit() {
-        // Arrange
         var settings = withSettings().extraInterfaces(WrapsDriver.class);
         WebDriver mockWrappedDriver = mock(WebDriver.class, settings);
         when(((WrapsDriver) mockWrappedDriver).getWrappedDriver()).thenReturn(mockDriver);
@@ -504,10 +467,8 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
 
-        // Act
         service.disposeWebDriver(driverRef);
 
-        // Assert
         verify(mockWrappedDriver).quit();
         verify(mockDriver, never()).quit();
     }
@@ -520,18 +481,15 @@ public class WebDriverServiceTest {
 
     @Test
     public void testDisposeWebDriver_withEmptyWebDriverReference_doesNothing() {
-        // Arrange
-        // We simulate the specific exception thrown by an empty reference.
+        // We simulate the specific exception thrown by an empty reference for this test.
         WebDriverReference mockDriverRef = mock(WebDriverReference.class);
         var ise = new IllegalStateException("WebDriverReference not initialized");
         doThrow(ise).when(mockDriverRef).get();
 
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
 
-        // Act
         service.disposeWebDriver(mockDriverRef);
 
-        // Assert
         verify(mockDriver, never()).quit();
         verify(mockDriverRef).clear();
     }
@@ -607,19 +565,17 @@ public class WebDriverServiceTest {
 
     @Test
     public void testDisposeWebDriver_whenDriverQuitThrows_doesNotPropagateException() {
-        // Arrange
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
         WebDriverReference driverRef = new WebDriverReference(mockDriver);
         doThrow(new RuntimeException("quit")).when(mockDriver).quit();
-        // Act
+
         service.disposeWebDriver(driverRef);
-        // Assert
+
         verify(mockDriver).quit();
     }
 
     @Test
     public void testDisposeWebDriver_whenReferenceThrows_doesNotPropagateException() {
-        // Arrange
         // Simulate the reference throwing on ALL method calls. This could happen if the reference
         // is broken in an unrecoverable way (e.g., the CDI proxy is failing).
         WebDriverReference mockDriverRef = mock(WebDriverReference.class);
@@ -629,10 +585,8 @@ public class WebDriverServiceTest {
 
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);
 
-        // Act
         service.disposeWebDriver(mockDriverRef);
 
-        // Assert
         verify(mockDriverRef).get();
         verify(mockDriver, never()).quit();
         verify(mockDriverRef).clear();
@@ -719,16 +673,18 @@ public class WebDriverServiceTest {
     /*
      * Why this mocked Instance exists:
      *
-     * In normal runtime, WebDriverService gets its DriverFactory beans from CDI via an injected
-     * jakarta.enterprise.inject.Instance. In tests, we would typically just Mockito.mock Instance,
-     * but when IntelliJ (and/or JaCoCo) runs the suite in coverage mode it instruments the
-     * Instance interface (e.g., adding synthetic methods). Mockito’s inline mock-maker then
-     * attempts to redefine that already-instrumented type and can fail with a byte-code
-     * redefinition clash.
+     * In normal runtime, WebDriverService gets its DriverFactory beans from CDI
+     * via an injected jakarta.enterprise.inject.Instance. In tests, we would
+     * typically just Mockito.mock Instance, but when IntelliJ (and/or JaCoCo)
+     * runs the suite in coverage mode it instruments the Instance interface
+     * (e.g., adding synthetic methods). Mockito’s inline mock-maker then
+     * attempts to redefine that already-instrumented type and can fail with a
+     * byte-code redefinition clash.
      *
-     * MockInstance is a tiny hand-rolled stand-in that provides only the Instance behavior this
-     * test suite needs (handles()/iteration and unsatisfied/ambiguous semantics), avoiding
-     * mocking the instrumented CDI API type and keeping coverage runs stable/green.
+     * MockInstance is a tiny hand-rolled stand-in that provides only the Instance
+     * behavior this test suite needs (handles()/iteration and unsatisfied/ambiguous
+     * semantics), avoiding mocking the instrumented CDI API type and keeping
+     * coverage runs stable/green.
      */
     private static class MockInstance implements Instance<DriverFactory<?>> {
         private final List<Handle<DriverFactory<?>>> handles;

@@ -52,7 +52,7 @@ public class DefaultTypeConfigSourceTest {
                     // Linux
                     { "Linux", "FIREFOX" },
                     // Unsupported
-                    // NOTE: AIX is supported by the JDK, but it is not officially supported by
+                    // Note: AIX is supported by the JDK, but it is not officially supported by
                     // this project. We just default to the Firefox Driver similar to other
                     // unsupported operating systems.
                     { "AIX", "FIREFOX" },
@@ -72,8 +72,6 @@ public class DefaultTypeConfigSourceTest {
 
         @Test
         public void testGetValue_givenOSName_returnsCorrectDefaultDriverType() throws Throwable {
-            // Arrange
-            // The 'osName' and 'expected' are from the @Parameters.
             // A scoped system property sandbox ensures the "os.name" property override stays
             // isolated to the test iteration.
             try (var env = ScopedSystemProperties.open()) {
@@ -83,7 +81,6 @@ public class DefaultTypeConfigSourceTest {
                     env.clearProperty("os.name");
                 }
 
-                // Act
                 String result;
                 result = IsolatedClassLoader.doInvoke(DefaultTypeConfigSource.class, clazz -> {
                     // Reflectively invoke 'new DefaultTypeConfigSource().getValue' and return
@@ -94,7 +91,6 @@ public class DefaultTypeConfigSourceTest {
                     return (String) method.invoke(instance, "driver.type");
                 });
 
-                // Assert
                 assertEquals(expected, result);
             }
         }
@@ -110,9 +106,7 @@ public class DefaultTypeConfigSourceTest {
 
         @Test
         public void testGetProperties_whenCalled_returnsMapWithCorrectStructure() {
-            // Act
             Map<String, String> properties = configSource.getProperties();
-            // Assert
             assertNotNull(properties);
             assertEquals(1, properties.size());
             assertTrue(properties.containsKey("driver.type"));
@@ -121,9 +115,7 @@ public class DefaultTypeConfigSourceTest {
 
         @Test
         public void testGetPropertyNames_whenCalled_returnsCorrectPropertySet() {
-            // Act
             Set<String> propertyNames = configSource.getPropertyNames();
-            // Assert
             assertNotNull(propertyNames);
             assertEquals(Set.of("driver.type"), propertyNames);
         }

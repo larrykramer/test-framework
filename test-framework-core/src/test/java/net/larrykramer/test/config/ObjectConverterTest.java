@@ -86,9 +86,7 @@ public class ObjectConverterTest {
 
         @Test
         public void testConvert_givenInput_returnsExpectedResult() {
-            // Arrange & Act
             Object result = new ObjectConverter().convert(input);
-            // Assert
             assertNotNull(result);
             assertEquals(expectedClass, result.getClass());
             if (expectSameInstance) {

@@ -68,30 +68,25 @@ public class StringLocalizerTest {
 
     @Test(expected = MissingResourceException.class)
     public void testConstructor_givenMissingBundle_throwsMissingResourceException() {
-        // Arrange
         Locale locale = Locale.forLanguageTag("zz-ZZ");
         try (var mocked = mockStatic(ResourceBundle.class)) {
             MissingResourceException e = new MissingResourceException(
                     "Can't find bundle for base name strings, locale zz_ZZ", "strings", "zz_ZZ");
             mocked.when(() -> ResourceBundle.getBundle("strings", locale)).thenThrow(e);
 
-            // Act
             new StringLocalizer(locale);
         }
     }
 
     @Test
     public void testGetLocale_givenRootLocale_returnsSameInstance() {
-        // Arrange
         final Locale locale = Locale.ROOT;
         StringLocalizer localizer = newLocalizer(locale);
-        // Act & Assert
         assertSame(locale, localizer.getLocale());
     }
 
     @Test
     public void testGetLocale_givenDifferentJVMDefault_returnsConstructorLocale() {
-        // Arrange
         // Find a locale that is different from the default locale.
         // If no such locale is available, the test is skipped.
         Locale baseline = Locale.getDefault();
@@ -100,12 +95,8 @@ public class StringLocalizerTest {
                 .findFirst()
                 .orElseThrow(() -> new AssumptionViolatedException("No suitable locale found"));
 
-        StringLocalizer localizer = newLocalizer(targetLocale);
+        Locale result = newLocalizer(targetLocale).getLocale();
 
-        // Act
-        Locale result = localizer.getLocale();
-
-        // Assert
         assertSame(targetLocale, result);
         assertNotEquals(baseline, result);
     }
@@ -124,9 +115,7 @@ public class StringLocalizerTest {
 
     @Test
     public void testLocalize_withUnicodeKey_returnsUnicodeMessage() {
-        // Arrange
         final StringLocalizer localizer = newLocalizer();
-        // Act & Assert
         assertEquals("Bonjour! Créons une journée géniale.", localizer.localize("french.greeting"));
         assertEquals("Willkommen, Jürgen!", localizer.localize("german.welcome", "Jürgen"));
         assertEquals("こんにちは、世界 🌏", localizer.localize("日本語.挨拶"));
@@ -134,23 +123,17 @@ public class StringLocalizerTest {
 
     @Test
     public void testLocalize_withNumericArgument_useInstanceLocaleNotJVMDefault() {
-        // Arrange
         double amount = 12345.67;
         Locale targetLocale = assumeLocaleWithDifferentCurrencyFormat(amount);
 
-        StringLocalizer localizer = newLocalizer(targetLocale);
-
-        // Act
+        final StringLocalizer localizer = newLocalizer(targetLocale);
         String result = localizer.localize("balance", amount);
 
-        // Assert
-        String expected = "Balance: " + formatCurrency(targetLocale, amount);
-        assertEquals(expected, result);
+        assertEquals("Balance: " + formatCurrency(targetLocale, amount), result);
     }
 
     @Test
     public void testLocalize_withDateArgument_useInstanceLocaleNotJVMDefault() {
-        // Arrange
         Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
         calendar.set(2025, Calendar.OCTOBER, 26, 0, 0, 0);
         calendar.set(Calendar.MILLISECOND, 0);
@@ -158,14 +141,10 @@ public class StringLocalizerTest {
 
         Locale targetLocale = assumeLocaleWithDifferentDateFormat(date);
 
-        StringLocalizer localizer = newLocalizer(targetLocale);
-
-        // Act
+        final StringLocalizer localizer = newLocalizer(targetLocale);
         String result = localizer.localize("date", date);
 
-        // Assert
-        String expected = "Date: " + formatLongDate(targetLocale, date);
-        assertEquals(expected, result);
+        assertEquals("Date: " + formatLongDate(targetLocale, date), result);
     }
 
     @Test

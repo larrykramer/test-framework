@@ -78,8 +78,6 @@ public class OperatingSystemTest {
 
         @Test
         public void testCurrent_givenOSName_returnsCorrectOperatingSystemEnum() throws Throwable {
-            // Arrange
-            // The 'osName' and 'expected' are from the @Parameters.
             // A scoped system property sandbox ensures the "os.name" property override stays
             // isolated to the test iteration.
             try (var env = ScopedSystemProperties.open()) {
@@ -89,7 +87,6 @@ public class OperatingSystemTest {
                     env.clearProperty("os.name");
                 }
 
-                // Act
                 OperatingSystem result;
                 result = IsolatedClassLoader.doInvoke(OperatingSystem.class, clazz -> {
                     // Reflectively invoke OperatingSystem.current and adapt its returned enum
@@ -99,7 +96,6 @@ public class OperatingSystemTest {
                     return OperatingSystem.valueOf(os.toString());
                 });
 
-                // Assert
                 assertEquals(expected, result);
             }
         }
@@ -108,11 +104,8 @@ public class OperatingSystemTest {
     public static class IntegrationTest {
         @Test
         public void testEnum_onMacOS_isConsistentWithActualOperatingSystem() {
-            // Arrange
-            // This test will only run its assertions if the current OS is macOS.
-            // On other system, it will be marked as "skipped".
             assumeTrue("Skipping macOS-specific test", OperatingSystem.isMacOS());
-            // Act & Assert
+
             assertEquals(OperatingSystem.MACOS, OperatingSystem.current());
             assertTrue(OperatingSystem.isMacOS());
             assertFalse(OperatingSystem.isWindows());
@@ -121,11 +114,8 @@ public class OperatingSystemTest {
 
         @Test
         public void testEnum_onWindows_isConsistentWithActualOperatingSystem() {
-            // Arrange
-            // This test will only run its assertions if the current OS is Windows.
-            // On other system, it will be marked as "skipped".
             assumeTrue("Skipping Windows-specific test", OperatingSystem.isWindows());
-            // Act & Assert
+
             assertEquals(OperatingSystem.WINDOWS, OperatingSystem.current());
             assertFalse(OperatingSystem.isMacOS());
             assertTrue(OperatingSystem.isWindows());
@@ -134,11 +124,8 @@ public class OperatingSystemTest {
 
         @Test
         public void testEnum_onLinux_isConsistentWithActualOperatingSystem() {
-            // Arrange
-            // This test will only run its assertions if the current OS is Linux.
-            // On other system, it will be marked as "skipped".
             assumeTrue("Skipping Linux-specific test", OperatingSystem.isLinux());
-            // Act & Assert
+
             assertEquals(OperatingSystem.LINUX, OperatingSystem.current());
             assertFalse(OperatingSystem.isMacOS());
             assertFalse(OperatingSystem.isWindows());
@@ -147,11 +134,9 @@ public class OperatingSystemTest {
 
         @Test
         public void testEnum_onUnsupportedOS_returnsUnsupportedAndFlagsAreFalse() {
-            // Arrange
-            // This test will only run if the OS is NOT one of the main supported types.
             OperatingSystem current = OperatingSystem.current();
             assumeTrue("Skipping unsupported OS test", current == OperatingSystem.UNSUPPORTED);
-            // Act & Assert
+
             assertEquals(OperatingSystem.UNSUPPORTED, current);
             assertFalse(OperatingSystem.isMacOS());
             assertFalse(OperatingSystem.isWindows());
