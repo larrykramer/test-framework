@@ -94,8 +94,10 @@ public class IPAddressUtilFuzzerTest {
             IPAddressUtil.isIPv6LiteralAddress(fuzzedInput);
             // If the input is a valid IPv6 address, that's acceptable. The fuzzer might
             // occasionally produce valid IPv6 addresses. We don't validate the output, just that
-            // the it didn't crash.
+            // it didn't crash.
         } catch (StackOverflowError | OutOfMemoryError e) {
+            // These are critical failures indicating the isIPv6LiteralAddress(String) can't handle
+            // certain inputs gracefully.
             fail("IPAddressUtil crashed with '" + e.getClass().getName()
                     + "' on test case: '" + testCaseName
                     + "'. Input: \"" + escapeFuzzedInput() + "\"");
