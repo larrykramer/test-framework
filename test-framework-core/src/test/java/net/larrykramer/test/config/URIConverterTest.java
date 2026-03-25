@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2025-2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class URIConverterTest {
     private URIConverter converter;
@@ -107,6 +108,17 @@ public class URIConverterTest {
     }
 
     @Test
+    public void testConvert_givenIPv6HostWithoutSchemeAndPort_returnsHttpURIWithoutPort() {
+        // Act
+        URI result = converter.convert("[::1]");
+        // Assert
+        assertEquals("http://[::1]", result.toString());
+        assertEquals("http", result.getScheme());
+        assertEquals("[::1]", result.getHost());
+        assertEquals(-1, result.getPort());
+    }
+
+    @Test
     public void testConvert_givenIPv6HostAndPortWithoutScheme_returnsHttpURI() {
         // Act
         URI result = converter.convert("[fe80::1]:8080");
@@ -118,13 +130,24 @@ public class URIConverterTest {
     }
 
     @Test
-    public void testConvert_givenIPv6HostWithoutSchemeAndPort_returnsHttpURIWithoutPort() {
+    public void testConvert_givenBracketedIPv6HostWithoutSchemePort_returnsHttpURIWithoutPort() {
         // Act
-        URI result = converter.convert("[::1]");
+        URI result = converter.convert("[cafe::1]");
         // Assert
-        assertEquals("http://[::1]", result.toString());
+        assertEquals("http://[cafe::1]", result.toString());
         assertEquals("http", result.getScheme());
-        assertEquals("[::1]", result.getHost());
+        assertEquals("[cafe::1]", result.getHost());
+        assertEquals(-1, result.getPort());
+    }
+
+    @Test
+    public void testConvert_givenBracketedIPv6ZoneIdWithoutSchemePort_returnsHttpURIWithoutPort() {
+        // Act
+        URI result = converter.convert("[fe80::1%25eth0]");
+        // Assert
+        assertEquals("http://[fe80::1%25eth0]", result.toString());
+        assertEquals("http", result.getScheme());
+        assertEquals("[fe80::1%25eth0]", result.getHost());
         assertEquals(-1, result.getPort());
     }
 
@@ -140,14 +163,50 @@ public class URIConverterTest {
     }
 
     @Test
-    public void testConvert_givenUnbracketedIPv6WithZoneId_returnsHttpURIWithEscapedZoneId() {
+    public void testConvert_givenUnbracketedIPv6ZoneId_returnsHttpURIWithoutPort() {
         // Act
-        URI result = converter.convert("fe80::1%eth0");
+        URI result = converter.convert("2001:db8::1%eth0");
         // Assert
-        assertEquals("http://[fe80::1%25eth0]", result.toString());
+        assertEquals("http://[2001:db8::1%25eth0]", result.toString());
         assertEquals("http", result.getScheme());
-        assertEquals("[fe80::1%25eth0]", result.getHost());
+        assertEquals("[2001:db8::1%25eth0]", result.getHost());
         assertEquals(-1, result.getPort());
+    }
+
+    @Test
+    public void testConvert_givenSchemeLikeValueWithDoubleColon_returnsOpaqueURI() {
+        // Act
+        URI result = converter.convert("cafe::1");
+        // Assert
+        assertEquals(URI.create("cafe::1"), result);
+        assertEquals("cafe", result.getScheme());
+        assertEquals(":1", result.getSchemeSpecificPart());
+        assertNull(result.getHost());
+        assertTrue(result.isOpaque());
+    }
+
+    @Test
+    public void testConvert_givenSchemeLikeValueEndingWithColon_returnsOpaqueURI() {
+        // Act
+        URI result = converter.convert("face::");
+        // Assert
+        assertEquals(URI.create("face::"), result);
+        assertEquals("face", result.getScheme());
+        assertEquals(":", result.getSchemeSpecificPart());
+        assertNull(result.getHost());
+        assertTrue(result.isOpaque());
+    }
+
+    @Test
+    public void testConvert_givenSchemeLikeValue_returnsOpaqueURI() {
+        // Act
+        URI result = converter.convert("dead:beef");
+        // Assert
+        assertEquals(URI.create("dead:beef"), result);
+        assertEquals("dead", result.getScheme());
+        assertEquals("beef", result.getSchemeSpecificPart());
+        assertNull(result.getHost());
+        assertTrue(result.isOpaque());
     }
 
     @Test
@@ -206,8 +265,18 @@ public class URIConverterTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testConvert_withInvalidIPv6ZoneId_throwsIllegalArgumentException() {
-        converter.convert("fe80::1%eth0%oops");
+    public void testConvert_givenSchemeLikeIPv6WithZoneId_throwsIllegalArgumentException() {
+        // Unbracketed "fe80::1%eth0" matches the URI scheme grammar ("fe80:"),
+        // so the converter does not normalize it as IPv6; java.net.URI then rejects
+        // the raw zone ID because '%' must be URI-escaped (%25) and IPv6 literals in
+        // URIs must be bracketed.
+        converter.convert("fe80::1%eth0");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testConvert_givenSchemeLikeIPv6WithNumericZoneId_throwsIllegalArgumentException() {
+        // Zone IDs can also be numeric interface indices.
+        converter.convert("fe80::1%3");
     }
 
     @Test(expected = NullPointerException.class)

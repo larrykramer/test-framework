@@ -162,6 +162,37 @@ and
 [webdriver](test-framework-core/src/main/java/net/larrykramer/test/webdriver)
 packages.
 
+### IPv6 Address Configuration
+
+When specifying IPv6 addresses in any URI configuration property (such as `grid.url`), always enclose the address in square brackets as required by [RFC 2732](https://www.ietf.org/rfc/rfc2732.txt).
+This avoids ambiguity with URI scheme syntax and ensures the address is parsed correctly.
+
+**Recommended format:**
+```properties
+# CORRECT: Always enclose IPv6 addresses in brackets
+grid.url=http://[2001:db8::1]:4444/
+ 
+# CORRECT: IPv6 loopback in brackets
+grid.url=http://[::1]:4444/
+ 
+# CORRECT: Brackets with zone ID (percent-encoded as %25)
+grid.url=http://[fe80::1%25eth0]:4444/
+```
+
+**Avoid unbracketed IPv6 addresses:**
+```properties
+# INCORRECT! MISSING BRACKETS
+# Port will be misinterpreted as part of the address
+grid.url=2001:db8::1:4444
+
+# AMBIGUOUS!
+# "cafe::1" is parsed as a URI with scheme "cafe", not as an IPv6 host
+grid.url=cafe::1
+```
+
+Unbracketed IPv6 strings that happen to start with a letter sequence followed by a colon (e.g., `cafe::1`, `face::`, `dead:beef`) are ambiguous because they also match the syntax of a URI scheme.
+The URI converter intentionally treats these as scheme-prefixed URIs per [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986), so bracket notation is the only reliable way to specify an IPv6 host literal.
+
 ## Continuous Integration
 
 This project uses GitHub Actions for Continuous Integration (CI).
