@@ -164,7 +164,7 @@ packages.
 
 ### IPv6 Address Configuration
 
-When specifying IPv6 addresses in any URI configuration property (such as `grid.url`), always enclose the address in square brackets as required by [RFC 2732](https://www.ietf.org/rfc/rfc2732.txt).
+When specifying IPv6 addresses in any URI configuration property (such as `grid.url`), always enclose the address in square brackets as required by [RFC 2732](https://www.rfc-editor.org/rfc/rfc2732).
 This avoids ambiguity with URI scheme syntax and ensures the address is parsed correctly.
 
 **Recommended format:**
@@ -178,6 +178,12 @@ grid.url=http://[::1]:4444/
 # CORRECT: Brackets with zone ID (percent-encoded as %25)
 grid.url=http://[fe80::1%25eth0]:4444/
 ```
+
+> **Note on Zone IDs:**
+> [RFC 6874](https://www.rfc-editor.org/rfc/rfc6874) strictly requires zone IDs in URIs to be percent-encoded (e.g., `%25eth0`).
+> Historically, Java's `java.net.URI` leniently accepts unencoded `%` characters inside bracketed IPv6 hosts (e.g., `[fe80::1%eth0]`).
+> The URI converter currently parses these lenient forms successfully, but they may fail in stricter downstream HTTP clients.
+> It is highly recommend explicitly encoding the zone ID as `%25`.
 
 **Avoid unbracketed IPv6 addresses:**
 ```properties
