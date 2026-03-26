@@ -174,6 +174,17 @@ public class URIConverterTest {
     }
 
     @Test
+    public void testConvert_givenUnbracketedIPv6WithEncodedZoneId_returnsHttpURIWithoutPort() {
+        // Act
+        URI result = converter.convert("2001:db8::1%25eth0");
+        // Assert
+        assertEquals("http://[2001:db8::1%25eth0]", result.toString());
+        assertEquals("http", result.getScheme());
+        assertEquals("[2001:db8::1%25eth0]", result.getHost());
+        assertEquals(-1, result.getPort());
+    }
+
+    @Test
     public void testConvert_givenSchemeLikeValueWithDoubleColon_returnsOpaqueURI() {
         // Act
         URI result = converter.convert("cafe::1");

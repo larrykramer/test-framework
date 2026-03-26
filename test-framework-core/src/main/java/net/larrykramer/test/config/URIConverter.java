@@ -118,7 +118,7 @@ public class URIConverter implements Converter<URI> {
                 // be escaped with %25 in URIs.
                 if (IPAddressUtil.isIPv6LiteralAddress(s)) {
                     int idx = s.indexOf('%');
-                    if (idx >= 0) {
+                    if (idx >= 0 && !s.startsWith("%25", idx)) {
                         s = s.substring(0, idx) + "%25" + s.substring(idx + 1);
                     }
                     s = "http://[" + s + "]";
