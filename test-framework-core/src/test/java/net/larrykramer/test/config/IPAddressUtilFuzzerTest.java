@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Larry Kramer
+ * Copyright (c) 2026 Larry Kramer
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 @Category(FuzzerTest.class)
-public class URIConverterFuzzerTest {
+public class IPAddressUtilFuzzerTest {
     private final String fuzzedInput;
     private final String testCaseName;
 
@@ -59,8 +59,8 @@ public class URIConverterFuzzerTest {
             params.add(new Object[] { s, "Random" });
         }
 
-        // Category 3: Mutations of  valid URI strings.
-        for (String s : generator.generateMutatedUris(4000, 8)) {
+        // Category 3: Mutations of valid IPv6 literals.
+        for (String s : generator.generateMutatedIPv6Literals(4000, 8)) {
             params.add(new Object[] { s, "Mutation" });
         }
 
@@ -83,32 +83,30 @@ public class URIConverterFuzzerTest {
         return 12345L;
     }
 
-    public URIConverterFuzzerTest(String fuzzedInput, String testCaseName) {
+    public IPAddressUtilFuzzerTest(String fuzzedInput, String testCaseName) {
         this.fuzzedInput = fuzzedInput;
         this.testCaseName = testCaseName;
     }
 
     @Test
-    public void testConvert_givenFuzzedInput_doesNotCrash() {
+    public void testIsIPv6LiteralAddress_givenFuzzedInput_doesNotCrash() {
         try {
-            new URIConverter().convert(fuzzedInput);
-            // If conversion succeeds, that's acceptable. The fuzzer might occasionally produce
-            // valid URIs. We don't validate the output, just that the converter didn't crash.
-        } catch (IllegalArgumentException e) {
-            // This is the expected and desired outcome for invalid URI input.
-            // The converter correctly identified a syntax error.
+            IPAddressUtil.isIPv6LiteralAddress(fuzzedInput);
+            // If the input is a valid IPv6 address, that's acceptable. The fuzzer might
+            // occasionally produce valid IPv6 addresses. We don't validate the output, just that
+            // it didn't crash.
         } catch (StackOverflowError | OutOfMemoryError e) {
-            // These are critical failures indicating the converter cannot handle certain inputs
-            // gracefully.
-            fail("Converter crashed with '" + e.getClass().getName()
+            // These are critical failures indicating the isIPv6LiteralAddress(String) can't handle
+            // certain inputs gracefully.
+            fail("IPAddressUtil crashed with '" + e.getClass().getName()
                     + "' on test case: '" + testCaseName
                     + "'. Input: \"" + escapeFuzzedInput() + "\"");
         } catch (Throwable t) {
-            // Any other throwable is a failure.
-            // The converter should be robust enough to only throw IllegalArgumentException for
-            // parsing errors.
-            fail("Converter threw an unexpected exception '" + t.getClass().getName()
-                    +  "' for input: \"" + escapeFuzzedInput() + "\"");
+            // isIPv6LiteralAddress(String) is not specified to throw.
+            // Treat any throwable as a failure.
+            fail("IPAddressUtil threw an unexpected exception '" + t.getClass().getName()
+                    + "' on test case: '" + testCaseName
+                    + "'. Input: \"" + escapeFuzzedInput() + "\"");
         }
     }
 
@@ -125,23 +123,28 @@ public class URIConverterFuzzerTest {
     }
 
     static class FuzzGenerator {
-        private static final String URI_CHARS
-                = "abcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
-        private static final String WHITESPACE = " \t\r\n";
+        private static final String IPV6_CHARS = "0123456789abcdefABCDEF:%.";
+        private static final String EXTRA_NOISE = "[](){}<>\"'\\/@!?;=,_-+*#& \t\r\n";
+        private static final String ZONE_CHARS
+                = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-";
         //@formatter:off
-        private static final String[] VALID_URI_SAMPLES = {
-                "http://example.com",
-                "https://user:pass@example.com:8443/path/to/resource?query=value#fragment",
-                "ftp://ftp.is.co.za/rfc/rfc1808.txt",
-                "custom-scheme://opaque/part",
-                "proxy.example.com:3128",
-                "localhost",
-                "127.0.0.1",
-                "192.168.1.1:8080",
-                "[::1]",
-                "[fe80::1ff:fe23:4567:89ab]:443",
+        private static final String[] VALID_IPV6_SAMPLES = {
+                // Basic
+                "::",
+                "::1",
+                "0:0:0:0:0:0:0:1",
+                "2001:db8::",
+                "2001:db8::1",
+                "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                // Mixed / embedded IPv4 tail.
+                "::ffff:192.0.2.128",
+                "2001:db8::192.0.2.33",
+                // Zone identifiers.
+                // Everything after % is ignored by IPAddressUtil, but must not be empty.
                 "fe80::1%eth0",
-                "::ffff:192.168.1.1"
+                "fe80::a:b:c:d%en0",
+                "fe80::1%1"
         };
         //@formatter:on
 
@@ -154,52 +157,56 @@ public class URIConverterFuzzerTest {
         public List<String> generateEdgeCases() {
             List<String> cases = new ArrayList<>();
 
-            // Empty/Whitespace.
+            // Empty / short.
             cases.add("");
             cases.add(" ");
             cases.add("\t\r\n ");
+            cases.add(":"); // too short to be valid
+            cases.add("::"); // valid minimal
+            cases.add(":::"); // invalid
+            cases.add("::::"); // invalid
 
-            // Invalid schemes.
-            cases.add("://example.com");
-            cases.add("1http://example.com");
-            cases.add("http:/example.com");
-            cases.add("http//example.com");
-            cases.add("http:example.com"); // should be handled, but good to test.
-            cases.add("a b://c");
+            // Leading/trailing garbage.
+            cases.add("::1 ");
+            cases.add(" ::1");
+            cases.add("::1\0");
+            cases.add("\n::1");
 
-            // Invalid ports.
-            cases.add("example.com:");
-            cases.add("example.com:abc");
-            cases.add("example.com:65536");
-            cases.add("example.com:-1");
-            cases.add("[::1]:");
-            cases.add("[::1]:xyz");
+            // Percent/zone edge cases.
+            cases.add("%"); // too short, invalid
+            cases.add("fe80::1%"); // explicitly invalid (percent at end)
+            cases.add("::%"); // invalid
+            cases.add("::% "); // zone isn't validated, but '%' not at end => should parse
+            cases.add("fe80::1%eth0%w"); // multiple '%'; ignore from first '%', shouldn't crash
 
-            // Malformed IPv6.
-            cases.add("[fe80::1"); // missing closing bracket
-            cases.add("fe80::1]"); // missing opening bracket
-            cases.add("[fe80::1]extra"); // trailing garbage
-            cases.add("[[fe80::1]]"); // nested brackets
+            // Hextet / colon structure edge cases.
+            cases.add(":1");
+            cases.add("1:"); // trailing colon
+            cases.add("1::");
+            cases.add("::1:"); // ends with colon
+            cases.add("0:0:0:0:0:0:0"); // too few groups
+            cases.add("0:0:0:0:0:0:0:0");
+            cases.add("0:0:0:0:0:0:0:0:0"); // too many groups
+            cases.add("gggg::1"); // non-hex
+            cases.add("10000::"); // hextet > 0xffff
+            cases.add("fffff::"); // hextet > 0xffff
+            cases.add("1::1::1"); // double '::'
+
+            // Embedded IPv4 tail edge cases.
+            cases.add("::ffff:256.0.0.1"); // invalid v4
+            cases.add("::ffff:192.168.0"); // invalid v4
+            cases.add("::ffff:192.168.0.1.2"); // invalid v4
+            cases.add("::ffff:192.168.0.1"); // valid v4-mapped
+            cases.add("::192.168.0.1"); // valid v4-embedded
+            cases.add("::ffff:1.2.3"); // wrong dot count
+            cases.add("::ffff:1.2.3.4.5"); // wrong dot count
+
+            // Brackets (valid in URIs, but this util expects the literal without brackets).
+            cases.add("[::1]");
+            cases.add("[fe80::1%eth0]");
             cases.add("[]");
-            cases.add("[:]");
-            cases.add("[]:8080");
-            cases.add("fe80::1%"); // missing zone ID after %
-            cases.add("::ffff:256.256.256.256"); // invalid IPv4-mapped IPv6
-
-            // Malformed IPv4.
-            cases.add("256.0.0.1");
-            cases.add("127.0.0");
-            cases.add("127.0.0.1.2");
-
-            // General malformations.
-            cases.add(":");
-            cases.add("::");
-            cases.add(":8080");
-            cases.add("http://");
-            cases.add("http://:8080");
-            cases.add("http://user@");
-            cases.add("http://\nexample.com"); // Control characters
-            cases.add("http://example.com\0"); // Null byte
+            cases.add("[::]");
+            cases.add("::1]");
 
             return cases;
         }
@@ -211,11 +218,11 @@ public class URIConverterFuzzerTest {
                 StringBuilder sb = new StringBuilder(length);
                 for (int j = 0; j < length; j++) {
                     int type = random.nextInt(10);
-                    if (type < 5) { // 50% URI-specific chars
-                        sb.append(URI_CHARS.charAt(random.nextInt(URI_CHARS.length())));
-                    } else if (type < 7) { // 20% whitespace
-                        sb.append(WHITESPACE.charAt(random.nextInt(WHITESPACE.length())));
-                    } else { // 30% random chars (up to BMP)
+                    if (type < 6) { // 60% IPv6-specific chars
+                        sb.append(IPV6_CHARS.charAt(random.nextInt(IPV6_CHARS.length())));
+                    } else if (type < 8) { // 20% noise
+                        sb.append(EXTRA_NOISE.charAt(random.nextInt(EXTRA_NOISE.length())));
+                    } else { // 20% random BMP (up to BMP)
                         sb.append((char) random.nextInt(0xD7FF));
                     }
                 }
@@ -224,23 +231,38 @@ public class URIConverterFuzzerTest {
             return strings;
         }
 
-        public String[] generateMutatedUris(int count, int maxMutations) {
+        public String[] generateMutatedIPv6Literals(int count, int maxMutations) {
             String[] strings = new String[count];
             for (int i = 0; i < count; i++) {
-                String base = VALID_URI_SAMPLES[random.nextInt(VALID_URI_SAMPLES.length)];
+                String base = VALID_IPV6_SAMPLES[random.nextInt(VALID_IPV6_SAMPLES.length)];
                 char[] chars = base.toCharArray();
+                char c;
+
                 int mutations = random.nextInt(maxMutations) + 1;
-                for (int j = 0; j < mutations && chars.length > 0; j++) {
+                for (int j = 0; j < mutations; j++) {
+                    if (chars.length == 0) {
+                        break;
+                    }
                     int pos = random.nextInt(chars.length);
-                    switch (random.nextInt(3)) {
-                        case 0: // Substitute a character
+                    switch (random.nextInt(5)) {
+                        case 0: // Substitute with IPv6-specific char
+                            chars[pos] = IPV6_CHARS.charAt(random.nextInt(IPV6_CHARS.length()));
+                            break;
+                        case 1: // Substitute with random BMP
                             chars[pos] = (char) random.nextInt(0xD7FF);
                             break;
-                        case 1: // Delete a character
+                        case 2: // Delete
                             chars = deleteCharAt(chars, pos);
                             break;
-                        case 2: // Insert a character
-                            chars = insertCharAt(chars, pos, (char) random.nextInt(0xD7FF));
+                        case 3: // Insert IPv6 char
+                            c = IPV6_CHARS.charAt(random.nextInt(IPV6_CHARS.length()));
+                            chars = insertCharAt(chars, pos, c);
+                            break;
+                        case 4: // Insert zone-id char (to stress % handling)
+                            c = ZONE_CHARS.charAt(random.nextInt(ZONE_CHARS.length()));
+                            chars = insertCharAt(chars, pos, c);
+                            break;
+                        default:
                             break;
                     }
                 }
@@ -250,6 +272,9 @@ public class URIConverterFuzzerTest {
         }
 
         private static char[] deleteCharAt(char[] src, int pos) {
+            if (src.length <= 1) {
+                return new char[0];
+            }
             char[] dest = new char[src.length - 1];
             if (pos > 0) {
                 System.arraycopy(src, 0, dest, 0, pos);
