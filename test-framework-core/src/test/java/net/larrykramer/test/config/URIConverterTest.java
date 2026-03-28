@@ -206,8 +206,11 @@ public class URIConverterTest {
     }
 
     @Test
-    public void testConvert_wsURI_returnsExactURI() {
-        assertEquals(URI.create("ws:chat"), converter.convert("ws:chat"));
+    public void testConvert_wsURI_returnsParsedURI() {
+        URI result = converter.convert("ws://chat.example.com");
+        assertEquals("ws://chat.example.com", result.toString());
+        assertEquals("ws", result.getScheme());
+        assertEquals("chat.example.com", result.getHost());
     }
 
     @Test
