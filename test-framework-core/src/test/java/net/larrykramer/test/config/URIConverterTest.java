@@ -105,21 +105,21 @@ public class URIConverterTest {
     }
 
     @Test
-    public void testConvert_bracketedIPv6WithPort_returnsHttpURI() {
-        URI result = converter.convert("[fe80::1]:8080");
-        assertEquals("http://[fe80::1]:8080", result.toString());
-        assertEquals("http", result.getScheme());
-        assertEquals("[fe80::1]", result.getHost());
-        assertEquals(8080, result.getPort());
-    }
-
-    @Test
     public void testConvert_bracketedIPv6_returnsHttpURI() {
         URI result = converter.convert("[cafe::1]");
         assertEquals("http://[cafe::1]", result.toString());
         assertEquals("http", result.getScheme());
         assertEquals("[cafe::1]", result.getHost());
         assertEquals(-1, result.getPort());
+    }
+
+    @Test
+    public void testConvert_bracketedIPv6WithPort_returnsHttpURI() {
+        URI result = converter.convert("[fe80::1]:8080");
+        assertEquals("http://[fe80::1]:8080", result.toString());
+        assertEquals("http", result.getScheme());
+        assertEquals("[fe80::1]", result.getHost());
+        assertEquals(8080, result.getPort());
     }
 
     @Test
