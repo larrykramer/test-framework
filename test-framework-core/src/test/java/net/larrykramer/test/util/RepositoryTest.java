@@ -178,7 +178,6 @@ public class RepositoryTest {
 
     @Test
     public void testGet_missingFormatArg_throwsIllegalArgumentException() {
-
         //language=properties
         final String repository = "bad.format=css=Item %s %d\n";
 

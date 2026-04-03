@@ -68,8 +68,8 @@ public class WebDriverServiceTest {
         WebDriverService service = createService(config, null, mockFactory);
 
         WebDriverReference driverRef = service.createWebDriver();
-
         assertNotNull(driverRef);
+
         WebDriver driver = driverRef.get();
 
         assertSame(mockDriver, driver);
@@ -384,9 +384,9 @@ public class WebDriverServiceTest {
             assertEquals(2, capturedArguments.size());
 
             MutableCapabilities capturedCaps = (MutableCapabilities) capturedArguments.get(1);
-            assertEquals("mock-browser", capturedCaps.getCapability(CapabilityType.BROWSER_NAME));
+            Object actual = capturedCaps.getCapability(CapabilityType.BROWSER_NAME);
+            assertEquals("mock-browser", actual);
         }
-
     }
 
     @Test
