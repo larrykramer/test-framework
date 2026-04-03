@@ -36,9 +36,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperties;
  * annotated with {@code @Inject} and {@code @ConfigProperties}.
  */
 public final class DriverFactoryTestHelper {
-    private DriverFactoryTestHelper() {
-        // Ensure there is only one instance of this utility class.
-    }
+    private DriverFactoryTestHelper() {}
 
     /**
      * Overrides the {@code DriverConfig} instance held by the supplied

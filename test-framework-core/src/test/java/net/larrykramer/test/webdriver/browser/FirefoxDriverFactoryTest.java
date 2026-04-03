@@ -61,25 +61,21 @@ public class FirefoxDriverFactoryTest {
     }
 
     @Test
-    public void testGetDriverType_whenCalled_returnsFirefoxDriverType() {
+    public void testGetDriverType_initializedFactory_returnsFirefoxDriverType() {
         assertEquals(DriverType.FIREFOX, factory.getDriverType());
     }
 
     @Test
-    public void testCreate_whenCalled_returnsWebDriverInstance() {
-        // Arrange
+    public void testCreate_defaultState_returnsWebDriverInstance() {
         try (var mocked = mockConstruction(FirefoxDriver.class)) {
-            // Act
             WebDriver driver = factory.create();
-            // Assert
             assertEquals(1, mocked.constructed().size());
             assertSame(mocked.constructed().getFirst(), driver);
         }
     }
 
     @Test
-    public void testConfigure_withWindowSize_appliesFirefoxSpecificConfiguration() {
-        // Arrange
+    public void testConfigure_windowSizeConfigured_appliesFirefoxSpecificConfiguration() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -95,10 +91,8 @@ public class FirefoxDriverFactoryTest {
         config.windowSize = Optional.of(new Dimension(1280, 720));
         setDriverConfig(factory, config);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(150L));
         verify(mockOptions).deleteAllCookies();
         verify(mockWindow).setSize(config.windowSize.get());
@@ -106,8 +100,7 @@ public class FirefoxDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_withMaximizeFalseAndNoWindowSize_doesNotChangeWindowSize() {
-        // Arrange
+    public void testConfigure_defaultWindow_doesNotChangeWindowSize() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -121,17 +114,14 @@ public class FirefoxDriverFactoryTest {
         config.windowSize = Optional.empty();
         setDriverConfig(factory, config);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockWindow, never()).maximize();
         verify(mockWindow, never()).setSize(any(Dimension.class));
     }
 
     @Test
-    public void testConfigure_whenMaximizeTrueAndHeadlessModeIsDisabled_maximizesWindow() {
-        // Arrange
+    public void testConfigure_maximizeConfigured_maximizesWindow() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -146,17 +136,14 @@ public class FirefoxDriverFactoryTest {
         config.windowSize = Optional.empty();
         setDriverConfig(factory, config);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockWindow).maximize();
         verify(mockWindow, never()).setSize(any(Dimension.class));
     }
 
     @Test
-    public void testConfigure_whenHeadlessModeIsEnabled_doesNotMaximizeWindow() {
-        // Arrange
+    public void testConfigure_headlessMode_doesNotMaximizeWindow() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -171,17 +158,14 @@ public class FirefoxDriverFactoryTest {
         config.windowSize = Optional.empty();
         setDriverConfig(factory, config);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockWindow, never()).maximize();
         verify(mockWindow, never()).setSize(any(Dimension.class));
     }
 
     @Test(expected = WebDriverException.class)
-    public void testConfigure_whenMaximizeThrows_propagatesException() {
-        // Arrange
+    public void testConfigure_maximizeFailure_propagatesException() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -195,46 +179,37 @@ public class FirefoxDriverFactoryTest {
         config.maximize = true;
         setDriverConfig(factory, config);
 
-        // Act & Assert
-        // Exception is propagated.
+        // Exception should be propagated for the Firefox driver.
         factory.configure(mockDriver);
     }
 
     @Test
-    public void testGetCapabilities_whenCalled_appliesCommonCapabilities() {
-        // Arrange
+    public void testGetCapabilities_commonCaps_appliesCommonCapabilities() {
         DriverConfig config = createConfig();
         config.allowInsecureCerts = true;
         config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
         setDriverConfig(factory, config);
 
-        // Act
         FirefoxOptions result = factory.getCapabilities();
 
-        // Assert
         assertNotNull(result);
         assertEquals(Boolean.TRUE, result.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
         assertNotNull(result.getCapability(CapabilityType.PROXY));
     }
 
     @Test
-    public void testGetCapabilities_whenHeadlessModeIsEnabled_addsHeadlessArgument() {
-        // Arrange
+    public void testGetCapabilities_headlessRequested_addsHeadlessArgument() {
         DriverConfig config = createConfig();
         config.headless = true;
         setDriverConfig(factory, config);
 
-        // Act
         FirefoxOptions options = factory.getCapabilities();
-
-        // Assert
         assertNotNull(options);
         assertTrue(extractArguments(options).contains("-headless"));
     }
 
     @Test
-    public void testGetCapabilities_whenUserPrefsAreProvided_setsProfileWithConvertedValues() {
-        // Arrange
+    public void testGetCapabilities_mixedUserPrefs_setsProfileWithConvertedValues() {
         double overflow = Integer.MAX_VALUE + 1.0d;
         double underflow = Integer.MIN_VALUE - 1.0d;
         //@formatter:off
@@ -262,10 +237,8 @@ public class FirefoxDriverFactoryTest {
         firefox.executable = Optional.empty();
         setFirefoxConfig(firefox);
 
-        // Act
         FirefoxOptions result = factory.getCapabilities();
 
-        // Assert
         assertNotNull(result);
 
         Object rawPrefs = extractFirefoxOptions(result).get("prefs");
@@ -293,17 +266,13 @@ public class FirefoxDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withExecutable_setsBinaryPath() {
-        // Arrange
+    public void testGetCapabilities_executableConfigured_setsBinaryPath() {
         FirefoxConfig firefox = new FirefoxConfig();
         firefox.userPrefs = Map.of();
         firefox.executable = Optional.of("/custom/firefox");
         setFirefoxConfig(firefox);
 
-        // Act
         FirefoxOptions result = factory.getCapabilities();
-
-        // Assert
         assertNotNull(result);
         assertEquals("/custom/firefox", extractFirefoxOptions(result).get("binary"));
     }

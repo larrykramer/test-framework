@@ -32,7 +32,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.interactions.Interactive;
 
-import static net.larrykramer.test.util.SharedUtils.identityToString;
+import static net.larrykramer.test.util.SharedUtils.toIdentityString;
 import static net.larrykramer.test.webdriver.WebDriverReference.MAX_UNWRAP_DEPTH;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -46,51 +46,47 @@ public class WebDriverReferenceTest {
     }
 
     @Test
-    public void testConstructor_whenDriverProvided_returnsStoredDriver() {
+    public void testConstructor_driverArg_returnsStoredDriver() {
         WebDriver mockDriver = mockWebDriver();
         WebDriver result = new WebDriverReference(mockDriver).get();
         assertSame(mockDriver, result);
     }
 
     @Test
-    public void testConstructor_givenWrappedDriver_storesDriverAndUnwrapsToTarget() {
-        // Arrange
+    public void testConstructor_wrappedDriver_storesDriverAndUnwrapsToTarget() {
         WebDriver mockDriver = mockWebDriver();
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
-        // Act
+
         WebDriverReference result = new WebDriverReference(mockWrappedDriver);
-        // Assert
         assertSame(mockWrappedDriver, result.get());
         assertSame(mockDriver, result.getUnderlyingDriver());
     }
 
     @Test(expected = NullPointerException.class)
-    public void testConstructor_givenNullDriver_throwsNullPointerException() {
+    public void testConstructor_nullDriver_throwsNullPointerException() {
         new WebDriverReference(null);
     }
 
     @Test
-    public void testSet_withPlainWebDriver_storesSameInstance() {
+    public void testSet_plainDriver_storesSameInstance() {
         WebDriver mockDriver = mockWebDriver();
         driverRef.set(mockDriver);
         assertSame(mockDriver, driverRef.get());
     }
 
     @Test
-    public void testSet_withWrapsDriverChain_returnsOutermostDriver() {
-        // Arrange
+    public void testSet_wrappedDriver_returnsOutermostDriver() {
         WebDriver mockDriver = mockWebDriver();
         WebDriver mockSecondWrappedDriver = createWrapsDriver(mockDriver);
         WebDriver mockFirstWrappedDriver = createWrapsDriver(mockSecondWrappedDriver);
-        // Act
+
         driverRef.set(mockFirstWrappedDriver);
-        // Assert
+
         assertSame(mockFirstWrappedDriver, driverRef.get());
     }
 
     @Test
-    public void testSet_withDeepWrapsDriverChain_stopsAtMaxUnwrapDepth() {
-        // Arrange
+    public void testSet_deepWrappedDriver_stopsAtMaxUnwrapDepth() {
         // Build a chain of 30 WrapsDriver instances around a plain WebDriver so that the chain
         // depth is greater than the maximum unwrap depth (25).
         WebDriver mockDriver = mockWebDriver();
@@ -102,10 +98,8 @@ public class WebDriverReferenceTest {
             next = mockWrappedDriver;
         }
 
-        // Act
         driverRef.set(chain[0]);
 
-        // Assert
         // With a maximum unwrap depth of 25, we expect to end on the wrapper at index 25.
         final WebDriver driver = driverRef.getUnderlyingDriver();
         assertSame(chain[MAX_UNWRAP_DEPTH], driver);
@@ -115,225 +109,196 @@ public class WebDriverReferenceTest {
     }
 
     @Test(expected = NullPointerException.class)
-    public void testSet_givenNullDriver_throwsNullPointerException() {
+    public void testSet_nullDriver_throwsNullPointerException() {
         driverRef.set(null);
     }
 
     @Test
-    public void testGet_givenStateInitialized_returnsStoredDriver() {
+    public void testGet_initializedRef_returnsStoredDriver() {
         WebDriver mockDriver = mockWebDriver();
         driverRef.set(mockDriver);
         assertSame(mockDriver, driverRef.get());
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testGet_givenStateNotInitialized_throwsIllegalStateException() {
+    public void testGet_uninitializedRef_throwsIllegalStateException() {
         driverRef.get();
     }
 
     @Test
-    public void testGetClass_whenDriverImplementsInterface_returnsDriver() {
-        // Arrange
+    public void testGetClass_directMatch_returnsDriver() {
         WebDriver mockDriver = mockWebDriver(TakesScreenshot.class);
         driverRef.set(mockDriver);
-        // Act & Assert
         assertSame(mockDriver, driverRef.get(TakesScreenshot.class));
     }
 
     @Test
-    public void testGetClass_whenOnlyUnderlyingDriverImplementsInterface_returnsUnderlyingDriver() {
-        // Arrange
+    public void testGetClass_underlyingMatch_returnsUnderlyingDriver() {
         WebDriver mockDriver = mockWebDriver(JavascriptExecutor.class);
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
         driverRef.set(mockWrappedDriver);
-        // Act & Assert
         assertSame(mockDriver, driverRef.get(JavascriptExecutor.class));
     }
 
     @Test
-    public void testGetClass_whenWrappedAndUnderlyingImplementInterface_prefersWrappedDriver() {
-        // Arrange
+    public void testGetClass_wrappedMatch_prefersWrappedDriver() {
         WebDriver mockDriver = mockWebDriver(TakesScreenshot.class);
         WebDriver mockWrappedDriver = mockWebDriver(WrapsDriver.class, TakesScreenshot.class);
         when(((WrapsDriver) mockWrappedDriver).getWrappedDriver()).thenReturn(mockDriver);
         driverRef.set(mockWrappedDriver);
-        // Act & Assert
         assertSame(mockWrappedDriver, driverRef.get(TakesScreenshot.class));
     }
 
     @Test
-    public void testGetClass_whenNoDriverImplementsInterface_throwsClassCastException() {
-        // Arrange
+    public void testGetClass_unsupportedType_throwsClassCastException() {
         WebDriver mockDriver = mockWebDriver(); // implements nothing extra
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver); // implements nothing extra
         driverRef.set(mockWrappedDriver);
-        // Act & Assert
+
         var e = assertThrows(ClassCastException.class, () -> driverRef.get(TakesScreenshot.class));
         assertTrue(e.getMessage().contains("TakesScreenshot"));
     }
 
     @Category(SmokeTest.class)
     @Test
-    public void testGetClass_whenWrappedDriverIsMissingInteractive_worksWithSeleniumActions() {
-        // Arrange
+    public void testGetClass_interactiveDriver_worksWithSeleniumActions() {
         WebDriver mockDriver = mockWebDriver(Interactive.class);
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
         driverRef.set(mockWrappedDriver);
-        // Act
+
         // Request a driver that supports Interactive and pass it to Selenium Actions which casts
         // it to Interactive.
         Actions actions = new Actions(driverRef.get(Interactive.class));
         actions.click().perform();
-        // Assert
+
         verify((Interactive) mockDriver).perform(any());
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testGetClass_givenStateNotInitialized_throwsIllegalStateException() {
+    public void testGetClass_uninitializedRef_throwsIllegalStateException() {
         driverRef.get(TakesScreenshot.class);
     }
 
     @Test(expected = NullPointerException.class)
-    public void testGetClass_givenNullInterfaceClass_throwsNullPointerException() {
+    public void testGetClass_nullType_throwsNullPointerException() {
         driverRef.set(mockWebDriver());
         driverRef.get(null);
     }
 
     @Test
-    public void testAs_whenDriverImplementsInterface_returnsTypedDriver() {
-        // Arrange
+    public void testAs_directMatch_returnsTypedDriver() {
         WebDriver mockDriver = mockWebDriver(TakesScreenshot.class);
         driverRef.set(mockDriver);
-        // Act & Assert
         assertSame(mockDriver, driverRef.as(TakesScreenshot.class));
     }
 
     @Test
-    public void testAs_whenOnlyUnderlyingDriverImplementsInterface_returnsUnderlyingDriver() {
-        // Arrange
+    public void testAs_underlyingMatch_returnsUnderlyingDriver() {
         WebDriver mockDriver = mockWebDriver(JavascriptExecutor.class);
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
         driverRef.set(mockWrappedDriver);
-        // Act & Assert
         assertSame(mockDriver, driverRef.as(JavascriptExecutor.class));
     }
 
     @Test
-    public void testAs_whenWrappedDriverIsMissingInterface_invokesMethodOnUnderlyingDriver() {
-        // Arrange
-        // language=JavaScript
+    public void testAs_underlyingMatch_invokesMethodOnUnderlyingDriver() {
+        //language=JavaScript
         final String js = "console.log('test');";
         WebDriver mockDriver = mockWebDriver(JavascriptExecutor.class);
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
         driverRef.set(mockWrappedDriver);
-        // Act
+
         driverRef.as(JavascriptExecutor.class).executeScript(js);
-        // Assert
+
         verify((JavascriptExecutor) mockDriver).executeScript(js);
     }
 
     @Test(expected = ClassCastException.class)
-    public void testAs_whenNoDriverImplementsInterface_throwsClassCastException() {
-        // Arrange
+    public void testAs_unsupportedType_throwsClassCastException() {
         WebDriver mockDriver = mockWebDriver(); // implements nothing extra
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver); // implements nothing extra
         driverRef.set(mockWrappedDriver);
-        // Act
+
         driverRef.as(JavascriptExecutor.class);
     }
 
     @Test
-    public void testTryAs_whenDriverImplementsInterface_returnsOptionalWithDriver() {
-        // Arrange
+    public void testTryAs_directMatch_returnsOptionalWithDriver() {
         WebDriver mockDriver = mockWebDriver(TakesScreenshot.class);
         driverRef.set(mockDriver);
-        // Act
+
         Optional<TakesScreenshot> result = driverRef.tryAs(TakesScreenshot.class);
-        // Assert
         assertTrue(result.isPresent());
         assertSame(mockDriver, result.get());
     }
 
     @Test
-    public void testTryAs_whenWrappedDriverMissingInterface_returnsOptionalWithUnderlyingDriver() {
-        // Arrange
+    public void testTryAs_underlyingMatch_returnsOptionalWithUnderlyingDriver() {
         WebDriver mockDriver = mockWebDriver(JavascriptExecutor.class);
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
         driverRef.set(mockWrappedDriver);
-        // Act
+
         Optional<JavascriptExecutor> result = driverRef.tryAs(JavascriptExecutor.class);
-        // Assert
         assertTrue(result.isPresent());
         assertSame(mockDriver, result.get());
     }
 
     @Test
-    public void testTryAs_whenNoDriverImplementsInterface_returnEmptyOptional() {
-        // Arrange
+    public void testTryAs_unsupportedType_returnEmptyOptional() {
         WebDriver mockDriver = mockWebDriver(); // implements nothing extra
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver); // implements nothing extra
         driverRef.set(mockWrappedDriver);
-        // Act & Assert
         assertFalse(driverRef.tryAs(TakesScreenshot.class).isPresent());
     }
 
     @Test
-    public void testGetUnderlyingDriver_givenStateInitialized_returnsSameInstanceAsSupplied() {
-        // Arrange
+    public void testGetUnderlyingDriver_plainDriver_returnsSameInstanceAsSupplied() {
         WebDriver mockDriver = mockWebDriver();
         driverRef.set(mockDriver);
-        // Act & Assert
         assertSame(mockDriver, driverRef.getUnderlyingDriver());
     }
 
     @Test
-    public void testGetUnderlyingDriver_givenSelfReferencingWrapsDriver_returnsSelfImmediately() {
-        // Arrange
+    public void testGetUnderlyingDriver_selfWrapping_returnsSelfImmediately() {
         // Simulate a driver that wraps itself (a bad, but possible, implementation).
         WebDriver mockWrappedDriver = mockWebDriver(WrapsDriver.class);
         WrapsDriver wrapsDriver = (WrapsDriver) mockWrappedDriver;
         when(wrapsDriver.getWrappedDriver()).thenReturn(mockWrappedDriver);
         driverRef.set(mockWrappedDriver);
-        // Act & Assert
         assertSame(mockWrappedDriver, driverRef.getUnderlyingDriver());
     }
 
     @Test
-    public void testGetUnderlyingDriver_withWrapsDriverChain_returnsInnermostDriver() {
-        // Arrange
+    public void testGetUnderlyingDriver_wrappedDriver_returnsInnermostDriver() {
         WebDriver mockDriver = mockWebDriver();
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
         driverRef.set(mockWrappedDriver);
-        // Act & Assert
         assertSame(mockDriver, driverRef.getUnderlyingDriver());
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testGetUnderlyingDriver_givenStateNotInitialized_throwsIllegalStateException() {
+    public void testGetUnderlyingDriver_uninitializedRef_throwsIllegalStateException() {
         driverRef.getUnderlyingDriver();
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testClear_whenStateWasInitializedThenCleared_clearsReference() {
+    public void testClear_initializedRef_clearsReference() {
         driverRef.set(mockWebDriver());
         driverRef.clear();
         driverRef.get();
     }
 
     @Test
-    public void testToString_whenUninitialized_returnsUninitializedMarker() {
-        assertEquals(identityToString(null), driverRef.toString());
+    public void testToString_uninitializedRef_returnsUninitializedMarker() {
+        assertEquals(toIdentityString(null), driverRef.toString());
     }
 
     @Test
-    public void testToString_whenInitialized_usesWrappedDriverIdentity() {
-        // Arrange
+    public void testToString_wrappedDriver_usesWrappedDriverIdentity() {
         WebDriver mockDriver = mockWebDriver();
         WebDriver mockWrappedDriver = createWrapsDriver(mockDriver);
-        // Act
         driverRef.set(mockWrappedDriver);
-        // Assert
-        assertEquals(identityToString(mockWrappedDriver), driverRef.toString());
+        assertEquals(toIdentityString(mockWrappedDriver), driverRef.toString());
     }
 
     private WebDriver createWrapsDriver(WebDriver driver) {

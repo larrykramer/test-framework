@@ -69,8 +69,9 @@ public final class Repository {
      * 3. This class's ClassLoader.
      * 4. The system ClassLoader.
      *
-     * NOTE: We intentionally use Properties.load(InputStream), which forces ISO-8859-1 per the
-     * Properties spec. If you need non-ASCII characters, escape them (e.g. "\u00E9").
+     * Note: We intentionally use Properties.load(InputStream), which forces
+     * ISO-8859-1 per the Properties spec. If you need non-ASCII characters, escape
+     * them (e.g. "\u00E9").
      */
     private static Map<Object, Object> loadRepository() {
         Properties props;

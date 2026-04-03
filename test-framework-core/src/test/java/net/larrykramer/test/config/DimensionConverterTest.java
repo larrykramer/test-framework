@@ -63,17 +63,16 @@ public class DimensionConverterTest {
         }
 
         @Test
-        public void testConvert_givenValue_returnsExpectedDimension() {
+        public void testConvert_supportedFormats_returnsExpectedDimension() {
             assertEquals(expected, new DimensionConverter().convert(value));
         }
     }
 
     public static class InvalidInputTest {
         @Test
-        public void testConvert_givenInvalidFormat_throwsIllegalArgumentException() {
-            // Arrange
+        public void testConvert_invalidFormat_throwsIllegalArgumentException() {
             DimensionConverter converter = new DimensionConverter();
-            // Act & Assert
+
             var expected = IllegalArgumentException.class;
             var e = assertThrows(expected, () -> converter.convert("1920*1080"));
             assertTrue(e.getMessage().contains("<width>x<height>"));
@@ -81,12 +80,12 @@ public class DimensionConverterTest {
         }
 
         @Test(expected = IllegalArgumentException.class)
-        public void testConvert_givenNonNumericComponent_throwsIllegalArgumentException() {
+        public void testConvert_nonNumericHeight_throwsIllegalArgumentException() {
             new DimensionConverter().convert("1920xabc");
         }
 
         @Test(expected = NullPointerException.class)
-        public void testConvert_givenNullValue_throwsNullPointerException() {
+        public void testConvert_nullInput_throwsNullPointerException() {
             new DimensionConverter().convert(null);
         }
     }

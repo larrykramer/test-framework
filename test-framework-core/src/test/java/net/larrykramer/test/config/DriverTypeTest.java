@@ -28,37 +28,37 @@ import static org.junit.Assert.assertEquals;
 
 public class DriverTypeTest {
     @Test
-    public void testOf_givenMatchingName_returnsEnumConstant() {
+    public void testOf_exactName_returnsEnumConstant() {
         assertEquals(DriverType.CHROME, DriverType.of("CHROME"));
     }
 
     @Test
-    public void testOf_givenMixedCaseName_returnsEnumConstant() {
+    public void testOf_mixedCaseName_returnsEnumConstant() {
         assertEquals(DriverType.SAFARI, DriverType.of("sAfArI"));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testOf_givenNameWithWhitespace_throwsIllegalArgumentException() {
+    public void testOf_trailingWhitespace_throwsIllegalArgumentException() {
         DriverType.of("CHROME  ");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testOf_givenInvalidName_throwsIllegalArgumentException() {
+    public void testOf_unknownName_throwsIllegalArgumentException() {
         DriverType.of("invalid-driver-name");
     }
 
     @Test(expected = NullPointerException.class)
-    public void testOf_givenNull_throwsNullPointerException() {
+    public void testOf_nullName_throwsNullPointerException() {
         DriverType.of(null);
     }
 
     @Test
-    public void testGetCanonicalName_givenFirefox_returnsFirefox() {
+    public void testGetCanonicalName_firefoxEnum_returnsFirefox() {
         assertEquals("firefox", DriverType.FIREFOX.getCanonicalName());
     }
 
     @Test(expected = UnsupportedOperationException.class)
-    public void testGetCanonicalName_givenSPI_throwsUnsupportedOperationException() {
+    public void testGetCanonicalName_SPIEnum_throwsUnsupportedOperationException() {
         DriverType.SPI.getCanonicalName();
     }
 }

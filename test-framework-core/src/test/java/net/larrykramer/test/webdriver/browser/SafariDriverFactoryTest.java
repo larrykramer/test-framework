@@ -59,34 +59,29 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testGetDriverType_whenCalled_returnsSafariDriverType() {
+    public void testGetDriverType_initializedFactory_returnsSafariDriverType() {
         assertEquals(DriverType.SAFARI, factory.getDriverType());
     }
 
     @Test
-    public void testCreate_whenCalled_returnsWebDriverInstance() {
-        // Arrange
+    public void testCreate_macOS_returnsWebDriverInstance() {
         try (var mockSafariDriver = mockConstruction(SafariDriver.class);
              var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
             mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(true);
 
-            // Act
             WebDriver driver = factory.create();
 
-            // Assert
             assertEquals(1, mockSafariDriver.constructed().size());
             assertSame(mockSafariDriver.constructed().getFirst(), driver);
         }
     }
 
     @Test
-    public void testCreate_givenNonMacOS_throwsUnsupportedOperationException() {
-        // Arrange
+    public void testCreate_nonMacOS_throwsUnsupportedOperationException() {
         try (var mockSafariDriver = mockConstruction(SafariDriver.class);
              var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
             mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(false);
 
-            // Act & Assert
             assertThrows(UnsupportedOperationException.class, () -> factory.create());
 
             assertEquals(0, mockSafariDriver.constructed().size());
@@ -94,8 +89,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_withWindowSize_setsImplicitWaitAndWindowSize() {
-        // Arrange
+    public void testConfigure_windowSizeConfigured_setsImplicitWaitAndWindowSize() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -109,10 +103,8 @@ public class SafariDriverFactoryTest {
         config.windowSize = Optional.of(new Dimension(1440, 900));
         setDriverConfig(factory, config);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(350L));
         verify(mockWindow).setSize(config.windowSize.get());
         verify(mockWindow, never()).maximize();
@@ -120,8 +112,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_withMaximize_setsImplicitWaitAndMaximize() {
-        // Arrange
+    public void testConfigure_maximizeConfigured_setsImplicitWaitAndMaximize() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -136,10 +127,8 @@ public class SafariDriverFactoryTest {
         config.maximize = true;
         setDriverConfig(factory, config);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(125L));
         verify(mockWindow).maximize();
         verify(mockWindow, never()).setSize(any(Dimension.class));
@@ -147,25 +136,21 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testConfigure_withoutWindowConfiguration_setsImplicitWaitOnly() {
-        // Arrange
+    public void testConfigure_defaultConfig_setsImplicitWaitOnly() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
         when(mockDriver.manage()).thenReturn(mockOptions);
         when(mockOptions.timeouts()).thenReturn(mockTimeouts);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ZERO);
         verify(mockOptions, never()).deleteAllCookies();
     }
 
     @Test
-    public void testConfigure_whenMaximizeThrows_doesNotPropagateException() {
-        // Arrange
+    public void testConfigure_maximizeFailure_doesNotPropagateException() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -179,17 +164,14 @@ public class SafariDriverFactoryTest {
         config.maximize = true;
         setDriverConfig(factory, config);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockWindow).maximize();
     }
 
     @Test
     @LogRule.UsesLogger(level = "WARNING")
-    public void testGetCapabilities_whenHeadlessRequested_logsMessageAndReturnsSafariOptions() {
-        // Arrange
+    public void testGetCapabilities_headlessRequested_logsMessageAndReturnsSafariOptions() {
         try (var mocked = mockStatic(OperatingSystem.class)) {
             mocked.when(OperatingSystem::isMacOS).thenReturn(true);
 
@@ -197,10 +179,7 @@ public class SafariDriverFactoryTest {
             config.headless = true;
             setDriverConfig(factory, config);
 
-            // Act
             SafariOptions result = factory.getCapabilities();
-
-            // Assert
             assertNotNull(result);
 
             final String expectedPrefix = "Headless mode in Safari not supported";
@@ -214,8 +193,7 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenMacOSConfig_appliesCommonCapabilities() {
-        // Arrange
+    public void testGetCapabilities_commonCaps_appliesCommonCapabilities() {
         try (var mocked = mockStatic(OperatingSystem.class)) {
             mocked.when(OperatingSystem::isMacOS).thenReturn(true);
 
@@ -224,10 +202,8 @@ public class SafariDriverFactoryTest {
             config.proxyAddress = Optional.of(URI.create("https://localhost:8443"));
             setDriverConfig(factory, config);
 
-            // Act
             SafariOptions result = factory.getCapabilities();
 
-            // Assert
             assertNotNull(result);
             assertEquals(Boolean.TRUE, result.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
             assertNotNull(result.getCapability(CapabilityType.PROXY));
@@ -235,12 +211,10 @@ public class SafariDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenNonMacOS_allowsGetCapabilitiesButCreateFails() {
-        // Arrange
+    public void testGetCapabilities_nonMacOS_allowsGetCapabilitiesButCreateFails() {
         try (var mocked = mockStatic(OperatingSystem.class)) {
             mocked.when(OperatingSystem::isMacOS).thenReturn(false);
 
-            // Act & Assert
             // We should be able to retrieve the Safari-specific capabilities on non-macOS, but
             // local creation *must* not be allowed on non-macOS.
             assertNotNull(factory.getCapabilities());

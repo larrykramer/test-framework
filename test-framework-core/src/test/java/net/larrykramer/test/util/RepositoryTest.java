@@ -44,48 +44,41 @@ public class RepositoryTest {
     public final TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Test
-    public void testGet_withExistingKey_returnsCorrectLocator() throws Throwable {
-        // Arrange
-        // language=properties
+    public void testGet_existingKey_returnsCorrectLocator() throws Throwable {
+        //language=properties
         final String repository = "login.button=css=.btn-primary\n";
-        // Act
+
         Locator result = getLocator(repository, "login.button");
-        // Assert
         assertEquals("css", result.type());
         assertEquals(".btn-primary", result.selector());
     }
 
     @Test
-    public void testGet_withExistingKeyAndArgs_returnsFormattedLocator() throws Throwable {
-        // Arrange
-        // language=properties
+    public void testGet_formatArgs_returnsFormattedLocator() throws Throwable {
+        //language=properties
         final String repository = "user.link=xpath=//a[@data-user='%s']\n";
-        // Act
+
         Locator result = getLocator(repository, "user.link", "alice");
-        // Assert
         assertEquals("xpath", result.type());
         assertEquals("//a[@data-user='alice']", result.selector());
     }
 
     @Test
-    public void testGet_withUnicodeCharacters_returnsCorrectLocators() throws Throwable {
-        // Arrange
+    public void testGet_unicodeContent_returnsCorrectLocators() throws Throwable {
         // This string simulates a properties file containing ISO-8859-1 encoded characters.
         // We include a key with a French character and a value to be formatted with a German
         // character. We also include a locator with Japanese text.
-        // language=properties
+        //language=properties
         final String repository = """
                 page.title.fran\\u00E7ais=xpath=//h1[text()='Titre de la Page']
                 german.welcome=xpath=//span[text()='Willkommen, %s!']
                 japanese.salutation=xpath=//h2[text()='\\u3053\\u3093\\u306B\\u3061\\u306F\\u3001\\u4E16\\u754C\\u0020\\uD83C\\uDF0F']
                 """;
 
-        // Act
         Locator frenchResult = getLocator(repository, "page.title.français");
         Locator germanResult = getLocator(repository, "german.welcome", "Jürgen");
         Locator japaneseResult = getLocator(repository, "japanese.salutation");
 
-        // Assert
         assertEquals("xpath", frenchResult.type());
         assertEquals("//h1[text()='Titre de la Page']", frenchResult.selector());
         assertEquals("xpath", germanResult.type());
@@ -95,82 +88,66 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withNullArgs_returnsNormalizedLocator() throws Throwable {
-        // Arrange
-        // language=properties
+    public void testGet_nullArgs_returnsNormalizedLocator() throws Throwable {
+        //language=properties
         final String repository = "null.arguments=css=Item %s\n";
-        // Act
+
         Locator result = getLocator(repository, "null.arguments", (Object[]) null);
-        // Assert
         assertEquals("css", result.type());
         assertEquals("Item %s", result.selector());
     }
 
     @Test
-    public void testGet_givenRepositoryOverrideProperty_prefersExternalLocator() throws Throwable {
-        // Arrange: Part 1
+    public void testGet_externalOverride_prefersExternalLocator() throws Throwable {
         File f = tempFolder.newFile("override-repository.properties");
         Files.writeString(f.toPath(), "key=css=.btn-secondary", StandardCharsets.ISO_8859_1);
 
-        // language=properties
+        //language=properties
         final String repository = "key=id=fallback-id\n";
 
         try (var env = ScopedSystemProperties.open()) {
-            // Arrange: Part 2
             env.setProperty("net.larrykramer.test.repository.file", f.getAbsolutePath());
 
-            // Act
             Locator result = getLocator(repository, "key");
-
-            // Assert
             assertEquals("css", result.type());
             assertEquals(".btn-secondary", result.selector());
         }
     }
 
     @Test
-    public void testGet_givenMalformedOverrideFile_usesFallbackLocator() throws Throwable {
-        // Arrange: Part 1
+    public void testGet_malformedExternal_usesFallbackLocator() throws Throwable {
         // Create a properties files with a malformed Unicode escape sequence (e.g., containing an
-        // invalid character or an incomplete sequence). This guaranteed by the Properties.load()
+        // invalid character or an incomplete sequence). This is guaranteed by the Properties.load()
         // specification to throw an exception.
         File f = tempFolder.newFile("malformed-repository.properties");
         Files.writeString(f.toPath(), "key=\\u123X", StandardCharsets.ISO_8859_1);
 
-        // language=properties
+        //language=properties
         final String repository = "key=id=fallback-id\n";
 
         try (var env = ScopedSystemProperties.open()) {
-            // Arrange: Part 2
             env.setProperty("net.larrykramer.test.repository.file", f.getAbsolutePath());
 
-            // Act
             Locator result = getLocator(repository, "key");
-
-            // Assert
             assertEquals("id", result.type());
             assertEquals("fallback-id", result.selector());
         }
     }
 
     @Test
-    public void testGet_withNonExistentKey_throwsMissingResourceException() {
-        // Arrange
-        // language=properties
+    public void testGet_missingKey_throwsMissingResourceException() {
+        //language=properties
         final String repository = "login.button=css=.btn\n";
-        // Act
+
         Throwable thrown = getLocatorExceptionally(repository, "absent");
-        // Assert
         assertNotNull(thrown);
         assertEquals(MissingResourceException.class, thrown.getClass());
         assertEquals("Missing locator: absent", thrown.getMessage());
     }
 
     @Test
-    public void testGet_whenMissingRepository_throwsMissingResourceException() {
-        // Act
+    public void testGet_missingRepo_throwsMissingResourceException() {
         Throwable thrown = getLocatorExceptionally(null, "any.key");
-        // Assert
         assertNotNull(thrown);
         assertEquals(MissingResourceException.class, thrown.getClass());
         assertNotNull(thrown.getMessage());
@@ -178,40 +155,33 @@ public class RepositoryTest {
     }
 
     @Test
-    public void testGet_withInvalidLocatorFormat_throwsIllegalArgumentException() {
-        // Arrange
-        // language=properties
+    public void testGet_invalidFormat_throwsIllegalArgumentException() {
+        //language=properties
         final String repository = "broken=css-selector\n";
-        // Act
+
         Throwable thrown = getLocatorExceptionally(repository, "broken");
-        // Assert
         assertNotNull(thrown);
         assertEquals(IllegalArgumentException.class, thrown.getClass());
         assertEquals("Invalid locator format for 'broken': css-selector", thrown.getMessage());
     }
 
     @Test
-    public void testGet_withBlankSelector_throwsIllegalArgumentException() {
-        // Arrange
-        // language=properties
+    public void testGet_blankSelector_throwsIllegalArgumentException() {
+        //language=properties
         final String repository = "blank=css=\n";
-        // Act
+
         Throwable thrown = getLocatorExceptionally(repository, "blank");
-        // Assert
         assertNotNull(thrown);
         assertEquals(IllegalArgumentException.class, thrown.getClass());
         assertEquals("Invalid locator format for 'blank': css=", thrown.getMessage());
     }
 
     @Test
-    public void testGet_withInvalidFormatArgs_throwsIllegalArgumentException() {
-        // Arrange
-        // language=properties
+    public void testGet_missingFormatArg_throwsIllegalArgumentException() {
+        //language=properties
         final String repository = "bad.format=css=Item %s %d\n";
-        // Act
+
         Throwable thrown = getLocatorExceptionally(repository, "bad.format", "only-one-arg");
-        // Assert
-        assertNotNull(thrown);
         assertEquals(IllegalArgumentException.class, thrown.getClass());
 
         Throwable cause = thrown.getCause();
@@ -242,7 +212,7 @@ public class RepositoryTest {
         HashMap<String, String> resources = createResourceMap(props);
         try {
             return IsolatedClassLoader.doInvoke(Repository.class, resources, clazz -> {
-                // Reflectively invoke Repository.get and captures any thrown exception instead
+                // Reflectively invoke Repository.get and capture any thrown exception instead
                 // of letting it fail the test. This enables assertions to inspect the exception
                 // type or message.
                 try {

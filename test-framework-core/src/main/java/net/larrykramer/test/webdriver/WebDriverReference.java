@@ -31,7 +31,7 @@ import jakarta.enterprise.inject.Vetoed;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WrapsDriver;
 
-import static net.larrykramer.test.util.SharedUtils.identityToString;
+import static net.larrykramer.test.util.SharedUtils.toIdentityString;
 
 /**
  * Holder for a Selenium {@code WebDriver} instance used within scenario scope.
@@ -265,7 +265,7 @@ public class WebDriverReference {
      */
     @Override
     public String toString() {
-        return identityToString(driver);
+        return toIdentityString(driver);
     }
 
     private WebDriver unwrap(WebDriver driver) {
@@ -289,7 +289,7 @@ public class WebDriverReference {
         LOGGER.log(Level.FINE, "Maximum WebDriver unwrap depth reached - wrapper chain may be "
                         + "cyclic or deeper than expected\nMaximum unwrap depth: {0}\nLast "
                         + "resolved WebDriver instance: {1}",
-                new Object[] { MAX_UNWRAP_DEPTH, identityToString(current) });
+                new Object[] { MAX_UNWRAP_DEPTH, toIdentityString(current) });
         return current;
     }
 

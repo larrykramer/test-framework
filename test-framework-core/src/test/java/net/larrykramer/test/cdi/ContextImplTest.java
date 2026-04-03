@@ -76,8 +76,7 @@ public class ContextImplTest {
     }
 
     @Test
-    public void testDestroy_existingInstance_invokesContextualDestroy() {
-        // Arrange
+    public void testDestroy_existingBean_invokesContextualDestroy() {
         Contextual<String> mockContextual = createMockContextual();
         CreationalContext<String> mockCreationalContext = createMockCreationalContext();
         String instance = "stored-instance";
@@ -86,62 +85,55 @@ public class ContextImplTest {
         context.activate(mockScenario);
         context.get(mockContextual, mockCreationalContext);
 
-        // Act
         context.destroy(mockContextual);
 
-        // Assert
         verify(mockContextual).destroy(instance, mockCreationalContext);
         assertNull(context.get(mockContextual));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testDestroy_missingInstance_doesNotInvokeContextualDestroy() {
-        // Arrange
+    public void testDestroy_missingBean_doesNotInvokeContextualDestroy() {
         Contextual<String> mockContextual = createMockContextual();
         context.activate(mockScenario);
-        // Act
+
         context.destroy(mockContextual);
-        // Assert
+
         verify(mockContextual, never()).destroy(anyString(), any(CreationalContext.class));
     }
 
     @Test(expected = ContextNotActiveException.class)
-    public void testDestroy_withoutActiveContext_throwsContextNotActiveException() {
+    public void testDestroy_inactiveContext_throwsContextNotActiveException() {
         context.destroy(createMockContextual());
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testDestroy_withNullContext_throwsIllegalArgumentException() {
+    public void testDestroy_nullContextual_throwsIllegalArgumentException() {
         context.destroy(null);
     }
 
     @Test
-    public void testGetScope_noState_returnsScenarioScopedClass() {
+    public void testGetScope_defaultState_returnsScenarioScopedClass() {
         assertEquals(ScenarioScoped.class, context.getScope());
     }
 
     @Test
-    public void testGet_withCreationalContext_createsAndStoresInstance() {
-        // Arrange
+    public void testGet_missingBean_createsAndStoresInstance() {
         Contextual<String> mockContextual = createMockContextual();
         CreationalContext<String> mockCreationalContext = createMockCreationalContext();
         String instance = "created-instance";
         when(mockContextual.create(mockCreationalContext)).thenReturn(instance);
         context.activate(mockScenario);
 
-        // Act
         String result = context.get(mockContextual, mockCreationalContext);
 
-        // Assert
         assertEquals(instance, result);
         verify(mockContextual).create(mockCreationalContext);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testGet_existingContextual_returnsCachedInstance() {
-        // Arrange
+    public void testGet_existingBean_returnsCachedInstance() {
         Contextual<String> mockContextual = createMockContextual();
         CreationalContext<String> mockCreationalContext = createMockCreationalContext();
         String instance = "cached-instance";
@@ -150,61 +142,52 @@ public class ContextImplTest {
         context.activate(mockScenario);
         context.get(mockContextual, mockCreationalContext);
 
-        // Act
         String result = context.get(mockContextual);
 
-        // Assert
         assertEquals(instance, result);
         verify(mockContextual, times(1)).create(any(CreationalContext.class));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testGet_withoutCreationalContextAndMissingBean_returnsNull() {
-        // Arrange
+    public void testGet_missingBean_returnsNull() {
         Contextual<String> mockContextual = createMockContextual();
         context.activate(mockScenario);
-        // Act & Assert
         assertNull(context.get(mockContextual));
         verify(mockContextual, never()).create(any(CreationalContext.class));
     }
 
     @Test
-    public void testGet_contextualCreateReturnsNull_returnsNullAndDoesNotStore() {
-        // Arrange
+    public void testGet_nullInstance_returnsNullAndDoesNotStore() {
         Contextual<String> mockContextual = createMockContextual();
         CreationalContext<String> mockCreationalContext = createMockCreationalContext();
         when(mockContextual.create(mockCreationalContext)).thenReturn(null);
 
         context.activate(mockScenario);
 
-        // Act
         String firstResult = context.get(mockContextual, mockCreationalContext);
         String secondResult = context.get(mockContextual);
 
-        // Assert
         assertNull(firstResult);
         assertNull(secondResult);
         verify(mockContextual, times(1)).create(mockCreationalContext);
     }
 
     @Test(expected = ContextNotActiveException.class)
-    public void testGet_withoutActiveContext_throwsContextNotActiveException() {
+    public void testGet_inactiveContext_throwsContextNotActiveException() {
         context.get(createMockContextual());
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGet_withNullContext_throwsIllegalArgumentException() {
-        // Arrange
+    public void testGet_nullContextual_throwsIllegalArgumentException() {
         CreationalContext<Object> mockCreationalContext = createMockCreationalContext();
         context.activate(mockScenario);
-        // Act
         context.get(null, mockCreationalContext);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testGet_threadIsolation_preventsCrossThreadVisibility() throws Exception {
+    public void testGet_crossThread_preventsCrossThreadVisibility() throws Exception {
         // Arrange
         Contextual<String> mockContextual = createMockContextual();
         when(mockContextual.create(any(CreationalContext.class)))
@@ -266,41 +249,36 @@ public class ContextImplTest {
     }
 
     @Test
-    public void testIsActive_withoutActivation_returnsFalse() {
+    public void testIsActive_inactiveContext_returnsFalse() {
         assertFalse(context.isActive());
     }
 
     @Test
-    public void testIsActive_afterActivation_returnsTrue() {
+    public void testIsActive_activeContext_returnsTrue() {
         context.activate(mockScenario);
         assertTrue(context.isActive());
     }
 
     @Test
-    public void testAssociate_withoutActiveContext_activatesAndFiresInitializedEvent() {
-        // Act
+    public void testAssociate_inactiveContext_activatesAndFiresInitializedEvent() {
         context.associate(mockScenario);
-        // Assert
         assertTrue(context.isActive());
         verify(mockInitializedEvent).fire(mockScenario);
     }
 
     @Test
-    public void testAssociate_withSameScenario_doesNotRefireInitializedEvent() {
+    public void testAssociate_sameScenario_doesNotRefireInitializedEvent() {
         context.activate(mockScenario);
         context.associate(mockScenario);
         verify(mockInitializedEvent, times(1)).fire(any(Scenario.class));
     }
 
     @Test
-    public void testAssociate_withDifferentScenario_firesInitializedEventForNewScenario() {
-        // Arrange
+    public void testAssociate_newScenario_firesInitializedEventForNewScenario() {
         context.activate(mockScenario);
 
-        // Act
         context.associate(mockAnotherScenario);
 
-        // Assert
         // The initialization event is fired in order for each scenario.
         var inOrder = inOrder(mockInitializedEvent);
         inOrder.verify(mockInitializedEvent).fire(mockScenario);
@@ -309,19 +287,18 @@ public class ContextImplTest {
     }
 
     @Test(expected = NullPointerException.class)
-    public void testAssociate_withNullScenario_throwsNullPointerException() {
+    public void testAssociate_nullScenario_throwsNullPointerException() {
         context.associate(null);
     }
 
     @Test
-    public void testActivate_withNullScenario_firesInitializedEvent() {
+    public void testActivate_nullScenario_firesInitializedEvent() {
         context.activate(null);
         verify(mockInitializedEvent, never()).fire(any(Scenario.class));
     }
 
     @Test
-    public void testActivate_whenContextAlreadyActive_replacesPreviousContext() {
-        // Arrange
+    public void testActivate_activeContext_replacesPreviousContext() {
         Contextual<String> mockContextual = createMockContextual();
         CreationalContext<String> mockCreationalContext = createMockCreationalContext();
         String instance = "first-instance";
@@ -330,10 +307,8 @@ public class ContextImplTest {
         context.activate(mockScenario);
         context.get(mockContextual, mockCreationalContext);
 
-        // Act
         context.activate(mockAnotherScenario);
 
-        // Assert
         // Verify the sequence: destroy instance, fire destroyed event, fire initialized event
         var inOrder = inOrder(mockContextual, mockDestroyedEvent, mockInitializedEvent);
         inOrder.verify(mockContextual).destroy(instance, mockCreationalContext);
@@ -343,8 +318,7 @@ public class ContextImplTest {
     }
 
     @Test
-    public void testDeactivate_withActiveContext_destroysInstancesAndFiresDestroyedEvent() {
-        // Arrange
+    public void testDeactivate_activeContext_destroysInstancesAndFiresDestroyedEvent() {
         Contextual<String> mockContextual = createMockContextual();
         CreationalContext<String> mockCreationalContext = createMockCreationalContext();
         String instance = "deactivate-instance";
@@ -353,38 +327,30 @@ public class ContextImplTest {
         context.activate(mockScenario);
         context.get(mockContextual, mockCreationalContext);
 
-        // Act
         context.deactivate();
 
-        // Assert
         assertFalse(context.isActive());
         verify(mockContextual).destroy(instance, mockCreationalContext);
         verify(mockDestroyedEvent, times(1)).fire(mockScenario);
     }
 
     @Test
-    public void testDeactivate_withNullScenario_doesNotFireDestroyedEvent() {
-        // Arrange
+    public void testDeactivate_nullScenario_doesNotFireDestroyedEvent() {
         context.activate(null);
-        // Act
         context.deactivate();
-        // Assert
         assertFalse(context.isActive());
         verify(mockDestroyedEvent, never()).fire(any(Scenario.class));
     }
 
     @Test
-    public void testDeactivate_withoutActiveContext_doesNothing() {
-        // Act
+    public void testDeactivate_inactiveContext_doesNothing() {
         context.deactivate();
-        // Assert
         assertFalse(context.isActive());
         verify(mockBeanManager, never()).getEvent();
     }
 
     @Test
-    public void testDeactivate_instanceDestroyThrows_continuesToDestroyOtherInstances() {
-        // Arrange
+    public void testDeactivate_destroyFailure_continuesToDestroyOtherInstances() {
         // Create two distinct beans to manage. The first bean should behave normally and the
         // second "faulty" bean's destroy method should throw an exception.
         Contextual<String> mockContextual = createMockContextual();
@@ -403,11 +369,9 @@ public class ContextImplTest {
         context.get(mockFaultyContextual, mockFaultyCreationalContext);
         context.get(mockContextual, mockCreationalContext);
 
-        // Act
         // This should not throw an exception.
         context.deactivate();
 
-        // Assert
         verify(mockContextual).destroy(instance, mockCreationalContext);
         verify(mockFaultyContextual).destroy(faultyInstance, mockFaultyCreationalContext);
     }

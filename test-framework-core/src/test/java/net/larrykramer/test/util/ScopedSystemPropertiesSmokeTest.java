@@ -31,18 +31,15 @@ import static org.junit.Assert.assertEquals;
 @Category(SmokeTest.class)
 public class ScopedSystemPropertiesSmokeTest {
     @Test
-    public void testOpen_whenPropertyIsSetInScope_itIsRestoredAfterClose() {
-        // Arrange
+    public void testOpen_propertyChanged_itIsRestoredAfterClose() {
         String key = "my.scoped.property.test";
         String original = System.getProperty(key); // could be null
 
-        // Act & Assert
         try (var env = ScopedSystemProperties.open()) {
             env.setProperty(key, "new-value");
             assertEquals("new-value", System.getProperty(key));
         }
 
-        // Assert
         assertEquals(original, System.getProperty(key));
     }
 }

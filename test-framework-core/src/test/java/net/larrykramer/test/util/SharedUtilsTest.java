@@ -22,81 +22,60 @@
 
 package net.larrykramer.test.util;
 
-import java.lang.reflect.Proxy;
-
 import org.junit.Test;
 
+import static net.larrykramer.test.util.SharedUtils.stripToNull;
+import static net.larrykramer.test.util.SharedUtils.toIdentityString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertNull;
 
 public class SharedUtilsTest {
     @Test
-    public void testIdentityToString_givenNull_returnsUninitialized() {
-        assertEquals("<uninitialized>", SharedUtils.identityToString(null));
+    public void testToIdentityString_nullInput_returnsUninitialized() {
+        assertEquals("<uninitialized>", toIdentityString(null));
     }
 
     @Test
-    public void testIdentityToString_givenObject_returnsIdentityStyleString() {
-        // Arrange
+    public void testToIdentityString_objectInput_returnsIdentityStyleString() {
         Object obj = new Object();
         String expected = obj.getClass().getName()
                 + "@"
                 + Integer.toHexString(System.identityHashCode(obj));
-        // Act
-        String result = SharedUtils.identityToString(obj);
-        // Assert
-        assertEquals(expected, result);
+        assertEquals(expected, toIdentityString(obj));
     }
 
     @Test
-    public void testGetUnproxiedClass_givenRegularClass_returnsSameClass() {
-        assertSame(String.class, SharedUtils.getUnproxiedClass(String.class));
+    public void testStripToNull_nullInput_returnsNull() {
+        assertNull(stripToNull(null));
     }
 
     @Test
-    public void testGetUnproxiedClass_givenProxySubclassChain_returnsBaseClass() {
-        assertSame(Base.class, SharedUtils.getUnproxiedClass(Base$$Proxy.class));
+    public void testStripToNull_emptyString_returnsNull() {
+        assertNull(stripToNull(""));
     }
 
     @Test
-    public void testGetUnproxiedClass_givenJDKDynamicProxy_returnsProxyClass() {
-        // Arrange
-        //noinspection SuspiciousInvocationHandlerImplementation
-        Object proxyInstance = Proxy.newProxyInstance(TestInterface.class.getClassLoader(),
-                new Class<?>[] { TestInterface.class },
-                (proxy, method, args) -> null);
-        // Act & Assert
-        assertSame(Proxy.class, SharedUtils.getUnproxiedClass(proxyInstance.getClass()));
+    public void testStripToNull_nonBlankInput_returnsSameContent() {
+        assertEquals("value", stripToNull("value"));
     }
 
     @Test
-    public void testGetUnproxiedClass_givenProxyExtendsObject_returnsSameClass() {
-        //@formatter:off
-        class Object$$Proxy {}
-        //@formatter:on
-        assertSame(Object$$Proxy.class, SharedUtils.getUnproxiedClass(Object$$Proxy.class));
+    public void testStripToNull_asciiWhitespace_returnsStrippedString() {
+        assertEquals("value", stripToNull("  value  "));
     }
 
     @Test
-    public void testGetUnproxiedClass_givenProxyNamedInterface_returnsSameInterface() {
-        //@formatter:off
-        interface Interface$$Proxy {}
-        //@formatter:on
-        assertSame(Interface$$Proxy.class, SharedUtils.getUnproxiedClass(Interface$$Proxy.class));
+    public void testStripToNull_unicodeWhitespace_returnsStrippedString() {
+        assertEquals("value", stripToNull("\u2003value\u2003"));
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testGetUnproxiedClass_givenNull_throwsNullPointerException() {
-        SharedUtils.getUnproxiedClass(null);
+    @Test
+    public void testStripToNull_whitespaceOnlyInput_returnsNull() {
+        assertNull(stripToNull(" \t\n "));
     }
 
-    // -- Class Definitions --
-
-    //@formatter:off
-    public interface TestInterface {}
-    static class Base {}
-    static class Base_ClientProxy extends Base {}
-    static class Base_WeldClientProxy extends Base_ClientProxy {}
-    static class Base$$Proxy extends Base_WeldClientProxy {}
-    //@formatter:on
+    @Test
+    public void testStripToNull_paddedInputWithInternalSpace_returnsStrippedString() {
+        assertEquals("ab c", stripToNull("  ab c\u2003  "));
+    }
 }

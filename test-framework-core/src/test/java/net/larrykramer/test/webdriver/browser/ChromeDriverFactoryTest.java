@@ -60,25 +60,21 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testGetDriverType_whenCalled_returnsChromeDriverType() {
+    public void testGetDriverType_initializedFactory_returnsChromeDriverType() {
         assertEquals(DriverType.CHROME, factory.getDriverType());
     }
 
     @Test
-    public void testCreate_whenCalled_returnsWebDriverInstance() {
-        // Arrange
+    public void testCreate_defaultState_returnsWebDriverInstance() {
         try (var mocked = mockConstruction(ChromeDriver.class)) {
-            // Act
             WebDriver driver = factory.create();
-            // Assert
             assertEquals(1, mocked.constructed().size());
             assertSame(mocked.constructed().getFirst(), driver);
         }
     }
 
     @Test
-    public void testConfigure_whenCalled_appliesCommonAndChromiumConfiguration() {
-        // Arrange
+    public void testConfigure_standardConfig_appliesCommonAndChromiumConfiguration() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -89,18 +85,15 @@ public class ChromeDriverFactoryTest {
         config.implicitTimeout = 400L;
         setDriverConfig(factory, config);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(400L));
         verify(mockOptions).deleteAllCookies();
         verify(mockOptions, never()).window();
     }
 
     @Test
-    public void testGetCapabilities_givenChromeAndGlobalConfig_appliesExpectedCapabilities() {
-        // Arrange
+    public void testGetCapabilities_fullConfig_appliesExpectedCapabilities() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
@@ -112,10 +105,8 @@ public class ChromeDriverFactoryTest {
         setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
-        // Act
         ChromeOptions options = factory.getCapabilities();
 
-        // Assert
         assertNotNull(options);
 
         assertEquals(Boolean.TRUE, options.getCapability(CapabilityType.ACCEPT_INSECURE_CERTS));
@@ -131,8 +122,7 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withMaximizeTrueAndWindowSize_addsOnlyWindowSizeArgument() {
-        // Arrange
+    public void testGetCapabilities_maximizeTrueAndwindowSize_addsOnlyWindowSizeArgument() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = false;
@@ -143,10 +133,8 @@ public class ChromeDriverFactoryTest {
         setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
-        // Act
         ChromeOptions options = factory.getCapabilities();
 
-        // Assert
         assertNotNull(options);
 
         List<String> args = extractArguments(options);
@@ -156,18 +144,15 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withMaximizeTrueAndNoWindowSize_addsStartMaximizedArgument() {
-        // Arrange
+    public void testGetCapabilities_maximizeOnly_addsStartMaximizedArgument() {
         DriverConfig config = createConfig();
         config.headless = false;
         config.maximize = true;
         config.windowSize = Optional.empty();
         setDriverConfig(factory, config);
 
-        // Act
         ChromeOptions options = factory.getCapabilities();
 
-        // Assert
         assertNotNull(options);
 
         List<String> args = extractArguments(options);
@@ -176,8 +161,7 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withStartMaximizedArgument_doesNotDuplicateArgument() {
-        // Arrange
+    public void testGetCapabilities_startMaximizedArgument_doesNotDuplicateArgument() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = false;
@@ -187,10 +171,8 @@ public class ChromeDriverFactoryTest {
         setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
-        // Act
         ChromeOptions options = factory.getCapabilities();
 
-        // Assert
         assertNotNull(options);
 
         List<String> args = extractArguments(options);
@@ -200,25 +182,21 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withWindowSize_addsWindowSizeArgument() {
-        // Arrange
+    public void testGetCapabilities_windowSize_addsWindowSizeArgument() {
         DriverConfig config = createConfig();
         config.headless = false;
         config.windowSize = Optional.of(new Dimension(1024, 768));
         setDriverConfig(factory, config);
 
-        // Act
         ChromeOptions options = factory.getCapabilities();
 
-        // Assert
         assertNotNull(options);
         List<String> args = extractArguments(options);
         assertTrue(args.contains("--window-size=1024,768"));
     }
 
     @Test
-    public void testGetCapabilities_withHeadlessArgument_doesNotDuplicateHeadlessOption() {
-        // Arrange
+    public void testGetCapabilities_existingHeadless_doesNotDuplicateHeadlessArgument() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.headless = true;
@@ -227,10 +205,8 @@ public class ChromeDriverFactoryTest {
         setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
-        // Act
         ChromeOptions options = factory.getCapabilities();
 
-        // Assert
         assertNotNull(options);
 
         List<String> args = extractArguments(options);
@@ -247,8 +223,7 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_withWindowSizeArgument_doesNotDuplicateWindowSizeOption() {
-        // Arrange
+    public void testGetCapabilities_windowSizeArgument_doesNotDuplicateWindowSizeArgument() {
         DriverConfig config = createConfig();
         ChromiumConfig chromium = new ChromiumConfig();
         config.maximize = false;
@@ -258,11 +233,10 @@ public class ChromeDriverFactoryTest {
         setDriverConfig(factory, config);
         setChromeConfig(chromium);
 
-        // Act
         ChromeOptions options = factory.getCapabilities();
 
-        // Assert
         assertNotNull(options);
+
         List<String> args = extractArguments(options);
         assertEquals(2, args.size());
         assertTrue(args.contains("--foo"));
@@ -271,13 +245,11 @@ public class ChromeDriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenNegativeWindowSize_throwsIllegalArgumentException() {
-        // Arrange
+    public void testGetCapabilities_invalidWindowSize_throwsIllegalArgumentException() {
         DriverConfig config = createConfig();
         config.windowSize = Optional.of(new Dimension(-800, -600));
         setDriverConfig(factory, config);
 
-        // Act & Assert
         var e = assertThrows(IllegalArgumentException.class, () -> factory.getCapabilities());
         assertTrue(e.getMessage().contains("-800"));
         assertTrue(e.getMessage().contains("-600"));

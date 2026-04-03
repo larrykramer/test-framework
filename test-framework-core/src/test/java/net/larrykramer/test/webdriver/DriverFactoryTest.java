@@ -44,14 +44,13 @@ public class DriverFactoryTest {
     public LogRule logRule = new LogRule(DriverFactory.class.getName());
 
     @Test
-    public void testGetDriverType_givenSPIFactory_returnsSPIDriverType() {
+    public void testGetDriverType_SPIFactory_returnsSPIDriverType() {
         final SPIDriverFactory factory = new SPIDriverFactory(null, null, null);
         assertEquals(DriverType.SPI, factory.getDriverType());
     }
 
     @Test
-    public void testCreate_withConfig_invokesSubclassAndReturnsWebDriver() {
-        // Arrange
+    public void testCreate_configuredCaps_invokesSubclassAndReturnsWebDriver() {
         MutableCapabilities capabilities = new MutableCapabilities();
         WebDriver mockDriver = mock(WebDriver.class);
         DriverConfig config = createConfig();
@@ -59,10 +58,8 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, mockDriver);
 
-        // Act
         WebDriver result = factory.create();
 
-        // Assert
         assertSame(mockDriver, result);
         assertSame(capabilities, factory.lastCapabilities);
         assertSame(config, factory.config);
@@ -71,22 +68,20 @@ public class DriverFactoryTest {
     }
 
     @Test
-    public void testCreate_withNullOptions_passesNullToSubclass() {
-        // Arrange
+    public void testCreate_nullCapabilities_passesNullToSubclass() {
         WebDriver mockDriver = mock(WebDriver.class);
         DriverConfig config = createConfig();
         SPIDriverFactory factory = new SPIDriverFactory(null, config, mockDriver);
-        // Act
+
         WebDriver result = factory.create();
-        // Assert
+
         assertSame(mockDriver, result);
         assertNull(factory.lastCapabilities);
         assertSame(config, factory.config);
     }
 
     @Test
-    public void testConfigure_withPositiveImplicitTimeout_setsImplicitWait() {
-        // Arrange
+    public void testConfigure_positiveTimeout_setsImplicitWait() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -98,16 +93,13 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockTimeouts).implicitlyWait(Duration.ofMillis(500L));
     }
 
     @Test
-    public void testConfigure_withNegativeImplicitTimeout_doesNotSetImplicitWait() {
-        // Arrange
+    public void testConfigure_negativeTimeout_doesNotSetImplicitWait() {
         WebDriver mockDriver = mock(WebDriver.class);
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         WebDriver.Timeouts mockTimeouts = mock(WebDriver.Timeouts.class);
@@ -119,16 +111,13 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
 
-        // Act
         factory.configure(mockDriver);
 
-        // Assert
         verify(mockTimeouts, never()).implicitlyWait(any(Duration.class));
     }
 
     @Test
-    public void testGetCapabilities_givenDefaultImplementation_returnsNull() {
-        // Arrange
+    public void testGetCapabilities_baseFactory_returnsNull() {
         DriverFactory<MutableCapabilities> factory = new DriverFactory<>() {
             @Override
             public DriverType getDriverType() {
@@ -140,54 +129,42 @@ public class DriverFactoryTest {
                 throw new UnsupportedOperationException();
             }
         };
-        // Act & Assert
         assertNull(factory.getCapabilities());
     }
 
     @Test
-    public void testGetCapabilities_givenNullCapabilities_returnsNull() {
-        // Arrange
+    public void testGetCapabilities_nullCapabilities_returnsNull() {
         DriverConfig config = createConfig();
         SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
-        // Act
         MutableCapabilities result = factory.getCapabilities();
-        // Assert
         assertNull(result);
         assertSame(config, factory.config);
     }
 
     @Test
-    public void testGetCapabilities_givenAllowInsecureCertsIsFalse_setsCapabilityToFalse() {
-        // Arrange
+    public void testGetCapabilities_insecureFalse_setsCapabilityToFalse() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.allowInsecureCerts = false;
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
         MutableCapabilities result = factory.getCapabilities();
 
-        // Assert
         assertSame(capabilities, result);
         assertEquals(Boolean.FALSE, result.getCapability(ACCEPT_INSECURE_CERTS));
         assertNull(result.getCapability(PROXY));
     }
 
     @Test
-    public void testGetCapabilities_givenHttpProxyWithoutPort_setsHttpProxyOnly() {
-        // Arrange
+    public void testGetCapabilities_httpProxy_setsHttpProxyOnly() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("http://proxy.example.com"));
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals(Proxy.ProxyType.MANUAL, proxy.getProxyType());
         assertEquals("proxy.example.com", proxy.getHttpProxy());
@@ -196,38 +173,28 @@ public class DriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenHttpProxyWithPort_setsHttpProxyWithPort() {
-        // Arrange
+    public void testGetCapabilities_httpProxyPort_setsHttpProxyWithPort() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("//proxy.example.com:8181"));
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals("proxy.example.com:8181", proxy.getHttpProxy());
         assertNull(proxy.getSslProxy());
     }
 
     @Test
-    public void testGetCapabilities_givenIPv6HttpProxy_setsHttpProxyWithBrackets() {
-        // Arrange
+    public void testGetCapabilities_IPv6Proxy_setsHttpProxyWithBrackets() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("http://[fe80::1]:8080"));
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals("[fe80::1]:8080", proxy.getHttpProxy());
         assertNull(proxy.getSslProxy());
@@ -235,38 +202,28 @@ public class DriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenHttpsProxy_setsHttpAndSslProxy() {
-        // Arrange
+    public void testGetCapabilities_httpsProxy_setsHttpAndSslProxy() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://secure.example:8443"));
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals("secure.example:8443", proxy.getHttpProxy());
         assertEquals("secure.example:8443", proxy.getSslProxy());
     }
 
     @Test
-    public void testGetCapabilities_givenSocksProxy_setsVersion5AndProxy() {
-        // Arrange
+    public void testGetCapabilities_socksProxy_setsVersion5AndProxy() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://socks.example:1080"));
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals("socks.example:1080", proxy.getSocksProxy());
         assertEquals(Integer.valueOf(5), proxy.getSocksVersion());
@@ -275,19 +232,14 @@ public class DriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenSocks5Proxy_setsVersion5AndProxy() {
-        // Arrange
+    public void testGetCapabilities_socks5Proxy_setsVersion5AndProxy() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("SOCKS5://socks.example:1080"));
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals("socks.example:1080", proxy.getSocksProxy());
         assertEquals(Integer.valueOf(5), proxy.getSocksVersion());
@@ -296,27 +248,21 @@ public class DriverFactoryTest {
     }
 
     @Test
-    public void testGetCapabilities_givenSocks4Proxy_setsVersion4() {
-        // Arrange
+    public void testGetCapabilities_socks4Proxy_setsVersion4() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks4://legacy.example:9050"));
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals("legacy.example:9050", proxy.getSocksProxy());
         assertEquals(Integer.valueOf(4), proxy.getSocksVersion());
     }
 
     @Test
-    public void testGetCapabilities_givenSocksProxyWithCredentials_setsAuthentication() {
-        // Arrange
+    public void testGetCapabilities_socksAuth_setsAuthentication() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://auth.example:1080"));
@@ -325,19 +271,14 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals(" user ", proxy.getSocksUsername());
         assertEquals(" pass ", proxy.getSocksPassword());
     }
 
     @Test
-    public void testGetCapabilities_givenSocksProxyWithMissingPassword_skipsAuthentication() {
-        // Arrange
+    public void testGetCapabilities_blankPassword_skipsAuthentication() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("socks://auth.example:1080"));
@@ -346,19 +287,14 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertNull(proxy.getSocksUsername());
         assertNull(proxy.getSocksPassword());
     }
 
     @Test
-    public void testGetCapabilities_givenEmptyNonProxyHosts_doesNotSetNoProxy() {
-        // Arrange
+    public void testGetCapabilities_emptyNonProxy_doesNotSetNoProxy() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://proxy.example.com:8443"));
@@ -366,18 +302,13 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertNull(proxy.getNoProxy());
     }
 
     @Test
-    public void testGetCapabilities_givenNonProxyHosts_trimsAndSetsNoProxy() {
-        // Arrange
+    public void testGetCapabilities_delimitedNonProxy_trimsAndSetsNoProxy() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("https://proxy.example.com:8443"));
@@ -385,31 +316,23 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
-        MutableCapabilities result = factory.getCapabilities();
-
-        // Assert
-        Proxy proxy = (Proxy) result.getCapability(PROXY);
+        Proxy proxy = (Proxy) factory.getCapabilities().getCapability(PROXY);
         assertNotNull(proxy);
         assertEquals("example.com,internal.local", proxy.getNoProxy());
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGetCapabilities_givenUnsupportedProxyScheme_throwsIllegalArgumentException() {
-        // Arrange
+    public void testGetCapabilities_invalidProxyScheme_throwsIllegalArgumentException() {
         MutableCapabilities capabilities = new MutableCapabilities();
         DriverConfig config = createConfig();
         config.proxyAddress = Optional.of(URI.create("ftp://invalid.example:21"));
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
-
-        // Act
         factory.getCapabilities();
     }
 
     @Test
-    public void testApplyCommonCapabilities_givenExistingCapabilities_overwritesValues() {
-        // Arrange
+    public void testApplyCommonCapabilities_existingCaps_overwritesValues() {
         MutableCapabilities capabilities = new MutableCapabilities();
         Proxy proxy = new Proxy();
         proxy.setHttpProxy("old.proxy.example:1111");
@@ -422,10 +345,8 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(capabilities, config, null);
 
-        // Act
         MutableCapabilities result = factory.getCapabilities();
 
-        // Assert
         assertEquals(Boolean.FALSE, result.getCapability(ACCEPT_INSECURE_CERTS));
 
         Proxy resultProxy = (Proxy) result.getCapability(PROXY);
@@ -434,39 +355,33 @@ public class DriverFactoryTest {
     }
 
     @Test
-    public void testDeleteAllCookies_whenSuccessful_invokesOptionsDeleteAllCookies() {
-        // Arrange
-        SPIDriverFactory factory = new SPIDriverFactory(null, createConfig(), null);
+    public void testDeleteAllCookies_validOptions_invokesOptionsDeleteAllCookies() {
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
-        // Act
+        SPIDriverFactory factory = new SPIDriverFactory(null, createConfig(), null);
+
         factory.deleteAllCookies(mockOptions);
-        // Assert
+
         verify(mockOptions).deleteAllCookies();
     }
 
     @Test
     @LogRule.UsesLogger(level = "WARNING")
-    public void testDeleteAllCookies_whenDeleteThrows_doesNotPropagateException() {
-        // Arrange
+    public void testDeleteAllCookies_cookieDeleteFailure_doesNotPropagateException() {
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         doThrow(new WebDriverException("deleteAllCookies")).when(mockOptions).deleteAllCookies();
 
         SPIDriverFactory factory = new SPIDriverFactory(null, createConfig(), null);
 
-        // Act
         factory.deleteAllCookies(mockOptions);
 
-        // Assert
         verify(mockOptions).deleteAllCookies();
-
         assertTrue(logRule.getRecords().stream()
                 .filter(r -> r.getLevel() == Level.WARNING)
                 .anyMatch(r -> "Unable to delete all cookies".equals(r.getMessage())));
     }
 
     @Test
-    public void testDeleteAllCookies_withFailOnCookieDeleteErrorTrue_propagatesException() {
-        // Arrange
+    public void testDeleteAllCookies_failOnDelete_propagatesException() {
         WebDriver.Options mockOptions = mock(WebDriver.Options.class);
         doThrow(new WebDriverException("deleteAllCookies")).when(mockOptions).deleteAllCookies();
 
@@ -475,7 +390,6 @@ public class DriverFactoryTest {
 
         SPIDriverFactory factory = new SPIDriverFactory(null, config, null);
 
-        // Act & Assert
         assertThrows(WebDriverException.class, () -> factory.deleteAllCookies(mockOptions));
         verify(mockOptions).deleteAllCookies();
     }

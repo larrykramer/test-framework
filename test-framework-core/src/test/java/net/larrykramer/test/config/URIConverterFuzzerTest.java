@@ -89,7 +89,7 @@ public class URIConverterFuzzerTest {
     }
 
     @Test
-    public void testConvert_givenFuzzedInput_doesNotCrash() {
+    public void testConvert_fuzzedInput_doesNotCrash() {
         try {
             new URIConverter().convert(fuzzedInput);
             // If conversion succeeds, that's acceptable. The fuzzer might occasionally produce

@@ -72,8 +72,7 @@ public class WebDriverServiceCDITest {
     }
 
     @Test
-    public void testCreateWebDriver_givenFactoryIsCDIProxy_resolvesFactoryAndReturnsDriverRef() {
-        // Arrange
+    public void testCreateWebDriver_proxyFactory_returnsDriverRef() {
         // Precondition: Ensure CDI gave us a proxy, not the raw factory.
         DriverFactory<?> factory = container.select(SPIDriverFactory.class).get();
         assertTrue("Expected Weld client proxy but got: "
@@ -82,36 +81,36 @@ public class WebDriverServiceCDITest {
 
         WebDriverService service = container.select(WebDriverService.class).get();
 
-        // Act
         // Attempt to retrieve the driver factory.
         // This will fail if the map was keyed by the proxy class but the lookup uses the raw
         // class name.
         WebDriverReference driverRef = service.createWebDriver();
 
-        // Assert
         assertNotNull(driverRef);
         assertNotNull(driverRef.get());
     }
 
     /*
-     * This class provides mock configuration beans to replace the default SmallRye Config
-     * implementation during this specific unit test.
+     * This class provides mock configuration beans to replace the default
+     * SmallRye Config implementation during this specific unit test.
      *
      * IMPORTANT: Resolving Ambiguous Dependencies with Isolated Alternatives
-     * The `DriverConfig` and `GridConfig` beans are normally provided automatically by the
-     * SmallRye Config library. Since this test defines producers for the same types, CDI
-     * detects an ambiguity (two sources for the same bean type).
+     * The `DriverConfig` and `GridConfig` beans are normally provided automatically
+     * by the SmallRye Config library. Since this test defines producers for the
+     * same types, CDI detects an ambiguity (two sources for the same bean
+     * type).
      *
-     * To resolve this, we mark these producers with `@Alternative`. However, we intentionally
-     * do NOT annotate this class with `@Priority`.
+     * To resolve this, we mark these producers with `@Alternative`. However, we
+     * intentionally do NOT annotate this class with `@Priority`.
      *
-     * 1. If we used `@Priority`, this alternative would become globally active for the entire test
-     *    classpath. This would accidentally override the real configuration in other integration
-     *    tests, causing them to fail.
-     * 2. By omitting `@Priority`, this alternative remains "disabled by default." It is invisible
-     *    to other tests.
-     * 3. We then explicitly activate this alternative ONLY for this test's container instance by
-     *    calling `weld.addAlternative(ConfigProducer.class)` in the `setUp()` method.
+     * 1. If we used `@Priority`, this alternative would become globally active
+     *    for the entire test classpath. This would accidentally override the
+     *    real configuration in other integration tests, causing them to fail.
+     * 2. By omitting `@Priority`, this alternative remains "disabled by default."
+     *    It is invisible to other tests.
+     * 3. We then explicitly activate this alternative ONLY for this test's
+     *    container instance by calling `weld.addAlternative(ConfigProducer.class)`
+     *    in the `setUp()` method.
      */
     @ApplicationScoped
     public static class ConfigProducer {
