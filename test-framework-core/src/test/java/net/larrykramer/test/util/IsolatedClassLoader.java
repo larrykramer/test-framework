@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
+import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -258,6 +259,15 @@ public final class IsolatedClassLoader extends ClassLoader {
      * loader's namespace. This is standard child-first loading boilerplate when
      * you want resource injection while still trusting the parent for bytecode.
      *
+     * @implNote
+     * The parent class's {@link ProtectionDomain} is intentionally reused when
+     * defining the reloaded class. Preserving the original domain keeps
+     * metadata such as the {@code CodeSource} aligned with the parent
+     * definition, which avoids breaking coverage and instrumentation tooling
+     * that expects the isolated test copy to look like the same class origin.
+     * Do not "simplify" this to a default or {@code null} protection domain
+     * unless that tooling behavior is no longer required.
+     *
      * @param name the binary name of the class to locate
      * @return the defined {@link Class} instance
      * @throws ClassNotFoundException if the class bytecode cannot be found or
@@ -270,8 +280,19 @@ public final class IsolatedClassLoader extends ClassLoader {
             if (in == null) {
                 throw new ClassNotFoundException("Could not find class bytes for " + name);
             }
+
+            ProtectionDomain pd = null;
+            try {
+                // Intentionally preserve the parent's ProtectionDomain so the isolated definition
+                // retains the original CodeSource and remains visible to coverage and
+                // instrumentation tooling.
+                pd = getParent().loadClass(name).getProtectionDomain();
+            } catch (ClassNotFoundException | LinkageError e) {
+                // Parent can't load the class; fall back to default ProtectionDomain
+            }
+
             byte[] bytes = in.readAllBytes();
-            return defineClass(name, bytes, 0, bytes.length);
+            return defineClass(name, bytes, 0, bytes.length, pd);
         } catch (IOException e) {
             throw new ClassNotFoundException("Could not load class " + name, e);
         }
