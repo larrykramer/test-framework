@@ -46,7 +46,7 @@
       in the `FuzzerTest` category.
 
       This behavior can be overridden by:
-      1. Activating a Maven profile (e.g., `fuzzer-tests`) that redefines these properties.
+      1. Activating a Maven profile (e.g., `fuzz`) that redefines these properties.
       2. Passing user properties on the command line (e.g., `-Dgroups=...`).
     -->
     <groups/>
@@ -122,7 +122,7 @@
 
   <profiles>
     <profile>
-      <id>fuzzer-tests</id>
+      <id>fuzz</id>
       <properties>
         <groups>net.larrykramer.test.junit.categories.FuzzerTest</groups>
         <excludedGroups/>

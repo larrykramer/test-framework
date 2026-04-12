@@ -1,0 +1,35 @@
+name: Fuzz
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 0' # every Sunday at 2:00 AM UTC
+
+jobs:
+  run-fuzzer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'oracle'
+          java-version: '21'
+          cache: 'maven'
+      - name: Run fuzzer
+        run: mvn -B -pl test-framework-core -am clean test -P fuzz -Dfuzz.seed=random
+      - name: Upload Surefire Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports
+          path: 'test-framework-core/target/surefire-reports/*'
+          if-no-files-found: ignore
