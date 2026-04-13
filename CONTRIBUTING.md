@@ -244,11 +244,11 @@ This command executes quickly and ensures that your changes have not introduced 
 
 #### 6.2.2 Running Fuzzer Tests
 
-To run the specialized fuzzer tests, you must activate the `fuzzer-tests` Maven profile using the `-P` flag.
+To run the specialized fuzzer tests, you must activate the `fuzz` Maven profile using the `-P` flag.
 This will run *only* the tests categorized as `FuzzerTest`.
 
 ```shell
-mvn -pl test-framework-core -am clean test -P fuzzer-tests
+mvn -pl test-framework-core -am clean test -P fuzz
 ```
 
 #### 6.2.3 Running Browser-Based Integration Tests
