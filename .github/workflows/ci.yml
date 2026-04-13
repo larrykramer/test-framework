@@ -24,10 +24,8 @@ on:
 
 jobs:
   unit-tests:
-    name: Unit Tests - JDK ${{ matrix.java }} (${{matrix.os}})
-    runs-on: ${{ matrix.os }}
-    # This condition prevents the CI workflow from running on commits made by the
-    # release workflow.
+    name: Unit Tests - JDK ${{ matrix.java }} [${{ matrix.os.name }}]
+    runs-on: ${{ matrix.os.runner }}
     if: >-
       github.event_name != 'push' ||
       !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
@@ -38,10 +36,14 @@ jobs:
           - '21'
           - '25'
         os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-26
-          - macos-15-intel
+          - runner: ubuntu-latest
+            name: 'Ubuntu'
+          - runner: windows-latest
+            name: 'Windows'
+          - runner: macos-26
+            name: 'macOS 26 Arm64'
+          - runner: macos-15-intel
+            name: 'macOS 15 Intel'
     steps:
       - uses: actions/checkout@v6
       - name: Setup JDK ${{ matrix.java }}
@@ -56,6 +58,6 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: surefire-reports-${{ matrix.os }}-jdk${{ matrix.java }}
+          name: surefire-reports-${{ matrix.os.runner }}-jdk${{ matrix.java }}
           path: 'test-framework-core/target/surefire-reports/*'
           if-no-files-found: ignore
