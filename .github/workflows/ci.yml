@@ -23,8 +23,31 @@ on:
       - main
 
 jobs:
+  checkstyle:
+    name: Checkstyle
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'push' ||
+      !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'oracle'
+          java-version: '21'
+          cache: 'maven'
+      - name: Register Checkstyle Problem Matcher
+        run: echo "::add-matcher::.github/checkstyle-matcher.json"
+      - name: Run Checkstyle
+        run: mvn -B checkstyle:check
+      - name: Remove Checkstyle Problem Matcher
+        if: always()
+        run: echo "::remove-matcher owner=maven-checkstyle::"
+
   unit-tests:
     name: Unit Tests - JDK ${{ matrix.java }} [${{ matrix.os.name }}]
+    needs: checkstyle
     runs-on: ${{ matrix.os.runner }}
     if: >-
       github.event_name != 'push' ||
@@ -53,7 +76,8 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: 'maven'
       - name: Run unit tests
-        run: mvn -B -pl test-framework-core -am clean test
+        shell: bash
+        run: mvn -B -pl test-framework-core -am clean test -Dcheckstyle.skip=true
       - name: Upload Surefire Reports on Failure
         if: failure()
         uses: actions/upload-artifact@v7
