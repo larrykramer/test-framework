@@ -3,6 +3,7 @@ name: CI
 permissions:
   contents: read
   actions: write
+  checks: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
@@ -37,13 +38,15 @@ jobs:
           distribution: 'oracle'
           java-version: '21'
           cache: 'maven'
-      - name: Register Checkstyle Problem Matcher
-        run: echo "::add-matcher::.github/checkstyle-matcher.json"
       - name: Run Checkstyle
         run: mvn -B checkstyle:check
-      - name: Remove Checkstyle Problem Matcher
+      - name: Publish Checkstyle results
         if: always()
-        run: echo "::remove-matcher owner=maven-checkstyle::"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHECKS_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: python3 ./.github/upload_checkstyle.py
 
   unit-tests:
     name: Unit Tests - JDK ${{ matrix.java }} [${{ matrix.os.name }}]

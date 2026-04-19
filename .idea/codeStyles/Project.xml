@@ -108,6 +108,10 @@
         <option name="TAB_SIZE" value="2" />
       </indentOptions>
     </codeStyleSettings>
+    <codeStyleSettings language="Python">
+      <option name="RIGHT_MARGIN" value="80" />
+      <option name="SOFT_MARGINS" value="80" />
+    </codeStyleSettings>
     <codeStyleSettings language="XML">
       <option name="RIGHT_MARGIN" value="120" />
       <option name="SOFT_MARGINS" value="120" />
