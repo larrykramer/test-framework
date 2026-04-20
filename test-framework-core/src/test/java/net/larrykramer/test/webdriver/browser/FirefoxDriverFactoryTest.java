@@ -28,9 +28,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.FirefoxConfig;
-import net.larrykramer.test.config.DriverConfig;
 import org.junit.Before;
 import org.junit.Test;
 import org.openqa.selenium.Dimension;

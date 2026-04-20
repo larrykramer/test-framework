@@ -26,8 +26,8 @@ import java.util.logging.Level;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import net.larrykramer.test.config.DriverType;
-import net.larrykramer.test.webdriver.DriverFactory;
 import net.larrykramer.test.util.OperatingSystem;
+import net.larrykramer.test.webdriver.DriverFactory;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.safari.SafariDriver;
