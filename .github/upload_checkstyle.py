@@ -43,6 +43,7 @@ API = f'https://api.github.com/repos/{REPO}'
 # when they are uploaded across multiple PATCH calls.
 MAX_ANNOTATIONS = 1000
 
+
 def gh(method: str, url: str, payload: Any) -> dict[str, Any]:
     """
     Send an authenticated JSON request to the GitHub REST API.
@@ -249,7 +250,7 @@ def main() -> None:
         conclusion = 'success'
 
     summary = (
-        f"Scanned {len(report_files)} report(s) matching '{REPORT_GLOB}'. "
+        f'Scanned {len(report_files)} report(s) matching \'{REPORT_GLOB}\'. '
         f'Found {len(annotations)} issue(s): '
         f'{failure_count} error(s), {warning_count} warning(s), '
         f'{notice_count} notice(s).'
@@ -265,12 +266,12 @@ def main() -> None:
         summary += f' {len(parse_errors)} report(s) could not be parsed.'
 
     text_lines = [
-        f"Matched pattern: '{REPORT_GLOB}'",
+        f'Matched pattern: \'{REPORT_GLOB}\'',
         '',
         'Reports:'
     ]
     if report_files:
-        text_lines.extend(f"- '{p}'" for p in report_files[:100])
+        text_lines.extend(f'- \'{p}\'' for p in report_files[:100])
         if len(report_files) > 100:
             text_lines.append(f'- ...and {len(report_files) - 100} more')
     else:
@@ -298,7 +299,7 @@ def main() -> None:
     })
     for chunk in chunks(annotations[50:], 50):
         gh('PATCH', f'{API}/check-runs/{response["id"]}', payload={
-            "output": {
+            'output': {
                 'title': CHECK_NAME,
                 'summary': summary,
                 'annotations': chunk

@@ -42,8 +42,8 @@ IMPORT_ENV = {
     'GITHUB_REPOSITORY': REPO,
     'GITHUB_WORKSPACE': IMPORT_WORKSPACE.name,
     'GITHUB_TOKEN': 'test-token',
-    'CHECKS_SHA': 'deadbeaf',
-    'GITHUB_SHA': 'deadbeaf',
+    'CHECKS_SHA': 'deadbeef',
+    'GITHUB_SHA': 'deadbeef',
 }
 
 
@@ -154,8 +154,7 @@ class TestNormalizePath(WorkspaceTestCase):
         report_file = self.make_reports_file()
 
         with tempfile.TemporaryDirectory() as other_dir:
-            outside_file = pathlib.Path(other_dir) / 'outside.py'
-            outside_file.write_text('x\n', encoding='utf-8')
+            outside_file = self.make_file(other_dir, 'outside.py')
 
             result = target.normalize_path(str(outside_file), report_file)
 
@@ -399,10 +398,10 @@ class TestMain(WorkspaceTestCase):
                     'title': self._CHECK_NAME,
                     'summary': expected_summary,
                     'text': '\n'.join([
-                        f"Matched pattern: '{self._REPORT_GLOB}'",
+                        f'Matched pattern: \'{self._REPORT_GLOB}\'',
                         '',
                         'Reports:',
-                        f"- '{report_file}'",
+                        f'- \'{report_file}\'',
                     ]),
                     'annotations': expected_annotations[:50],
                 },
