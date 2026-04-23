@@ -42,7 +42,7 @@ jobs:
         run: mvn -B checkstyle:check
       - name: Publish Checkstyle results
         if: >-
-          always() &&
+          !cancelled() &&
           (github.event_name != 'pull_request' ||
            github.event.pull_request.head.repo.full_name == github.repository)
         env:
@@ -94,7 +94,7 @@ jobs:
     needs:
       - checkstyle
       - unit-tests
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - env:
