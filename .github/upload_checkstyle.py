@@ -89,11 +89,12 @@ def gh(method: str, url: str, payload: Any) -> dict[str, Any]:
 
 def chunks(items: list[Any], size: int) -> Iterator[list[Any]]:
     """
-    Yield successive fixed-size slices from a sequence.
+    Yield successive slices of `items`, each containing up to `size` elements.
 
-    This function splits a sliceable sequence into contiguous chunks of at most
-    `size` elements. It is used to batch GitHub check annotations into groups
-    small enough for API updates.
+    Chunks are produced in the original order of the input list. All yielded
+    chunks have exactly `size` elements except the last chunk, which may be
+    shorter if the list length is not evenly divisible by `size`. If `items`
+    is empty, nothing is yielded.
 
     Args:
         items: A sequence supporting `len()` and slicing.
@@ -103,9 +104,10 @@ def chunks(items: list[Any], size: int) -> Iterator[list[Any]]:
         Slices of `items`, each containing up to `size` elements.
 
     Raises:
-        ValueError: May occur indirectly if `size` is invalid for `range()`,
-            such as zero.
+        ValueError: If `size` is less than or equal to 0.
     """
+    if size <= 0:
+        raise ValueError(f"size must be positive, got {size}")
     for i in range(0, len(items), size):
         yield items[i:i + size]
 

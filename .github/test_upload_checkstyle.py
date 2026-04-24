@@ -113,6 +113,10 @@ class TestChunks(unittest.TestCase):
         with self.assertRaises(ValueError):
             list(target.chunks([1, 2, 3], 0))
 
+    def test_chunks_negative_size_raises_value_error(self):
+        with self.assertRaises(ValueError):
+            list(target.chunks([1, 2, 3], -1))
+
 
 class WorkspaceTestCase(unittest.TestCase):
     def setUp(self):
