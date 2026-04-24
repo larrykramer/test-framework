@@ -158,9 +158,12 @@ def normalize_path(file_name: str, report_path: str) -> str:
         except Exception:
             return pathlib.Path(file_name).name
 
-    repo_candidate = WORKSPACE / file_name
+    repo_candidate = (WORKSPACE / file_name).resolve()
     if repo_candidate.exists():
-        return _to_workspace_path(repo_candidate)
+        try:
+            return _to_workspace_path(repo_candidate)
+        except ValueError:
+            pass
 
     report_dir = pathlib.Path(report_path).resolve().parent
     current = report_dir

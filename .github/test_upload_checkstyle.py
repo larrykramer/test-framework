@@ -177,6 +177,16 @@ class TestNormalizePath(WorkspaceTestCase):
 
         self.assertEqual('app/main.py', result)
 
+    def test_workspace_match_resolves_parent_directory_segments(self):
+        self.make_workspace_file('src/Main.java')
+        report_file = self.make_reports_file()
+
+        # Pass a path that contains a '..' segment but still points to a valid
+        # workspace file.
+        result = target.normalize_path('src/../src/Main.java', report_file)
+
+        self.assertEqual('src/Main.java', result)
+
     def test_backslashes_normalized_for_repo_match(self):
         self.make_workspace_file('app/main.py')
         report_file = self.make_reports_file()
