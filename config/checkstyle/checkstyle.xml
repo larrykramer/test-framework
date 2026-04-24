@@ -43,6 +43,11 @@
     <property name="onCommentFormat" value="@formatter:on"/>
   </module>
   <module name="TreeWalker">
+    <!--
+      AvoidStarImport is effectively disabled. We rely on IDE formatting
+      settings to enforce our coding standard of using star imports only when
+      there are 4 or more imports from the same package or type.
+    -->
     <module name="AvoidStarImport">
       <property name="allowClassImports" value="true"/>
       <property name="allowStaticMemberImports" value="true"/>
