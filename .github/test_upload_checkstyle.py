@@ -290,7 +290,7 @@ class TestMain(WorkspaceTestCase):
                 annotation['annotation_level'] = 'failure'
             elif severity.lower() == 'warning':
                 annotation['annotation_level'] = 'warning'
-            elif severity != 'warning':
+            else:
                 annotation['annotation_level'] = 'notice'
 
             column = issue.get('column')
