@@ -65,26 +65,26 @@ public class SafariDriverFactoryTest {
 
     @Test
     public void testCreate_macOS_returnsWebDriverInstance() {
-        try (var mockSafariDriver = mockConstruction(SafariDriver.class);
-             var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
-            mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(true);
+        try (var mockSafariDriver = mockConstruction(SafariDriver.class)) {
+            try (var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
+                mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(true);
 
-            WebDriver driver = factory.create();
+                WebDriver driver = factory.create();
 
-            assertEquals(1, mockSafariDriver.constructed().size());
-            assertSame(mockSafariDriver.constructed().getFirst(), driver);
+                assertEquals(1, mockSafariDriver.constructed().size());
+                assertSame(mockSafariDriver.constructed().getFirst(), driver);
+            }
         }
     }
 
     @Test
     public void testCreate_nonMacOS_throwsUnsupportedOperationException() {
-        try (var mockSafariDriver = mockConstruction(SafariDriver.class);
-             var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
-            mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(false);
-
-            assertThrows(UnsupportedOperationException.class, () -> factory.create());
-
-            assertEquals(0, mockSafariDriver.constructed().size());
+        try (var mockSafariDriver = mockConstruction(SafariDriver.class)) {
+            try (var mockOperatingSystem = mockStatic(OperatingSystem.class)) {
+                mockOperatingSystem.when(OperatingSystem::isMacOS).thenReturn(false);
+                assertThrows(UnsupportedOperationException.class, () -> factory.create());
+                assertEquals(0, mockSafariDriver.constructed().size());
+            }
         }
     }
 

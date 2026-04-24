@@ -68,12 +68,14 @@ public class RepositoryTest {
         // This string simulates a properties file containing ISO-8859-1 encoded characters.
         // We include a key with a French character and a value to be formatted with a German
         // character. We also include a locator with Japanese text.
+        //@formatter:off
         //language=properties
         final String repository = """
                 page.title.fran\\u00E7ais=xpath=//h1[text()='Titre de la Page']
                 german.welcome=xpath=//span[text()='Willkommen, %s!']
                 japanese.salutation=xpath=//h2[text()='\\u3053\\u3093\\u306B\\u3061\\u306F\\u3001\\u4E16\\u754C\\u0020\\uD83C\\uDF0F']
                 """;
+        //@formatter:on
 
         Locator frenchResult = getLocator(repository, "page.title.français");
         Locator germanResult = getLocator(repository, "german.welcome", "Jürgen");

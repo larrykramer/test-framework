@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
 
 @RunWith(Enclosed.class)
 public class WeldObjectFactoryExtensionTest {
-    public static abstract class ExtensionTestBase {
+    public abstract static class ExtensionTestBase {
         protected WeldObjectFactory factory;
 
         protected WeldContainer container;

@@ -38,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(Enclosed.class)
 public class IPAddressUtilTest {
-    public static abstract class IPAddressUtilTestBase {
+    public abstract static class IPAddressUtilTestBase {
         protected boolean invokeIsIPv6LiteralAddress(String input, boolean allowAmbiguous)
                 throws Throwable {
             // A scoped system property sandbox ensures the

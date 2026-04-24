@@ -3,6 +3,7 @@ name: CI
 permissions:
   contents: read
   actions: write
+  checks: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
@@ -23,12 +24,40 @@ on:
       - main
 
 jobs:
-  unit-tests:
-    name: Unit Tests - JDK ${{ matrix.java }} [${{ matrix.os.name }}]
-    runs-on: ${{ matrix.os.runner }}
+  checkstyle:
+    name: Checkstyle
     if: >-
       github.event_name != 'push' ||
       !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'oracle'
+          java-version: '21'
+          cache: 'maven'
+      - name: Run Checkstyle
+        id: checkstyle
+        run: mvn -B -fae checkstyle:check
+      - name: Publish Checkstyle results
+        if: >-
+          !cancelled() &&
+          (steps.checkstyle.outcome == 'success' || steps.checkstyle.outcome == 'failure') &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHECKS_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CHECKSTYLE_OUTCOME: ${{ steps.checkstyle.outcome }}
+        shell: bash
+        run: python3 ./.github/upload_checkstyle.py
+
+  unit-tests:
+    name: Unit Tests - JDK ${{ matrix.java }} [${{ matrix.os.name }}]
+    needs: checkstyle
+    runs-on: ${{ matrix.os.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -53,7 +82,8 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: 'maven'
       - name: Run unit tests
-        run: mvn -B -pl test-framework-core -am clean test
+        shell: bash
+        run: mvn -B -pl test-framework-core -am clean test -Dcheckstyle.skip=true
       - name: Upload Surefire Reports on Failure
         if: failure()
         uses: actions/upload-artifact@v7
@@ -61,3 +91,38 @@ jobs:
           name: surefire-reports-${{ matrix.os.runner }}-jdk${{ matrix.java }}
           path: 'test-framework-core/target/surefire-reports/*'
           if-no-files-found: ignore
+
+  ci-status:
+    name: CI Status
+    needs:
+      - checkstyle
+      - unit-tests
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        #language=bash
+        run: |
+          # If CI was intentionally skipped on push via '[skip ci]'.
+          # This must check the first job guarded by that condition. That condition
+          # should be defined on the first job in the CI workflow.
+          if [[ "${{ needs.checkstyle.result }}" == "skipped" ]]; then
+            echo "CI skipped"
+            exit 0
+          fi
+
+          FAILING_JOBS=$(echo "$NEEDS_JSON" | jq -r '
+              to_entries |
+              .[] |
+              select(.value.result != "success" and .value.result != "skipped") |
+              "\(.key): \(.value.result)"
+            ')
+          if [ -n "$FAILING_JOBS" ]; then
+            echo "CI failed"
+            echo "The following jobs did not succeed:"
+            echo "$FAILING_JOBS"
+            exit 1
+          fi
+
+          echo "CI passed"

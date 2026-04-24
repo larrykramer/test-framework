@@ -247,8 +247,14 @@ public class LogRule implements TestRule {
     }
 
     /**
-     * {@return captured log records in the order they were enqueued; with
-     *          concurrent logging, interleaving is nondeterministic}
+     * Returns the log records captured by this rule for the target logger.
+     * <p>
+     * Records are captured only for test methods annotated with
+     * {@link UsesLogger @LogRule.UsesLogger}, and only for the configured
+     * target logger itself.
+     *
+     * @return a snapshot of the captured log records, or an empty list if no
+     *         records have been captured
      */
     public List<LogRecord> getRecords() {
         return new ArrayList<>(capturedLogs);

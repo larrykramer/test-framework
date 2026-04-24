@@ -31,7 +31,6 @@ import java.util.*;
 import io.smallrye.config.inject.ConfigExtension;
 import jakarta.enterprise.context.ApplicationScoped;
 import net.larrykramer.test.cdi.WeldObjectFactory;
-import net.larrykramer.test.config.ChromiumConfig;
 import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.util.ScopedSystemProperties;
 import net.larrykramer.test.webdriver.browser.ChromeDriverFactory;
@@ -50,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(Enclosed.class)
 public class DriverFactoryCDITest {
-    public static abstract class DriverFactoryCDITestBase {
+    public abstract static class DriverFactoryCDITestBase {
         protected WeldContainer container;
 
         @After

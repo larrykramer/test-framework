@@ -129,7 +129,9 @@
       depend upon can go here if they are not otherwise used.
     -->
     <antrun.plugin.version>3.2.0</antrun.plugin.version>
+    <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
     <clean.plugin.version>3.5.0</clean.plugin.version>
+    <com.puppycrawl.tools.version>13.4.0</com.puppycrawl.tools.version>
     <compiler.plugin.version>3.14.1</compiler.plugin.version>
     <dependency.plugin.version>3.9.0</dependency.plugin.version>
     <enforcer.plugin.version>3.6.2</enforcer.plugin.version>
@@ -229,6 +231,33 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${checkstyle.plugin.version}</version>
+          <executions>
+            <execution>
+              <id>check-style</id>
+              <phase>compile</phase>
+              <goals>
+                <goal>checkstyle</goal>
+              </goals>
+            </execution>
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId>com.puppycrawl.tools</groupId>
+              <artifactId>checkstyle</artifactId>
+              <version>${com.puppycrawl.tools.version}</version>
+            </dependency>
+          </dependencies>
+          <configuration>
+            <configLocation>${maven.multiModuleProjectDirectory}/config/checkstyle/checkstyle.xml</configLocation>
+            <consoleOutput>true</consoleOutput>
+            <failsOnError>true</failsOnError>
+            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
           <version>${clean.plugin.version}</version>
         </plugin>
@@ -272,6 +301,11 @@
     </pluginManagement>
 
     <plugins>
+      <!-- Checkstyle -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
       <!-- Check for the minimum version of Java and Maven. -->
       <!-- Runs during the validation phase. -->
       <plugin>
