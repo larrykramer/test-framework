@@ -44,6 +44,7 @@ IMPORT_ENV = {
     'GITHUB_TOKEN': 'test-token',
     'CHECKS_SHA': 'deadbeef',
     'GITHUB_SHA': 'deadbeef',
+    'CHECKSTYLE_OUTCOME': 'success',
 }
 
 
@@ -63,7 +64,7 @@ def load_module_from_sibling(filename, module_name=None):
     return module
 
 
-with patch.dict(os.environ, IMPORT_ENV, clear=False):
+with patch.dict(os.environ, IMPORT_ENV, clear=True):
     target = load_module_from_sibling(
         'upload_checkstyle.py',
         'upload_checkstyle'
@@ -422,6 +423,23 @@ class TestMain(WorkspaceTestCase):
             },
             patch_payload
         )
+
+    def test_main_fails_when_maven_fails_and_no_reports_found(self):
+        with patch.object(target, 'CHECKSTYLE_OUTCOME', 'failure'):
+            api_calls = self.run_main_with_mocks(report_files=[], post_id=123)
+
+        self.assertEqual(1, len(api_calls))
+
+        post_method, _, post_payload = api_calls[0]
+        self.assertEqual('POST', post_method)
+        self.assertEqual('failure', post_payload['conclusion'])
+
+        summary = post_payload['output']['summary']
+        text = post_payload['output']['text']
+
+        self.assertRegex(summary, r'(?i)\bfailed\b')
+        self.assertRegex(summary, r'(?i)\b(?:maven|checkstyle reports?)\b')
+        self.assertIn('- No reports found', text)
 
 
 if __name__ == '__main__':

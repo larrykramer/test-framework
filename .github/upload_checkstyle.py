@@ -37,6 +37,8 @@ SHA = os.environ.get('CHECKS_SHA') or os.environ['GITHUB_SHA']
 REPORT_GLOB = os.environ.get('REPORT_GLOB', '**/checkstyle-result.xml')
 CHECK_NAME = os.environ.get('CHECK_NAME', 'Checkstyle')
 
+CHECKSTYLE_OUTCOME = os.environ.get('CHECKSTYLE_OUTCOME', 'success')
+
 API = f'https://api.github.com/repos/{REPO}'
 
 # GitHub Checks allows at most 1000 annotations per check run in total, even
@@ -239,32 +241,6 @@ def main() -> None:
 
                 annotations.append(annotation)
 
-    # Intentionally treat any warning- or notice-level annotation as "neutral"
-    # rather than "success". This makes the check report "not fully clean" even
-    # when there are no failures, instead of showing a green checkmark.
-    if parse_errors or failure_count:
-        conclusion = 'failure'
-    elif warning_count or notice_count:
-        conclusion = 'neutral'
-    else:
-        conclusion = 'success'
-
-    summary = (
-        f'Scanned {len(report_files)} report(s) matching \'{REPORT_GLOB}\'. '
-        f'Found {len(annotations)} issue(s): '
-        f'{failure_count} error(s), {warning_count} warning(s), '
-        f'{notice_count} notice(s).'
-    )
-    if len(annotations) > MAX_ANNOTATIONS:
-        # Truncate only what we upload to satisfy the GitHub API limit. The
-        # counts above, and the conclusion computed earlier, intentionally
-        # reflect the full set of violations, including those we cannot
-        # annotate individually.
-        annotations = annotations[:MAX_ANNOTATIONS]
-        summary += f' Uploaded only the first {MAX_ANNOTATIONS} annotations.'
-    if parse_errors:
-        summary += f' {len(parse_errors)} report(s) could not be parsed.'
-
     text_lines = [
         f'Matched pattern: \'{REPORT_GLOB}\'',
         '',
@@ -284,6 +260,42 @@ def main() -> None:
     text = '\n'.join(text_lines)
     if len(text) > 65535:
         text = text[:65530] + '\n...'
+
+    # Intentionally treat any warning- or notice-level annotation as "neutral"
+    # rather than "success". This makes the check report "not fully clean" even
+    # when there are no failures, instead of showing a green checkmark.
+    if CHECKSTYLE_OUTCOME == 'failure' and not report_files:
+        conclusion = 'failure'
+        summary = (
+            'Maven build failed before Checkstyle reports could be generated. '
+            'See CI logs for details.'
+        )
+    else:
+        summary = (
+            f'Scanned {len(report_files)} report(s) matching '
+            f'\'{REPORT_GLOB}\'. '
+            f'Found {len(annotations)} issue(s): '
+            f'{failure_count} error(s), {warning_count} warning(s), '
+            f'{notice_count} notice(s).'
+        )
+        if len(annotations) > MAX_ANNOTATIONS:
+            # Truncate only what we upload to satisfy the GitHub API limit. The
+            # counts above, and the conclusion computed earlier, intentionally
+            # reflect the full set of violations, including those we cannot
+            # annotate individually.
+            annotations = annotations[:MAX_ANNOTATIONS]
+            summary += ' '
+            summary += f'Uploaded only the first {MAX_ANNOTATIONS} annotations.'
+
+        if CHECKSTYLE_OUTCOME == 'failure' or parse_errors or failure_count:
+            conclusion = 'failure'
+            if parse_errors:
+                summary += ' '
+                summary += f'{len(parse_errors)} report(s) could not be parsed.'
+        elif warning_count or notice_count:
+            conclusion = 'neutral'
+        else:
+            conclusion = 'success'
 
     response = gh('POST', f'{API}/check-runs', payload={
         'name': CHECK_NAME,
