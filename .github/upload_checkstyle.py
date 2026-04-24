@@ -80,7 +80,7 @@ def gh(method: str, url: str, payload: Any) -> dict[str, Any]:
         },
     )
     try:
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             return json.loads(resp.read().decode('utf-8'))
     except urllib.error.HTTPError as e:
         print(e.read().decode('utf-8'))
