@@ -70,9 +70,8 @@ public class StringLocalizerTest {
     public void testConstructor_missingBundle_throwsMissingResourceException() {
         Locale locale = Locale.forLanguageTag("zz-ZZ");
         try (var mocked = mockStatic(ResourceBundle.class)) {
-            MissingResourceException e = new MissingResourceException(
-                    "Can't find bundle for base name strings, locale zz_ZZ", "strings", "zz_ZZ");
-            mocked.when(() -> ResourceBundle.getBundle("strings", locale)).thenThrow(e);
+            mocked.when(() -> ResourceBundle.getBundle("strings", locale))
+                    .thenThrow(new MissingResourceException("missing bundle", "strings", "zz_ZZ"));
 
             new StringLocalizer(locale);
         }

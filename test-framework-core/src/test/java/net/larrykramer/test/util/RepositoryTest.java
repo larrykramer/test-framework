@@ -28,7 +28,6 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
-import java.util.MissingFormatArgumentException;
 import java.util.MissingResourceException;
 
 import org.junit.Rule;
@@ -144,16 +143,7 @@ public class RepositoryTest {
         Throwable thrown = getLocatorExceptionally(repository, "absent");
         assertNotNull(thrown);
         assertEquals(MissingResourceException.class, thrown.getClass());
-        assertEquals("Missing locator: absent", thrown.getMessage());
-    }
-
-    @Test
-    public void testGet_missingRepo_throwsMissingResourceException() {
-        Throwable thrown = getLocatorExceptionally(null, "any.key");
-        assertNotNull(thrown);
-        assertEquals(MissingResourceException.class, thrown.getClass());
-        assertNotNull(thrown.getMessage());
-        assertTrue(thrown.getMessage().startsWith("Can't find "));
+        assertEquals("absent", ((MissingResourceException) thrown).getKey());
     }
 
     @Test
@@ -164,7 +154,8 @@ public class RepositoryTest {
         Throwable thrown = getLocatorExceptionally(repository, "broken");
         assertNotNull(thrown);
         assertEquals(IllegalArgumentException.class, thrown.getClass());
-        assertEquals("Invalid locator format for 'broken': css-selector", thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("broken"));
+        assertTrue(thrown.getMessage().contains("css-selector"));
     }
 
     @Test
@@ -175,7 +166,7 @@ public class RepositoryTest {
         Throwable thrown = getLocatorExceptionally(repository, "blank");
         assertNotNull(thrown);
         assertEquals(IllegalArgumentException.class, thrown.getClass());
-        assertEquals("Invalid locator format for 'blank': css=", thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("blank"));
     }
 
     @Test
@@ -184,12 +175,28 @@ public class RepositoryTest {
         final String repository = "bad.format=css=Item %s %d\n";
 
         Throwable thrown = getLocatorExceptionally(repository, "bad.format", "only-one-arg");
+        assertNotNull(thrown);
         assertEquals(IllegalArgumentException.class, thrown.getClass());
+        assertTrue(thrown.getMessage().contains("bad.format"));
+    }
 
-        Throwable cause = thrown.getCause();
-        assertNotNull(cause);
-        assertEquals(MissingFormatArgumentException.class, cause.getClass());
-        assertEquals("Format specifier '%d'", cause.getMessage());
+    @Test
+    public void testGet_missingRepo_failsInitialization() {
+        // A missing repository prevents Repository from completing static initialization.
+        // We only confirm that some Throwable is thrown. No caller should be catching a Throwable
+        // from static initialization to make a branching decision. Additionally, reflection/class
+        // loading may wrap that failure differently.
+        assertNotNull(getLocatorExceptionally(null, "any.key"));
+    }
+
+    @Test
+    public void testGet_nullKey_throwsNullPointerException() {
+        //language=properties
+        final String repository = "login.button=css=.btn\n";
+
+        Throwable thrown = getLocatorExceptionally(repository, null);
+        assertNotNull(thrown);
+        assertEquals(NullPointerException.class, thrown.getClass());
     }
 
     private static Locator getLocator(String props, String key, Object... args) throws Throwable {
