@@ -23,15 +23,13 @@
 import glob
 import json
 import os
-import pathlib
 import re
 import urllib.error
 import urllib.request
-from typing import Any, Iterator, Union
 from xml.etree import ElementTree
 
 REPO = os.environ['GITHUB_REPOSITORY']
-WORKSPACE = pathlib.Path(os.environ['GITHUB_WORKSPACE']).resolve()
+WORKSPACE = os.path.realpath(os.environ['GITHUB_WORKSPACE'])
 TOKEN = os.environ['GITHUB_TOKEN']
 SHA = os.environ.get('CHECKS_SHA') or os.environ['GITHUB_SHA']
 REPORT_GLOB = os.environ.get('REPORT_GLOB', '**/checkstyle-result.xml')
@@ -46,7 +44,7 @@ API = f'https://api.github.com/repos/{REPO}'
 MAX_ANNOTATIONS = 1000
 
 
-def gh(method: str, url: str, payload: Any) -> dict[str, Any]:
+def gh(method, url, payload):
     """
     Send an authenticated JSON request to the GitHub REST API.
 
@@ -68,17 +66,14 @@ def gh(method: str, url: str, payload: Any) -> dict[str, Any]:
         urllib.error.URLError: If the request cannot be completed.
         json.JSONDecodeError: If the response body is not valid JSON.
     """
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode('utf-8'),
-        method=method,
-        headers={
-            'Authorization': f'Bearer {TOKEN}',
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json',
-        },
-    )
+    headers = {
+        'Authorization': f'Bearer {TOKEN}',
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+    }
+    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'),
+                                 method=method, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             return json.loads(resp.read().decode('utf-8'))
@@ -87,7 +82,7 @@ def gh(method: str, url: str, payload: Any) -> dict[str, Any]:
         raise
 
 
-def chunks(items: list[Any], size: int) -> Iterator[list[Any]]:
+def chunks(items, size):
     """
     Yield successive slices of `items`, each containing up to `size` elements.
 
@@ -112,17 +107,31 @@ def chunks(items: list[Any], size: int) -> Iterator[list[Any]]:
         yield items[i:i + size]
 
 
-def _slashify(path: Union[os.PathLike[str], str]) -> str:
+def slashify(path):
     """Return `path` as a string with forward slashes."""
     return str(path).replace('\\', '/')
 
 
-def _to_workspace_path(path: pathlib.Path) -> str:
-    """Return `path` relative to GitHub workspace with forward slashes."""
-    return _slashify(path.relative_to(WORKSPACE))
+def is_relative_to(path, base):
+    try:
+        path = os.path.normcase(os.path.realpath(path))
+        normalized_base = os.path.normcase(os.path.realpath(base))
+        return os.path.commonpath([path, normalized_base]) == normalized_base
+    except ValueError:
+        return False
 
 
-def normalize_path(file_name: str, report_path: str) -> str:
+def to_workspace_path(path):
+    try:
+        path = str(os.path.realpath(path))
+        if not is_relative_to(path, WORKSPACE):
+            return None
+        return slashify(os.path.relpath(path, WORKSPACE))
+    except (ValueError, OSError):
+        return None
+
+
+def normalize_path(file_name, report_path):
     """
     Resolve a Checkstyle file path to a GitHub-annotation-friendly repository
     path.
@@ -153,48 +162,45 @@ def normalize_path(file_name: str, report_path: str) -> str:
         A normalized path string suitable for GitHub annotations, preferably
         relative to the repository workspace.
     """
-    file_name = _slashify(file_name)
+    file_name = str(slashify(file_name))
     if os.path.isabs(file_name) or re.match(r'^[A-Za-z]:[\\/]', file_name):
-        try:
-            return _to_workspace_path(pathlib.Path(file_name).resolve())
-        except Exception:
-            return pathlib.Path(file_name).name
+        path = to_workspace_path(os.path.realpath(file_name))
+        if path is None:
+            return os.path.basename(file_name)
+        return path
 
-    repo_candidate = (WORKSPACE / file_name).resolve()
-    if repo_candidate.exists():
-        try:
-            return _to_workspace_path(repo_candidate)
-        except ValueError:
-            pass
+    candidate = os.path.realpath(os.path.join(WORKSPACE, file_name))
+    if os.path.exists(candidate):
+        candidate = to_workspace_path(candidate)
+        if candidate is not None:
+            return candidate
 
-    report_dir = pathlib.Path(report_path).resolve().parent
-    current = report_dir
-    while True:
-        try:
-            current.relative_to(WORKSPACE)
-        except ValueError:
+    current = str(os.path.dirname(os.path.realpath(report_path)))
+    while is_relative_to(current, WORKSPACE):
+        candidate = os.path.realpath(os.path.join(current, file_name))
+        if os.path.exists(candidate):
+            candidate = to_workspace_path(candidate)
+            if candidate is not None:
+                return candidate
+
+        if os.path.normcase(current) == os.path.normcase(WORKSPACE):
             break
 
-        candidate = (current / file_name).resolve()
-        if candidate.exists():
-            try:
-                return _to_workspace_path(candidate)
-            except ValueError:
-                pass
-
-        if current == WORKSPACE:
+        parent = os.path.dirname(current)
+        if os.path.normcase(parent) == os.path.normcase(current):
             break
-        current = current.parent
 
-    return _slashify(os.path.normpath(file_name))
+        current = parent
+
+    return slashify(os.path.normpath(file_name))
 
 
-def main() -> None:
+def main():
     report_files = sorted(glob.glob(REPORT_GLOB, recursive=True))
 
-    parse_errors: list[str] = []
+    parse_errors = []
 
-    annotations: list[dict[str, Union[str, int]]] = []
+    annotations = []
     failure_count = 0
     warning_count = 0
     notice_count = 0
@@ -232,7 +238,7 @@ def main() -> None:
                 title = source.rsplit('.', 1)[-1] if source else 'Checkstyle'
 
                 annotation = {
-                    'path': path,
+                    'path': str(path),
                     'start_line': line,
                     'end_line': line,
                     'annotation_level': severity,
@@ -271,18 +277,14 @@ def main() -> None:
     # when there are no failures, instead of showing a green checkmark.
     if CHECKSTYLE_OUTCOME == 'failure' and not report_files:
         conclusion = 'failure'
-        summary = (
-            'Maven build failed before Checkstyle reports could be generated. '
-            'See CI logs for details.'
-        )
+        summary = ('Maven build failed before Checkstyle reports could be '
+                   'generated. See CI logs for details.')
     else:
-        summary = (
-            f'Scanned {len(report_files)} report(s) matching '
-            f'\'{REPORT_GLOB}\'. '
-            f'Found {len(annotations)} issue(s): '
-            f'{failure_count} error(s), {warning_count} warning(s), '
-            f'{notice_count} notice(s).'
-        )
+        summary = (f'Scanned {len(report_files)} report(s) matching '
+                   f'\'{REPORT_GLOB}\'. '
+                   f'Found {len(annotations)} issue(s): '
+                   f'{failure_count} error(s), {warning_count} warning(s), '
+                   f'{notice_count} notice(s).')
         if len(annotations) > MAX_ANNOTATIONS:
             # Truncate only what we upload to satisfy the GitHub API limit. The
             # counts above, and the conclusion computed earlier, intentionally

@@ -23,7 +23,6 @@
 import atexit
 import importlib.util
 import os
-import pathlib
 import sys
 import tempfile
 import unittest
@@ -49,10 +48,10 @@ IMPORT_ENV = {
 
 
 def load_module_from_sibling(filename, module_name=None):
-    test_dir = pathlib.Path(__file__).resolve().parent
-    module_path = test_dir / filename
+    test_dir = os.path.dirname(os.path.realpath(str(__file__)))
+    module_path = os.path.join(test_dir, filename)
 
-    name = module_name or module_path.stem
+    name = module_name or os.path.splitext(os.path.basename(module_path))[0]
 
     spec = importlib.util.spec_from_file_location(name, module_path)
     module = importlib.util.module_from_spec(spec)
@@ -65,10 +64,8 @@ def load_module_from_sibling(filename, module_name=None):
 
 
 with patch.dict(os.environ, IMPORT_ENV, clear=True):
-    target = load_module_from_sibling(
-        'upload_checkstyle.py',
-        'upload_checkstyle'
-    )
+    target = load_module_from_sibling('upload_checkstyle.py',
+                                      'upload_checkstyle')
 
 
 class TestChunks(unittest.TestCase):
@@ -123,7 +120,7 @@ class WorkspaceTestCase(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp_dir.cleanup)
 
-        self.workspace = pathlib.Path(self.temp_dir.name).resolve()
+        self.workspace = os.path.realpath(self.temp_dir.name)
 
         workspace_patcher = patch.object(target, "WORKSPACE", self.workspace)
         workspace_patcher.start()
@@ -133,16 +130,17 @@ class WorkspaceTestCase(unittest.TestCase):
         return self.make_file(self.workspace, relative_path)
 
     def make_reports_file(self, root = ''):
-        base = pathlib.Path(root) if root else self.workspace
-        if not base.is_absolute():
-            base = self.workspace / base
+        base = root if root else self.workspace
+        if not os.path.isabs(base):
+            base = os.path.join(self.workspace, base)
         return str(self.make_file(base, 'reports/checkstyle-result.xml'))
 
     @staticmethod
     def make_file(root, relative_path, contents = 'test\n'):
-        path = pathlib.Path(root) / pathlib.Path(relative_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(contents, encoding='utf-8')
+        path = str(os.path.join(root, relative_path))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(contents)
         return path
 
 
@@ -160,17 +158,14 @@ class TestNormalizePath(WorkspaceTestCase):
 
         with tempfile.TemporaryDirectory() as other_dir:
             outside_file = self.make_file(other_dir, 'outside.py')
-
             result = target.normalize_path(str(outside_file), report_file)
 
         self.assertEqual('outside.py', result)
 
     def test_windows_abs_path_returns_basename(self):
         report_file = self.make_reports_file()
-        result = target.normalize_path(
-            r'C:\temp\Example.java',
-            str(report_file),
-        )
+        result = target.normalize_path(r'C:\temp\Example.java',
+                                       str(report_file))
         self.assertEqual('Example.java', result)
 
     def test_repo_relative_found_in_workspace(self):
@@ -196,16 +191,15 @@ class TestNormalizePath(WorkspaceTestCase):
         report_file = self.make_reports_file()
 
         result = target.normalize_path(r'app\main.py', report_file)
-
         self.assertEqual('app/main.py', result)
 
     def test_workspace_match_precedes_report_search(self):
         self.make_workspace_file('app/main.py')
         self.make_workspace_file('module/app/main.py')
+
         report_file = self.make_reports_file('module')
 
         result = target.normalize_path('app/main.py', report_file)
-
         self.assertEqual('app/main.py', result)
 
     def test_walk_up_from_report_dir_finds_file(self):
@@ -219,10 +213,10 @@ class TestNormalizePath(WorkspaceTestCase):
     def test_walk_uses_nearest_ancestor_match(self):
         self.make_workspace_file('a/local/file.py')
         self.make_workspace_file('a/b/local/file.py')
+
         report_file = self.make_reports_file('a/b/c')
 
         result = target.normalize_path('local/file.py', report_file)
-
         self.assertEqual('a/b/local/file.py', result)
 
     def test_walk_can_find_file_at_workspace_root(self):
@@ -248,10 +242,8 @@ class TestNormalizePath(WorkspaceTestCase):
             external_report_file = self.make_reports_file(other_dir)
             self.make_file(other_dir, 'src/outside.py')
 
-            result = target.normalize_path(
-                'src/outside.py',
-                external_report_file,
-            )
+            result = target.normalize_path('src/outside.py',
+                                           external_report_file)
 
         self.assertEqual('src/outside.py', result)
 
@@ -318,11 +310,9 @@ class TestMain(WorkspaceTestCase):
         report_xml = '<?xml version="1.0" encoding="UTF-8"?>'
         report_xml += ElementTree.tostring(report, encoding='unicode')
 
-        report_file = self.make_file(
-            self.workspace,
-            'reports/checkstyle-report.xml',
-            report_xml
-        )
+        report_file = self.make_file(self.workspace,
+                                     'reports/checkstyle-report.xml',
+                                     report_xml)
 
         return report_file, annotations
 
@@ -335,22 +325,21 @@ class TestMain(WorkspaceTestCase):
                 return {'id': post_id}
             return {}
 
-        with ExitStack() as stack:
+        # False positive: ExitStack is a concrete stdlib context manager, but
+        # some inspections/type checkers see its AbstractContextManager base
+        # and report it as abstract.
+        #noinspection PyAbstractClass
+        with ExitStack() as stack: # type: ignore[abstract]
             stack.enter_context(
-                patch.object(target.glob, 'glob', return_value=report_files)
-            )
+                patch.object(target, 'REPORT_GLOB', self._REPORT_GLOB))
             stack.enter_context(
-                patch.object(target, 'REPORT_GLOB', self._REPORT_GLOB)
-            )
-            stack.enter_context(
-                patch.object(target, 'CHECK_NAME', self._CHECK_NAME)
-            )
+                patch.object(target, 'CHECK_NAME', self._CHECK_NAME))
             stack.enter_context(patch.object(target, 'SHA', self._SHA))
             stack.enter_context(patch.object(target, 'API', self._API))
 
+            stack.enter_context(patch.object(target, 'gh', side_effect=fake_gh))
             stack.enter_context(
-                patch.object(target, 'gh', side_effect=fake_gh)
-            )
+                patch.object(target.glob, 'glob', return_value=report_files))
 
             target.main()
 
@@ -386,10 +375,10 @@ class TestMain(WorkspaceTestCase):
             },
         ])
 
-        expected_summary = (
-            "Scanned 1 report(s) matching '**/checkstyle-report.xml'. "
-            "Found 52 issue(s): 50 error(s), 1 warning(s), 1 notice(s)."
-        )
+        expected_summary = ('Scanned 1 report(s) matching '
+                            '\'**/checkstyle-report.xml\'. '
+                            'Found 52 issue(s): '
+                            '50 error(s), 1 warning(s), 1 notice(s).')
 
         # Act
         api_calls = self.run_main_with_mocks(
