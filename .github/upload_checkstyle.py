@@ -108,7 +108,8 @@ def chunks(items, size):
 
 
 def slashify(path):
-    return os.fspath(path).replace('\\', '/')
+    """Return `path` as a string with forward slashes."""
+    return str(path).replace('\\', '/')
 
 
 def is_relative_to(path, base):
