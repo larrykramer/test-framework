@@ -52,7 +52,7 @@ jobs:
           CHECKS_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           CHECKSTYLE_OUTCOME: ${{ steps.checkstyle.outcome }}
         shell: bash
-        run: python3 ./.github/upload_checkstyle.py
+        run: python3 ./.github/scripts/upload_checkstyle.py
 
   unit-tests:
     name: Unit Tests - JDK ${{ matrix.java }} [${{ matrix.os.name }}]
