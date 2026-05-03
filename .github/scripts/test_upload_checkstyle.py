@@ -47,25 +47,18 @@ IMPORT_ENV = {
 }
 
 
-def load_module_from_sibling(filename, module_name=None):
-    test_dir = os.path.dirname(os.path.realpath(str(__file__)))
-    module_path = os.path.join(test_dir, filename)
-
-    name = module_name or os.path.splitext(os.path.basename(module_path))[0]
+with patch.dict(os.environ, IMPORT_ENV, clear=True):
+    module_path = os.path.join(os.path.dirname(os.path.realpath(str(__file__))),
+                               'upload_checkstyle.py')
+    name = os.path.splitext(os.path.basename(module_path))[0]
 
     spec = importlib.util.spec_from_file_location(name, module_path)
-    module = importlib.util.module_from_spec(spec)
+
+    target = importlib.util.module_from_spec(spec)
 
     sys.modules.pop(name, None)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-
-    return module
-
-
-with patch.dict(os.environ, IMPORT_ENV, clear=True):
-    target = load_module_from_sibling('upload_checkstyle.py',
-                                      'upload_checkstyle')
+    sys.modules[name] = target
+    spec.loader.exec_module(target)
 
 
 class TestChunks(unittest.TestCase):
