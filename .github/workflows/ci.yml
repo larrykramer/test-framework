@@ -26,6 +26,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ci-unit-tests:
+    name: CI Unit Tests
+    if: >-
+      github.event_name != 'push' ||
+      !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run CI unit tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
   checkstyle:
     name: Checkstyle
     permissions:
@@ -33,9 +44,7 @@ jobs:
       # must repeat contents: read here for actions/checkout.
       contents: read # to fetch code
       checks: write # to publish checkstyle annotations
-    if: >-
-      github.event_name != 'push' ||
-      !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
+    needs: ci-unit-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -100,6 +109,7 @@ jobs:
   ci-status:
     name: CI Status
     needs:
+      - ci-unit-tests
       - checkstyle
       - unit-tests
     if: ${{ !cancelled() }}
@@ -110,7 +120,7 @@ jobs:
           # If CI was intentionally skipped on push via '[skip ci]'.
           # This must check the first job guarded by that condition. That condition
           # should be defined on the first job in the CI workflow.
-          if [[ "${{ needs.checkstyle.result }}" == "skipped" ]]; then
+          if [[ "${{ needs.ci-unit-tests.result }}" == "skipped" ]]; then
             echo "CI skipped"
             exit 0
           fi
