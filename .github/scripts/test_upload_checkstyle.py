@@ -48,8 +48,9 @@ IMPORT_ENV = {
 
 
 with patch.dict(os.environ, IMPORT_ENV, clear=True):
-    module_path = os.path.join(os.path.dirname(os.path.realpath(str(__file__))),
-                               'upload_checkstyle.py')
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    module_path = os.path.join(script_dir, 'upload_checkstyle.py')
+
     name = os.path.splitext(os.path.basename(module_path))[0]
 
     spec = importlib.util.spec_from_file_location(name, module_path)
