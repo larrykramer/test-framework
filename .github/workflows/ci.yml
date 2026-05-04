@@ -15,9 +15,7 @@ on:
       - main
 
 permissions:
-  contents: read
-  actions: write
-  checks: write
+  contents: read # to fetch code
 
 defaults:
   run:
@@ -30,6 +28,11 @@ concurrency:
 jobs:
   checkstyle:
     name: Checkstyle
+    permissions:
+      # Job-level permissions override the workflow-level permissions, so we
+      # must repeat contents: read here for actions/checkout.
+      contents: read # to fetch code
+      checks: write # to publish checkstyle annotations
     if: >-
       github.event_name != 'push' ||
       !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
