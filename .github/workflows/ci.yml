@@ -100,7 +100,7 @@ jobs:
       - checkstyle
       - unit-tests
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
         #language=bash
       - run: |
