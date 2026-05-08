@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   ci-unit-tests:
-    name: CI Unit Tests
+    name: Unit Tests - CI
     if: >-
       github.event_name != 'push' ||
       !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
@@ -107,7 +107,7 @@ jobs:
       fail-fast: false
 
   ci-status:
-    name: CI Status
+    name: Workflow Status
     needs:
       - ci-unit-tests
       - checkstyle
