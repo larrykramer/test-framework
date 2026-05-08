@@ -1,14 +1,5 @@
 name: CI
 
-permissions:
-  contents: read
-  actions: write
-  checks: write
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
-  cancel-in-progress: true
-
 on:
   push:
     branches:
@@ -23,12 +14,37 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read # to fetch code
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  checkstyle:
-    name: Checkstyle
+  ci-unit-tests:
+    name: Unit Tests - CI
     if: >-
       github.event_name != 'push' ||
       !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run CI unit tests
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+
+  checkstyle:
+    name: Checkstyle
+    permissions:
+      # Job-level permissions override the workflow-level permissions, so we
+      # must repeat contents: read here for actions/checkout.
+      contents: read # to fetch code
+      checks: write # to publish checkstyle annotations
+    needs: ci-unit-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -38,28 +54,43 @@ jobs:
           distribution: 'oracle'
           java-version: '21'
           cache: 'maven'
-      - name: Run Checkstyle
-        id: checkstyle
+      - id: checkstyle
+        name: Run Checkstyle
         run: mvn -B -fae checkstyle:check
-      - name: Publish Checkstyle results
-        if: >-
+      - if: >-
           !cancelled() &&
           (steps.checkstyle.outcome == 'success' || steps.checkstyle.outcome == 'failure') &&
           (github.event_name != 'pull_request' ||
            github.event.pull_request.head.repo.full_name == github.repository)
+        name: Publish Checkstyle results
+        run: python3 ./.github/scripts/upload_checkstyle.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHECKS_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           CHECKSTYLE_OUTCOME: ${{ steps.checkstyle.outcome }}
-        shell: bash
-        run: python3 ./.github/scripts/upload_checkstyle.py
 
   unit-tests:
     name: Unit Tests - JDK ${{ matrix.java }} [${{ matrix.os.name }}]
     needs: checkstyle
     runs-on: ${{ matrix.os.runner }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup JDK ${{ matrix.java }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'oracle'
+          java-version: ${{ matrix.java }}
+          cache: 'maven'
+      - name: Run unit tests
+        run: mvn -B -pl test-framework-core -am clean test -Dcheckstyle.skip=true
+      - if: failure()
+        name: Upload Surefire Reports on Failure
+        uses: actions/upload-artifact@v7
+        with:
+          name: surefire-reports-${{ matrix.os.runner }}-jdk${{ matrix.java }}
+          path: 'test-framework-core/target/surefire-reports/*'
+          if-no-files-found: ignore
     strategy:
-      fail-fast: false
       matrix:
         java:
           - '21'
@@ -73,41 +104,23 @@ jobs:
             name: 'macOS 26 Arm64'
           - runner: macos-15-intel
             name: 'macOS 15 Intel'
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup JDK ${{ matrix.java }}
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'oracle'
-          java-version: ${{ matrix.java }}
-          cache: 'maven'
-      - name: Run unit tests
-        shell: bash
-        run: mvn -B -pl test-framework-core -am clean test -Dcheckstyle.skip=true
-      - name: Upload Surefire Reports on Failure
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: surefire-reports-${{ matrix.os.runner }}-jdk${{ matrix.java }}
-          path: 'test-framework-core/target/surefire-reports/*'
-          if-no-files-found: ignore
+      fail-fast: false
 
   ci-status:
-    name: CI Status
+    name: Workflow Status
     needs:
+      - ci-unit-tests
       - checkstyle
       - unit-tests
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
-      - env:
-          NEEDS_JSON: ${{ toJSON(needs) }}
         #language=bash
-        run: |
+      - run: |
           # If CI was intentionally skipped on push via '[skip ci]'.
           # This must check the first job guarded by that condition. That condition
           # should be defined on the first job in the CI workflow.
-          if [[ "${{ needs.checkstyle.result }}" == "skipped" ]]; then
+          if [[ "${{ needs.ci-unit-tests.result }}" == "skipped" ]]; then
             echo "CI skipped"
             exit 0
           fi
@@ -126,3 +139,5 @@ jobs:
           fi
 
           echo "CI passed"
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
