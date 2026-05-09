@@ -97,13 +97,11 @@ jobs:
           - '25'
         os:
           - runner: ubuntu-latest
-            name: 'Ubuntu'
+            name: 'Linux'
           - runner: windows-latest
             name: 'Windows'
           - runner: macos-26
-            name: 'macOS 26 Arm64'
-          - runner: macos-15-intel
-            name: 'macOS 15 Intel'
+            name: 'macOS'
       fail-fast: false
 
   ci-status:
