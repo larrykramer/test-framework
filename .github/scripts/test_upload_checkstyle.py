@@ -246,7 +246,7 @@ class TestMain(WorkspaceTestCase):
     # Test Constants
     _FILE_PATH = 'src/main/java/com/example/Main.java'
 
-    _REPORT_GLOB = '**/checkstyle-report.xml'
+    _REPORT_GLOB = '**/checkstyle-result.xml'
 
     _CHECK_NAME = 'Checkstyle Smoke'
     _SHA = 'deadbeef'
@@ -305,7 +305,7 @@ class TestMain(WorkspaceTestCase):
         report_xml += ElementTree.tostring(report, encoding='unicode')
 
         report_file = self.make_file(self.workspace,
-                                     'reports/checkstyle-report.xml',
+                                     'reports/checkstyle-result.xml',
                                      report_xml)
 
         return report_file, annotations
@@ -370,7 +370,7 @@ class TestMain(WorkspaceTestCase):
         ])
 
         expected_summary = ('Scanned 1 report(s) matching '
-                            '\'**/checkstyle-report.xml\'. '
+                            '\'**/checkstyle-result.xml\'. '
                             'Found 52 issue(s): '
                             '50 error(s), 1 warning(s), 1 notice(s).')
 
