@@ -26,17 +26,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci-unit-tests:
-    name: Unit Tests - CI
-    if: >-
-      github.event_name != 'push' ||
-      !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
-    runs-on: ubuntu-slim
-    steps:
-      - uses: actions/checkout@v6
-      - name: Run CI unit tests
-        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
-
   checkstyle:
     name: Checkstyle
     permissions:
@@ -44,7 +33,9 @@ jobs:
       # must repeat contents: read here for actions/checkout.
       contents: read # to fetch code
       checks: write # to publish checkstyle annotations
-    needs: ci-unit-tests
+    if: >-
+      github.event_name != 'push' ||
+      !contains(join(github.event.commits.*.message, ' '), '[skip ci]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -54,6 +45,8 @@ jobs:
           distribution: 'oracle'
           java-version: '21'
           cache: 'maven'
+      - name: Initialize Checkstyle
+        run: python3 ./.github/scripts/test_upload_checkstyle.py
       - id: checkstyle
         name: Run Checkstyle
         run: mvn -B -fae checkstyle:check
@@ -68,8 +61,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHECKS_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           CHECKSTYLE_OUTCOME: ${{ steps.checkstyle.outcome }}
+      - if: failure()
+        name: Upload Checkstyle Reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: checkstyle-reports
+          path: '**/checkstyle-result.xml'
+          if-no-files-found: ignore
 
-  unit-tests:
+  java-unit-tests:
     name: Unit Tests - JDK ${{ matrix.java }} [${{ matrix.os.name }}]
     needs: checkstyle
     runs-on: ${{ matrix.os.runner }}
@@ -107,9 +107,8 @@ jobs:
   ci-status:
     name: Workflow Status
     needs:
-      - ci-unit-tests
       - checkstyle
-      - unit-tests
+      - java-unit-tests
     if: ${{ !cancelled() }}
     runs-on: ubuntu-slim
     steps:
@@ -118,7 +117,7 @@ jobs:
           # If CI was intentionally skipped on push via '[skip ci]'.
           # This must check the first job guarded by that condition. That condition
           # should be defined on the first job in the CI workflow.
-          if [[ "${{ needs.ci-unit-tests.result }}" == "skipped" ]]; then
+          if [[ "${{ needs.checkstyle.result }}" == "skipped" ]]; then
             echo "CI skipped"
             exit 0
           fi
