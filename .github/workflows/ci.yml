@@ -115,9 +115,9 @@ jobs:
         #language=bash
       - run: |
           # If CI was intentionally skipped on push via '[skip ci]'.
-          # This must check the first job guarded by that condition. That condition
-          # should be defined on the first job in the CI workflow.
-          if [[ "${{ needs.checkstyle.result }}" == "skipped" ]]; then
+          # See the CI_GATE_RESULT environment variable comment below for why this
+          # means the whole CI run was intentionally skipped.
+          if [[ "$CI_GATE_RESULT" == "skipped" ]]; then
             echo "CI skipped"
             exit 0
           fi
@@ -138,3 +138,8 @@ jobs:
           echo "CI passed"
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
+          # The first job in the workflow MUST be the CI gate. This job MUST be
+          # guarded by the '[skip ci]' condition, so a skipped result here means
+          # the workflow was intentionally skipped and downstream jobs were
+          # skipped via needs.
+          CI_GATE_RESULT: ${{ needs.checkstyle.result }}
