@@ -78,7 +78,10 @@ def gh(method, url, payload):
         with urllib.request.urlopen(req, timeout=30) as resp:
             return json.loads(resp.read().decode('utf-8'))
     except urllib.error.HTTPError as e:
-        print(e.read().decode('utf-8'))
+        print(f"GitHub API error: {e.code} {e.reason}")
+        if os.environ.get('RUNNER_DEBUG') == '1':
+            body = e.read().decode('utf-8')
+            print(body)
         raise
 
 
