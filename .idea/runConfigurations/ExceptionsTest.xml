@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ExceptionsTest" type="JUnit" factoryName="JUnit" folderName="Utilities">
+    <module name="test-framework-core" />
+    <extension name="coverage" runner="jacoco" />
+    <option name="PACKAGE_NAME" value="net.larrykramer.test.util" />
+    <option name="MAIN_CLASS_NAME" value="net.larrykramer.test.util.ExceptionsTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
