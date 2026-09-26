@@ -448,6 +448,21 @@ public class WebDriverServiceTest {
         service.createWebDriver();
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateWebDriver_unsupportedGridURIScheme_throwsIllegalArgumentException() {
+        // Set up a Grid URI with an unsupported scheme to trigger validation failure.
+        // RemoteWebDriver requires HTTP or HTTPS.
+        DriverConfig config = createConfig(DriverType.CHROME);
+        GridConfig grid = createGridConfig();
+        grid.uri = Optional.of(URI.create("wss://selenium-hub.local"));
+
+        when(mockFactory.getDriverType()).thenReturn(config.type);
+        when(mockFactory.getCapabilities()).thenReturn(new MutableCapabilities());
+
+        WebDriverService service = createService(config, grid, mockFactory);
+        service.createWebDriver();
+    }
+
     @Test
     public void testDisposeWebDriver_initializedRef_callsQuit() {
         WebDriverService service = createService(createConfig(DriverType.CHROME), null);

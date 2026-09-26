@@ -39,6 +39,7 @@ import net.larrykramer.test.cdi.ScenarioScoped;
 import net.larrykramer.test.config.DriverConfig;
 import net.larrykramer.test.config.DriverType;
 import net.larrykramer.test.config.GridConfig;
+import net.larrykramer.test.util.Exceptions;
 import net.larrykramer.test.webdriver.DriverFactory;
 import net.larrykramer.test.webdriver.WebDriverReference;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
@@ -267,7 +268,7 @@ public class WebDriverService {
                 throw new IllegalStateException(
                         "Grid not supported for driver type: " + driverConfig.type);
             }
-            driver = createRemoteWebDriver(capabilities);
+            driver = createRemoteWebDriver(gridConfig.uri.get(), capabilities);
         } else {
             driver = factory.create();
         }
@@ -340,25 +341,8 @@ public class WebDriverService {
      * The supplied capabilities are defensively copied before augmented with
      * Grid-specific capabilities.
      */
-    private WebDriver createRemoteWebDriver(MutableCapabilities capabilities) {
-        assert gridConfig.uri.isPresent() : "Trusted caller missed precondition";
-        URI uri = gridConfig.uri.get();
-        URL gridURL;
-        try {
-            if (uri.isOpaque()) {
-                throw new IllegalArgumentException("URI is not hierarchical");
-            }
-
-            // Check for query/fragment which are known to break RemoteWebDriver URL construction.
-            // See https://github.com/SeleniumHQ/selenium/issues/9011
-            if (uri.getRawQuery() != null || uri.getRawFragment() != null) {
-                throw new IllegalArgumentException("URI has a query or fragment");
-            }
-
-            gridURL = uri.toURL();
-        } catch (IllegalArgumentException | MalformedURLException e) {
-            throw new IllegalArgumentException("Invalid grid.url: " + uri, e);
-        }
+    private WebDriver createRemoteWebDriver(URI uri, MutableCapabilities capabilities) {
+        URL gridURL = toGridURL(uri);
 
         // Create a defensive copy of the capabilities options to ensure isolation.
         // We are about to mutate these capabilities by merging Grid-specific configuration
@@ -397,5 +381,39 @@ public class WebDriverService {
         gridConfig.capabilities.forEach(remoteCaps::setCapability);
 
         return new RemoteWebDriver(gridURL, remoteCaps);
+    }
+
+    private static URL toGridURL(URI uri) {
+        String scheme = uri.getScheme();
+        if (scheme == null) {
+            throw new IllegalArgumentException("URI with undefined scheme");
+        }
+        if (!(scheme.equalsIgnoreCase("https") || scheme.equalsIgnoreCase("http"))) {
+            throw new IllegalArgumentException(String.format("invalid URI scheme %s", scheme));
+        }
+        if (uri.getHost() == null) {
+            throw invalidGridURL(uri, null);
+        }
+
+        // Check for query/fragment which are known to break RemoteWebDriver URL construction.
+        // See https://github.com/SeleniumHQ/selenium/issues/9011
+        if (uri.getRawQuery() != null || uri.getRawFragment() != null) {
+            throw invalidGridURL(uri, null);
+        }
+
+        try {
+            return uri.toURL();
+        } catch (IllegalArgumentException | MalformedURLException e) {
+            throw invalidGridURL(uri, e);
+        }
+    }
+
+    private static IllegalArgumentException invalidGridURL(URI uri, Throwable cause) {
+        var si = Exceptions.filterHostInfo(uri.toString()).withPrefix(": ");
+        var iae = new IllegalArgumentException(Exceptions.formatMsg("Invalid grid.url%s", si));
+        if (si.isEnhanced() && cause != null) {
+            iae.initCause(cause);
+        }
+        return iae;
     }
 }
