@@ -28,6 +28,9 @@ import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
+import static net.larrykramer.test.util.Exceptions.filterHostInfo;
+import static net.larrykramer.test.util.Exceptions.formatMsg;
+
 /**
  * A {@code Converter} implementation that parses textual configuration values
  * into {@code URI} instances.
@@ -128,7 +131,16 @@ public class URIConverter implements Converter<URI> {
             }
             return new URI(s);
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Invalid URI format: " + value, e);
+            var si = filterHostInfo(value).withPrefix(": ");
+            var iae = new IllegalArgumentException(formatMsg("Invalid URI format%s", si));
+
+            // URISyntaxException echoes the input string in its message.
+            // We must drop the cause in secure mode to prevent stack trace leakage.
+            if (si.isEnhanced()) {
+                iae.initCause(e);
+            }
+
+            throw iae;
         }
     }
 }

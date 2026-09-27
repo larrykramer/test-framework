@@ -145,16 +145,16 @@ Environment variables use the property name in uppercase, with dots (`.`) and hy
 
 Common configuration properties include:
 
-| Property                      | Description                                                                                                                                                                                                                       | Default                                                                  |
-|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| `driver.type`                 | Target driver. Supported: `EDGE`, `SAFARI`, `FIREFOX`, `CHROME`, `SPI`.                                                                                                                                                           | OS-dependent (`EDGE` on Windows, `SAFARI` on macOS, `FIREFOX` otherwise) |
-| `driver.spi`                  | Fully qualified class name of a custom driver factory implementation that creates Selenium `WebDriver` instances. Required when `driver.type=SPI`.                                                                                | _(none)_                                                                 |
-| `driver.headless`             | Run the browser in headless mode.                                                                                                                                                                                                 | `false`                                                                  |
-| `driver.maximize`             | Maximize the browser window on startup.                                                                                                                                                                                           | `false`                                                                  |
-| `driver.window-size`          | Set a specific window size. Overrides `driver.maximize`. Format: `<width>x<height>` or `<width>,<height>`.                                                                                                                        | _(none)_                                                                 |
-| `driver.allow-insecure-certs` | Accept invalid TLS certificates.                                                                                                                                                                                                  | `false`                                                                  |
-| `driver.implicit-timeout`     | Implicit wait timeout in milliseconds. `0` disables it.                                                                                                                                                                           | `0`                                                                      |
-| `grid.url`                    | URL of the remote Selenium Grid hub for distributed testing.<br>**Note:** Do not embed secrets (e.g., `user:password`) in this URI. The framework may log this value in exceptions for debugging, which could expose credentials. | _(none)_                                                                 |
+| Property                      | Description                                                                                                                                         | Default                                                                  |
+|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `driver.type`                 | Target driver. Supported: `EDGE`, `SAFARI`, `FIREFOX`, `CHROME`, `SPI`.                                                                             | OS-dependent (`EDGE` on Windows, `SAFARI` on macOS, `FIREFOX` otherwise) |
+| `driver.spi`                  | Fully qualified class name of a custom driver factory implementation that creates Selenium `WebDriver` instances. Required when `driver.type=SPI`.  | _(none)_                                                                 |
+| `driver.headless`             | Run the browser in headless mode.                                                                                                                   | `false`                                                                  |
+| `driver.maximize`             | Maximize the browser window on startup.                                                                                                             | `false`                                                                  |
+| `driver.window-size`          | Set a specific window size. Overrides `driver.maximize`. Format: `<width>x<height>` or `<width>,<height>`.                                          | _(none)_                                                                 |
+| `driver.allow-insecure-certs` | Accept invalid TLS certificates.                                                                                                                    | `false`                                                                  |
+| `driver.implicit-timeout`     | Implicit wait timeout in milliseconds. `0` disables it.                                                                                             | `0`                                                                      |
+| `grid.url`                    | URL of the remote Selenium Grid hub for distributed testing.<br>See Exception Redaction for debugging details.                                      | _(none)_                                                                 |
 
 For the complete list of driver-specific, proxy, and advanced settings, see the configuration and driver classes under the
 [config](test-framework-core/src/main/java/net/larrykramer/test/config)
@@ -198,6 +198,30 @@ grid.url=cafe::1
 
 Unbracketed IPv6 strings that happen to start with a letter sequence followed by a colon (e.g., `cafe::1`, `face::`, `dead:beef`) are ambiguous because they also match the syntax of a URI scheme.
 The URI converter intentionally treats these as scheme-prefixed URIs per [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986), so bracket notation is the only reliable way to specify an IPv6 host literal.
+
+### Exception Redaction (Secure-by-Default)
+
+To prevent accidental credential leakage in Continuous Integration logs and centralized logging systems, the framework operates in a **secure-by-default** mode.
+Potentially sensitive configuration values—such as URIs, hostnames, and connection strings—are redacted or omitted from exception messages and stack traces.
+
+If you need to debug a configuration issue (e.g., a malformed `grid.url`), you can opt-in to enhanced diagnostic messages by enabling the standard JDK security property `jdk.includeInExceptions`.
+
+To enable enhanced exception text, pass the following argument to your JVM or build tool:
+
+```shell
+-Djdk.includeInExceptions=hostInfo
+```
+
+**Example Behavior:**
+
+* **Default (Secure):**
+  `java.lang.IllegalArgumentException: invalid grid.url`
+* **Enhanced (Debug):**
+  `java.lang.IllegalArgumentException: invalid grid.url: https://user:pass@grid-hub:4444`
+
+> **Security Warning:**
+> Only enable this property in local development or isolated debugging environments.
+> Do _not_ enable `jdk.includeInExceptions=hostInfo` in production or shared Continuous Integration environments where logs may be exposed.
 
 ## Continuous Integration
 
